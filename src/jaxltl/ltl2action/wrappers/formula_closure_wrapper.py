@@ -121,5 +121,5 @@ class FormulaClosureWrapper[
                 next_graph,
             ),
             propositions=transition.propositions,
-            info=transition.info,
+            info=transition.info | {"is_sink": is_false},
         )

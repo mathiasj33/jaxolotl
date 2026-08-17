@@ -1,0 +1,40 @@
+# Version-control and local tooling metadata
+.git
+.gitignore
+.agents
+.codex
+.VSCodeCounter
+.vscode
+
+# Local Python/Pixi environments and caches
+.pixi
+.cache
+.pytest_cache
+.ruff_cache
+**/__pycache__
+*.py[cod]
+*.egg-info
+
+# Generated experiment artifacts and downloaded assets
+data
+dependencies
+local
+outputs
+runs
+threejs_output
+
+# Local configuration and credentials
+.env
+.env.*
+conf/combine_models.yaml
+conf/eval.yaml
+conf/eval_curves.yaml
+conf/precompute.yaml
+conf/train.yaml
+conf/visualize_env.yaml
+conf/visualize_traj.yaml
+
+# Miscellaneous generated files
+*.log
+*.zip
+ldba.png

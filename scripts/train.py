@@ -55,7 +55,7 @@ def main(cfg: DictConfig):
     env = LogWrapper(env)
     env = VectorizeWrapper(env)
 
-    seeds = jnp.arange(cfg.num_seeds)
+    seeds = jnp.arange(cfg.start_seed, cfg.num_seeds)
     keys = jax.vmap(jax.random.key)(seeds)
     split = jax.vmap(jax.random.split)(keys)
     keys, model_keys = split[:, 0], split[:, 1]
@@ -83,7 +83,7 @@ def main(cfg: DictConfig):
     train = eqx.filter_jit(train)
 
     if cfg.wandb.use_wandb:
-        import wandb
+        import wandb  # noqa
 
         settings = wandb.Settings(silent=True)
 
@@ -91,7 +91,7 @@ def main(cfg: DictConfig):
             wandb.init(
                 reinit="create_new",
                 project=cfg.wandb.project,
-                config=OmegaConf.to_container(cfg, resolve=True) | {"seed": i},  # type: ignore
+                config=OmegaConf.to_container(cfg, resolve=True) | {"seed": seeds[i]},  # type: ignore
                 name=f"{cfg.run}_{i}",
                 settings=settings,
             )

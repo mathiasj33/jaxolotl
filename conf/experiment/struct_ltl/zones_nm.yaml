@@ -54,7 +54,7 @@ rl_alg:
   gae_lambda: 0.95
   clip_eps: 0.2
   ent_coef: 0.003
-  vf_coef: 1.0  # TODO
+  vf_coef: 1.0
   lr: 3e-4
   max_grad_norm: 0.5
   anneal_lr: false

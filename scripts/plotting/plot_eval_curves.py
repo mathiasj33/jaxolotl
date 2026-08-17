@@ -21,18 +21,9 @@ def load_df(path: str | Path, smooth_radius: int = 10) -> pd.DataFrame:
     return df
 
 
-runs = [
-    # "struct_ltl/noattn",
-    # "struct_ltl/newattn",
-    # "struct_ltl/attn_mod",
-    # "deep_ltl/big",
-    "deep_ltl/main",
-    "struct_ltl/attn",
-    "struct_ltl/noattn",
-    "struct_ltl/attn_pos",
-]
+runs = ["struct_ltl/main"]
 
-dfs = [load_df(f"runs/ZoneEnv/{run}/eval_results_checkpoints.csv") for run in runs]
+dfs = [load_df(f"runs/ZoneEnv-NM/{run}/eval_results_checkpoints.csv") for run in runs]
 df = pd.concat(dfs, ignore_index=True)
 
 

@@ -26,28 +26,11 @@ def load_df(path: str | Path) -> pd.DataFrame:
 
     avg_data["timestep"] = avg_data["bin"] * bin_size
 
-    # for seed in avg_data["seed"].unique():
-    #     mask = avg_data["seed"] == seed
-    #     avg_data.loc[mask, "smooth_return"] = smooth(
-    #         avg_data.loc[mask, "return"], radius=10
-    #     )
-    #     avg_data.loc[mask, "smooth_length"] = smooth(
-    #         avg_data.loc[mask, "length"], radius=10
-    #     )
-
     avg_data["name"] = Path(path).parent.parent.name
     return avg_data
 
 
-log_files = [
-    # "runs/WarehouseEnv/deep_ltl/new/logs.csv",
-    # "runs/WarehouseEnv/struct_ltl/noattn/logs.csv",
-    # "runs/WarehouseEnv/struct_ltl/newattn/logs.csv",
-    # "runs/ZoneEnv/deep_ltl/main/logs.csv",
-    # "runs/ZoneEnv/struct_ltl/main/logs.csv",
-    # "runs/ZoneEnv/ltl2action/main10/logs.csv",
-    "runs/ZoneEnv/genz_ltl/main/logs.csv",
-]
+log_files = ["runs/ZoneEnv-NM/struct_ltl/main/logs.csv"]
 
 dfs = [load_df(path) for path in log_files]
 df = pd.concat(dfs, ignore_index=True)

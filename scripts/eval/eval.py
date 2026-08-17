@@ -57,7 +57,7 @@ def main(cfg: DictConfig):
     agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     logger.info(
-        f"Loaded model with {compute_num_params(models) / num_models / 1e3}k parameters."
+        f"Loaded {num_models} seeds. Each model has {compute_num_params(models) / num_models / 1e3}k parameters."
     )
 
     # set up evaluator
