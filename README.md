@@ -97,7 +97,7 @@ To evaluate the trained models:
 pixi run -e gpu python scripts/eval/eval.py experiment=struct_ltl/warehouse run=tmp formulas=warehouse/finite eval.finite=True
 ```
 
-Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See `[eval.yaml](conf/eval.yaml.template)` for other configuration options.
+Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See [eval.yaml](conf/eval.yaml.template) for other configuration options.
 
 > [!NOTE]
 > If you run into OOM errors, the eval script supports `models_per_batch` and `formulas_per_batch` to control the evaluation parallelism. Lowering these will reduce memory requirements, at the expense of longer runtimes.
