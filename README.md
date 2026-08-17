@@ -15,7 +15,12 @@ We recommend using [pixi](https://pixi.sh/latest/) to install the required depen
 in a virtual environment. Installing on GPU is highly recommended:
 ```bash
 pixi install -e gpu
-pixi run copy-templates
+pixi run -e gpu copy-templates
+```
+
+To install the pretrained models:
+```bash
+pixi run -e gpu install-pretrained-models
 ```
 
 ### Rabinizer 4
@@ -53,7 +58,7 @@ docker run --rm -it --gpus all \
 
 We use [Hydra](https://hydra.cc/docs/intro/) to configure experiments. The below
 commands assume you want to train and evaluate StructLTL for the Warehouse
-experiment. You can set the experiment Hydra configuration via command line; see the
+environment. You can set the experiment Hydra configuration via command line; see the
 `conf` subfolder for the pre-made experiment configuration files.
 
 ### Precomputing Resets
@@ -87,10 +92,12 @@ pixi run -e gpu python scripts/plotting/plot_training_curves.py
 
 ### Evaluation
 
-To evaluate the trained policy on a set of LTL formulae:
+To evaluate the trained models:
 ```bash
 pixi run -e gpu python scripts/eval/eval.py experiment=struct_ltl/warehouse run=tmp formulas=warehouse/finite eval.finite=True
 ```
+
+Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See `[eval.yaml](conf/eval.yaml.template)` for other configuration options.
 
 > [!NOTE]
 > If you run into OOM errors, the eval script supports `models_per_batch` and `formulas_per_batch` to control the evaluation parallelism. Lowering these will reduce memory requirements, at the expense of longer runtimes.
@@ -100,13 +107,15 @@ pixi run -e gpu python scripts/eval/eval.py experiment=struct_ltl/warehouse run=
 
 To visualize trajectories for the trained policy on an LTL formula (both for drawing trajectories and rendering them in real-time):
 ```bash
-pixi run -e gpu python scripts/eval/visualize_trajectories.py experiment=struct_ltl/warehouse run=tmp eval.formula="F (vase & region_a & X(!vase & region_a))"
+pixi run -e gpu python scripts/eval/visualize_trajectories.py experiment=struct_ltl/warehouse run=pretrained eval.formula="F (vase & region_a & X(!vase & region_a))"
 ```
 
 To compute evaluation curves:
 ```bash
 pixi run -e gpu python scripts/eval/compute_eval_curves.py experiment=struct_ltl/warehouse run=tmp +formulas=warehouse/finite
 ```
+
+Note that only final pretrained models are provided, so evaluation curves can only be computed for new runs.
 
 To plot evaluation curves:
 ```bash

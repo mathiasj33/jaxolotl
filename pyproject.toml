@@ -32,6 +32,7 @@ jaxltl = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 copy-templates = "python -c \"import shutil; from pathlib import Path; [shutil.copy(f, f.with_suffix('')) for f in Path('conf').glob('*.template')]\""
+install-pretrained-models = "python scripts/install_pretrained_models.py"
 threejs = "bash -c '(sleep 1 && xdg-open http://localhost:8000) & python -m http.server 8000 --directory threejs_output'"
 
 [tool.pixi.dependencies]
