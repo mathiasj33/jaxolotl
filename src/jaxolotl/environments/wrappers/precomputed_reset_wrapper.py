@@ -50,6 +50,7 @@ class PrecomputedResetWrapper[
             TResetOptions | None
         ) = None,  # note: currently ignored for precomputed resets
     ) -> tuple[WrapperState, EnvObservation[TObsFeatures]]:
+        del options
         state = self._sample_random_reset_state(key)
         obs = self._env.compute_obs(state, params)
         return state, obs

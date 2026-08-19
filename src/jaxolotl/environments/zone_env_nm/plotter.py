@@ -12,6 +12,7 @@ class StaticColorAxisBBox(mpatches.FancyBboxPatch):
         self._set_edgecolor(color)  # type: ignore
 
     def set_linewidth(self, w):
+        del w
         super().set_linewidth(1.5)
 
 
@@ -50,9 +51,8 @@ def draw_circle(ax, center, color, radius=0.4):
 
 def draw_zones(ax, zone_positions, colors):
     for (x, y), color in zip(zone_positions, colors, strict=False):
-        if color in _color_map:
-            color = _color_map[color]
-        draw_circle(ax, (x, y), color)
+        mapped_color = _color_map.get(color, color)
+        draw_circle(ax, (x, y), mapped_color)
 
 
 def draw_path(

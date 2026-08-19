@@ -1,1 +1,1 @@
-from .agent import GenZLTLAgent
+from .agent import GenZLTLAgent as GenZLTLAgent

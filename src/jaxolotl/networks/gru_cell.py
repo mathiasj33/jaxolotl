@@ -51,7 +51,7 @@ class GRUCell(Module):
         self.hidden_size = hidden_size
         self.use_bias = use_bias
 
-    def __call__(self, input: jax.Array, hidden: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, hidden: jax.Array) -> jax.Array:  # noqa: A002
         """Perform a single step of the GRU update.
 
         Args:

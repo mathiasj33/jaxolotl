@@ -102,7 +102,9 @@ class JaxFormulaClosureGraph(eqx.Module):
                 max_graph_edges = max(max_graph_edges, node.formula.num_edges)
         graphs: list[JaxFormulaGraph] = []
 
-        for i, closure in tqdm(enumerate(closures), desc="Converting closures", total=len(closures)):
+        for i, closure in tqdm(
+            enumerate(closures), desc="Converting closures", total=len(closures)
+        ):
             if closure.initial_node is None:
                 raise ValueError("FormulaClosureGraph not initialized.")
 

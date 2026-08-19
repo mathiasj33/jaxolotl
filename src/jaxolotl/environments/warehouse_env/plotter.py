@@ -1,6 +1,5 @@
 """Plotting utilities for WarehouseEnv environment."""
 
-import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -285,7 +284,7 @@ def setup_axis(ax: Axes, world_size: float):
     )
 
 
-def draw_single_trajectory(  # noqa: PLR0913
+def draw_single_trajectory(  # noqa: PLR0913, PLR0917
     ax: Axes,
     positions: list[tuple[float, float]],
     initial_vase_positions: list[tuple[float, float]],
@@ -362,7 +361,7 @@ def draw_single_trajectory(  # noqa: PLR0913
         draw_start_marker(ax, positions[0])
 
 
-def draw_trajectories(  # noqa: PLR0913
+def draw_trajectories(  # noqa: PLR0913, PLR0917
     positions: list[list[tuple[float, float]]],
     initial_vase_positions: list[list[tuple[float, float]]],
     initial_crate_positions: list[list[tuple[float, float]]],
@@ -425,66 +424,6 @@ def draw_trajectories(  # noqa: PLR0913
             world_size,
             pickup_radius,
         )
-
-    # Add legend
-    legend_elements = [
-        mpatches.Patch(color=_REGION_A_COLOR, alpha=0.3, label="Region A"),
-        mpatches.Patch(color=_REGION_B_COLOR, alpha=0.3, label="Region B"),
-        mpatches.Patch(color=_DOOR_COLOR, alpha=0.3, label="Door"),
-        mpatches.Patch(color=_PATH_COLOR, label="Path (empty hands)"),
-        mpatches.Patch(color=_CARRYING_VASE_PATH_COLOR, label="Path (carrying vase)"),
-        mpatches.Patch(color=_CARRYING_CRATE_PATH_COLOR, label="Path (carrying crate)"),
-        mlines.Line2D(
-            [0],
-            [0],
-            marker="^",
-            color="w",
-            markerfacecolor=_VASE_COLOR,
-            markeredgecolor="black",
-            markersize=10,
-            label="Vase pickup",
-        ),
-        mlines.Line2D(
-            [0],
-            [0],
-            marker="v",
-            color="w",
-            markerfacecolor=_VASE_COLOR,
-            markeredgecolor="black",
-            markersize=10,
-            label="Vase drop",
-        ),
-        mlines.Line2D(
-            [0],
-            [0],
-            marker="^",
-            color="w",
-            markerfacecolor=_CRATE_COLOR,
-            markeredgecolor="black",
-            markersize=10,
-            label="Crate pickup",
-        ),
-        mlines.Line2D(
-            [0],
-            [0],
-            marker="v",
-            color="w",
-            markerfacecolor=_CRATE_COLOR,
-            markeredgecolor="black",
-            markersize=10,
-            label="Crate drop",
-        ),
-        mlines.Line2D(
-            [0],
-            [0],
-            marker="d",
-            color="w",
-            markerfacecolor="orange",
-            markeredgecolor="black",
-            markersize=10,
-            label="Start",
-        ),
-    ]
 
     plt.tight_layout(pad=4)
     if save_path is not None:

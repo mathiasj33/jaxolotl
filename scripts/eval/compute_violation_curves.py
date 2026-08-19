@@ -131,7 +131,7 @@ def save_results(
         mask = returns[i] > 0  # (num_seeds, num_formulas, num_episodes)
         counts = jnp.sum(mask, axis=(1, 2))  # Shape: (num_seeds,)
 
-        def compute_masked_seed_means(data_tensor):
+        def compute_masked_seed_means(data_tensor, i=i, mask=mask, counts=counts):
             # Sum values of successful trajectories only
             sum_val = jnp.sum(data_tensor[i] * mask, axis=(1, 2))
             # Avoid division by zero if a seed had 0 successes

@@ -18,7 +18,7 @@ class ContinuousActor(Actor):
     epsilon_prob: MLP | None
     use_epsilon: bool
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         in_size: int,
         action_dim: int,

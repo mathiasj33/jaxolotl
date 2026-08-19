@@ -68,7 +68,7 @@ def _build_replay_data(
     frames_per_step: int,
     pause_between_episodes: float,
 ) -> dict:
-    trajs_np = jax.tree.map(lambda x: jax.device_get(x), trajs)
+    trajs_np = jax.tree.map(jax.device_get, trajs)
     lengths_np = jax.device_get(lengths)
 
     trajectories = []

@@ -46,9 +46,10 @@ def compute_sequences(  # noqa: PLR0915
                 if len(paths[i]) < len(paths[j]):
                     if check_path_contained(paths[j], paths[i]):
                         to_remove.add(j)
-                elif len(paths[i]) > len(paths[j]):
-                    if check_path_contained(paths[i], paths[j]):
-                        to_remove.add(i)
+                elif len(paths[i]) > len(paths[j]) and check_path_contained(
+                    paths[i], paths[j]
+                ):
+                    to_remove.add(i)
                 if i in to_remove:
                     break
         paths = [paths[i] for i in range(len(paths)) if i not in to_remove]

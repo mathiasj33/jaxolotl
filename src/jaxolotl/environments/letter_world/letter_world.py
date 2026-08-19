@@ -227,7 +227,7 @@ class LetterWorld(
         self, env_params: EnvParams, **kwargs
     ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
         """Returns a renderer for the environment."""
-        from .renderer import LetterWorldRenderer
+        from .renderer import LetterWorldRenderer  # noqa: PLC0415
 
         return LetterWorldRenderer(
             title="LetterWorld",
@@ -250,7 +250,7 @@ class LetterWorld(
             params: Environment parameters
             plotting_kwargs: Additional keyword arguments for the plotting function
         """
-        from .plotter import draw_trajectories
+        from .plotter import draw_trajectories  # noqa: PLC0415
 
         letters_grids = np.array(trajs.letters[:, 0])
         paths = [

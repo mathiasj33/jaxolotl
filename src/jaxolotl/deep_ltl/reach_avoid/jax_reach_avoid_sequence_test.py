@@ -6,7 +6,10 @@ import numpy as np
 import numpy.testing as npt
 
 from jaxolotl.deep_ltl.reach_avoid.jax_reach_avoid_sequence import JaxReachAvoidSequence
-from jaxolotl.deep_ltl.reach_avoid.reach_avoid_sequence import EPSILON, ReachAvoidSequence
+from jaxolotl.deep_ltl.reach_avoid.reach_avoid_sequence import (
+    EPSILON,
+    ReachAvoidSequence,
+)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.ltl.logic.assignment import Assignment
 

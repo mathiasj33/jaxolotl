@@ -627,7 +627,9 @@ class WarehouseEnv(
     def get_renderer(
         self, env_params: WarehouseParams, **kwargs
     ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
-        from jaxolotl.environments.warehouse_env.renderer import Renderer
+        from jaxolotl.environments.warehouse_env.renderer import (  # noqa: PLC0415
+            Renderer,
+        )
 
         return Renderer(params=env_params, **kwargs)
 
@@ -649,7 +651,9 @@ class WarehouseEnv(
             save_path: Optional path at which to save the plot as a PDF
             plotting_kwargs: Additional keyword arguments for the plotting function
         """
-        from jaxolotl.environments.warehouse_env.plotter import draw_trajectories
+        from jaxolotl.environments.warehouse_env.plotter import (  # noqa: PLC0415
+            draw_trajectories,
+        )
 
         num_episodes = lengths.shape[0]
 

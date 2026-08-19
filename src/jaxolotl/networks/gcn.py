@@ -28,7 +28,7 @@ class GCN(CallableModule):
     activation: Callable[[jax.Array], jax.Array]
     final_layer_activation: bool
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         in_size: int,
         out_size: int,

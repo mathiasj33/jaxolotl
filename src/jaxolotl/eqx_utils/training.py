@@ -36,6 +36,6 @@ def ensemble_to_list(models: eqx.Module, num_models: int) -> list[eqx.Module]:
 
     ensemble_params, static = eqx.partition(models, eqx.is_array)
     model_params = [
-        jax.tree.map(lambda x: x[i], ensemble_params) for i in range(num_models)
+        jax.tree.map(lambda x, i=i: x[i], ensemble_params) for i in range(num_models)
     ]
     return [eqx.combine(model_param, static) for model_param in model_params]

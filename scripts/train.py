@@ -20,7 +20,11 @@ import jaxolotl
 from jaxolotl import DATA_DIR, eqx_utils
 from jaxolotl.environments.environment import EnvParams
 from jaxolotl.environments.spaces import Space
-from jaxolotl.environments.wrappers import AutoResetWrapper, LogWrapper, VectorizeWrapper
+from jaxolotl.environments.wrappers import (
+    AutoResetWrapper,
+    LogWrapper,
+    VectorizeWrapper,
+)
 from jaxolotl.environments.wrappers.auto_reset_wrapper import ResetStrategy
 from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,

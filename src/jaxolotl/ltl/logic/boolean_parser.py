@@ -287,6 +287,7 @@ class ImplicationNode(BooleanNode):
 
 class FalseNode(BooleanNode):
     def eval(self, assignment: "Assignment") -> bool:
+        del assignment
         return False
 
     def __eq__(self, other) -> bool:

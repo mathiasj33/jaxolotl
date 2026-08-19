@@ -50,6 +50,7 @@ class PositionalAttention(CallableModule):
                 create higher frequency variations across positions.
             key: PRNG key for initialization.
         """
+        del kwargs
         if hidden_dim is None:
             hidden_dim = input_dim
 

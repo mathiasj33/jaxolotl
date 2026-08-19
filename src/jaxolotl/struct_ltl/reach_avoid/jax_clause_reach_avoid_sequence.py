@@ -84,7 +84,7 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         )
 
     @classmethod
-    def from_reach_avoid_seqs(
+    def from_reach_avoid_seqs(  # noqa: PLR0912
         cls,
         seqs: list[BooleanReachAvoidSequence],
         env: Environment | EnvWrapper,
@@ -181,7 +181,7 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         )
 
     @classmethod
-    def from_state_to_seqs(  # TODO: reduce duplication
+    def from_state_to_seqs(  # noqa: PLR0912
         cls,
         state_to_seqs: dict[int, list[BooleanReachAvoidSequence]],
         env: Environment | EnvWrapper,

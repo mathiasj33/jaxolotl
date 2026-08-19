@@ -25,14 +25,7 @@ def source(environment: str, algorithm: str) -> Path:
 
 
 def destination(environment: str, algorithm: str) -> Path:
-    return (
-        PROJECT_ROOT
-        / "runs"
-        / environment
-        / algorithm
-        / "pretrained"
-        / "models.eqx"
-    )
+    return PROJECT_ROOT / "runs" / environment / algorithm / "pretrained" / "models.eqx"
 
 
 def main() -> int:
@@ -52,17 +45,13 @@ def main() -> int:
         if not source(environment, algorithm).is_file()
     ]
     if missing:
-        parser.error(
-            f"missing pretrained model(s): {', '.join(map(str, missing))}"
-        )
+        parser.error(f"missing pretrained model(s): {', '.join(map(str, missing))}")
 
     conflicts = []
     for environment, algorithm in CHECKPOINTS:
         bundled_model = source(environment, algorithm)
         target = destination(environment, algorithm)
-        if target.exists() and not filecmp.cmp(
-            bundled_model, target, shallow=False
-        ):
+        if target.exists() and not filecmp.cmp(bundled_model, target, shallow=False):
             conflicts.append(target.relative_to(PROJECT_ROOT))
 
     if conflicts and not args.force:
@@ -78,9 +67,7 @@ def main() -> int:
     for environment, algorithm in CHECKPOINTS:
         bundled_model = source(environment, algorithm)
         target = destination(environment, algorithm)
-        if target.exists() and filecmp.cmp(
-            bundled_model, target, shallow=False
-        ):
+        if target.exists() and filecmp.cmp(bundled_model, target, shallow=False):
             print(f"Up to date: {target.relative_to(PROJECT_ROOT)}")
             unchanged += 1
             continue

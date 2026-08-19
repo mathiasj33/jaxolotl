@@ -11,7 +11,7 @@ def ltl2ldba(
     propositions: Iterable[str] | None = None,
 ) -> LDBA:
     """Converts an LTL formula to an LDBA using the rabinizer tool."""
-    from jaxolotl.ltl.hoa import HOAParser
+    from jaxolotl.ltl.hoa import HOAParser  # noqa: PLC0415
 
     hoa = run_rabinizer(formula)
     return HOAParser(formula, hoa, propositions).parse_hoa()

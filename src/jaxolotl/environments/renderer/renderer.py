@@ -130,6 +130,7 @@ class BaseRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](ABC):
 
     def _format_obs(self, obs: TObsFeatures) -> str:
         """Formats the observations into a string."""
+        del obs
         return ""
 
     def _format_propositions(

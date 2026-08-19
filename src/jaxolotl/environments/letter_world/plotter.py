@@ -77,6 +77,7 @@ def setup_axis(ax, grid_size):
 
 
 def draw_letters(ax, grid, propositions, path):
+    del path
     # grid shape: (G, G, L)
     rows, cols, letter_idxs = np.where(grid)
 

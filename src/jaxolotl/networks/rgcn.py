@@ -36,6 +36,7 @@ class RGCN(CallableModule):
         key: jax.Array,
         **kwargs,
     ):
+        del kwargs
         if in_size != out_size:
             raise ValueError("RGCN requires in_size == out_size for weight sharing.")
         key, self_loop_key = jax.random.split(key)

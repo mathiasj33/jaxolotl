@@ -54,6 +54,7 @@ axes[0].set_ylabel("SR")
 
 
 def millions_formatter(x, pos):
+    del pos
     return f"{x / 1e6:g}"  # :g removes unnecessary trailing zeros
 
 

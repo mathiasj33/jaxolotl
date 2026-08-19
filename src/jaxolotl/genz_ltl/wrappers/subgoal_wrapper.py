@@ -120,12 +120,12 @@ class SubgoalWrapper[
             logger.info(
                 "Applying zone_env_nm-specific logic to exclude green assignment!"
             )
-            GREEN_ASSIGNMENT_IDX = 1  # green is the second assignment in zone_env_nm
-            exclude_green = unwrapped_state.masked_colors[GREEN_ASSIGNMENT_IDX]
+            green_assignment_idx = 1  # green is the second assignment in zone_env_nm
+            exclude_green = unwrapped_state.masked_colors[green_assignment_idx]
             # Conditionally exclude the green index based on the tracer
             valid_reach_mask = jnp.where(
                 exclude_green,
-                valid_reach_mask.at[GREEN_ASSIGNMENT_IDX].set(False),
+                valid_reach_mask.at[green_assignment_idx].set(False),
                 valid_reach_mask,
             )
 

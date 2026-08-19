@@ -103,7 +103,7 @@ class SequenceWrapper[
         )
         seq = jax.lax.cond(
             epsilon_action.astype(jnp.bool),
-            lambda: state.seq.advance(),
+            state.seq.advance,
             lambda: state.seq,
         )
         reach = seq.reach[0]  # (num_assignments,)
@@ -111,7 +111,7 @@ class SequenceWrapper[
         assignment = self._env.map_assignment_to_index(transition.propositions)
         avoided = jnp.logical_not(jnp.any(avoid == assignment))
         reached = jnp.logical_and(jnp.any(reach == assignment), avoided)
-        seq = jax.lax.cond(reached, lambda: seq.advance(), lambda: seq)
+        seq = jax.lax.cond(reached, seq.advance, lambda: seq)
         reached_end = jnp.all(seq.reach[0] == -1)  # Check if reached is just padding
         reward = jax.lax.cond(
             reached_end,

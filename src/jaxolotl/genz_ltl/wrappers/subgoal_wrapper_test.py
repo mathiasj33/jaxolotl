@@ -20,18 +20,23 @@ class FakeEnv(Environment):
         super().__init__(default_params=_DummyParams(), propositions=props)
 
     def _reset(self, key, state, params, options=None):
+        del key, state, params, options
         return eqx.Module()
 
     def _cheap_reset(self, key, state, params, options=None):
+        del key, params, options
         return state
 
     def _step(self, key, state, action, params):
+        del key, action, params
         return state, jnp.array(0.0), jnp.array(False), {}
 
     def _compute_obs(self, state, params):
+        del state, params
         return eqx.Module()
 
     def compute_propositions(self, state, params):
+        del state, params
         return -jnp.ones((len(self.propositions),), dtype=jnp.int32)
 
     def _observation_space(self, params):
@@ -43,7 +48,7 @@ class FakeEnv(Environment):
     @staticmethod
     def assignments():
         # zero-or-one propositions: [{'p'},{'q'},{'r'},{}]
-        return Assignment.zero_or_one_propositions(set(("p", "q", "r")))
+        return Assignment.zero_or_one_propositions({"p", "q", "r"})
 
     def get_renderer(self, params, **kwargs):
         raise NotImplementedError()
@@ -112,11 +117,11 @@ def test_sample_new_goal_excludes_current_assignment_and_reach():
     # -------------------------------------------------------------------------
     # TEST 2: Complex behavior (Green is excluded)
     # -------------------------------------------------------------------------
-    GREEN_ASSIGNMENT_IDX = 1
+    green_assignment_idx = 1
 
     # Create an array where green (index 1) is marked as masked/excluded
     masked_colors = jnp.zeros(num_assignments, dtype=bool)
-    masked_colors = masked_colors.at[GREEN_ASSIGNMENT_IDX].set(True)
+    masked_colors = masked_colors.at[green_assignment_idx].set(True)
 
     # Wrap it in our mock complex state
     complex_state = MockComplexEnvState(masked_colors=masked_colors)
@@ -139,7 +144,7 @@ def test_sample_new_goal_excludes_current_assignment_and_reach():
                 avoid = list(subgoal.avoid.tolist())
 
                 # The primary new assertion: reach must never be green
-                assert reach != GREEN_ASSIGNMENT_IDX
+                assert reach != green_assignment_idx
 
                 # Standard assertions must still hold true
                 assert reach != a

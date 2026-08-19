@@ -170,7 +170,7 @@ def formula_to_clauses(formula: BooleanNode | None) -> list[Clause]:
     raise ValueError("Formula must be in Disjunctive Normal Form (DNF).")
 
 
-def push_down_nots(node: BooleanNode) -> BooleanNode:
+def push_down_nots(node: BooleanNode) -> BooleanNode:  # noqa: PLR0911
     """Pushes NOT operators down to the variable level using De Morgan's laws."""
     if isinstance(node, NotNode):
         operand = node.operand

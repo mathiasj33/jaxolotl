@@ -390,7 +390,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         self, env_params: EnvParams, **kwargs
     ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
         """Returns a renderer for the environment."""
-        from .renderer import Renderer
+        from .renderer import Renderer  # noqa: PLC0415
 
         return Renderer(env_params, **kwargs)
 

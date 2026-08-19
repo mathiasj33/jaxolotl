@@ -71,9 +71,7 @@ def test_ast_children_and_size_properties():
 
 def test_equivalent_nodes_have_equal_hashes():
     first = parse("G (a => F b)")
-    second = AlwaysNode(
-        ImplicationNode(VarNode("a"), EventuallyNode(VarNode("b")))
-    )
+    second = AlwaysNode(ImplicationNode(VarNode("a"), EventuallyNode(VarNode("b"))))
 
     assert first == second
     assert hash(first) == hash(second)

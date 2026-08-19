@@ -32,7 +32,7 @@ class LTLLexer:
         self.pos = 0
         self.length = len(formula)
 
-    def lex(self) -> list[LTLToken]:
+    def lex(self) -> list[LTLToken]:  # noqa: PLR0912
         tokens = []
         while self.pos < self.length:
             current_char = self.formula[self.pos]

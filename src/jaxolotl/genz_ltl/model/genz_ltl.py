@@ -35,6 +35,7 @@ class GenZLTLModel(ActorCritic):
         env_params: Any,
         **kwargs,
     ):
+        del obs_shape, num_assignments
         config = DictConfig(kwargs)
 
         key, env_key, actor_key, critic_key, cost_key, lag_key = jax.random.split(
