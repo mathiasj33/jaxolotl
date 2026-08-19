@@ -2,8 +2,8 @@ from jaxolotl.alg.deep_ltl.curriculum.simple_samplers import (
     SimpleReachAvoidSampler,
     SimpleReachStaySampler,
 )
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EPSILON, EpsilonType
 from jaxolotl.ltl.logic.assignment import Assignment
+from jaxolotl.ltl.reach_avoid.sequence import EPSILON, EpsilonType
 
 
 def test_simple_reach_avoid_sampler():

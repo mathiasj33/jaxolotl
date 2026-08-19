@@ -6,13 +6,13 @@ from DeepLTL (https://arxiv.org/abs/2410.04631).
 from dataclasses import dataclass
 from typing import overload
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import (
+from jaxolotl.ltl.automata import LDBA, LDBATransition
+from jaxolotl.ltl.logic.assignment import Assignment
+from jaxolotl.ltl.reach_avoid.sequence import (
     EPSILON,
     EpsilonType,
     ReachAvoidSequence,
 )
-from jaxolotl.ltl.automata import LDBA, LDBATransition
-from jaxolotl.ltl.logic.assignment import Assignment
 
 
 def compute_sequences(  # noqa: PLR0915

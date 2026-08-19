@@ -1,14 +1,14 @@
 import random
 from typing import override
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import (
+from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
+from jaxolotl.ltl.logic.assignment import Assignment
+from jaxolotl.ltl.reach_avoid.sequence import (
     EPSILON,
     AssignmentSet,
     EpsilonType,
     ReachAvoidSequence,
 )
-from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
-from jaxolotl.ltl.logic.assignment import Assignment
 
 
 class SimpleReachAvoidSampler(Sampler[ReachAvoidSequence]):

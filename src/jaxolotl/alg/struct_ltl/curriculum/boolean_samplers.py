@@ -4,7 +4,6 @@ import random
 from collections.abc import Sequence
 from typing import override
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EPSILON
 from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
 from jaxolotl.alg.struct_ltl.curriculum.formula_cache import FormulaCache
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
@@ -18,6 +17,7 @@ from jaxolotl.ltl.logic.boolean_parser import (
     NotNode,
 )
 from jaxolotl.ltl.logic.utils import compute_sat, push_down_nots
+from jaxolotl.ltl.reach_avoid.sequence import EPSILON
 
 
 class BooleanReachAvoidSampler(Sampler[BooleanReachAvoidSequence]):

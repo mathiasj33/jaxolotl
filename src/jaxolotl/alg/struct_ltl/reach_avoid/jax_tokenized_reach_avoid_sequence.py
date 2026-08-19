@@ -16,7 +16,6 @@ import numpy as np
 from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
     JaxReachAvoidSequence,
 )
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
     BooleanReachAvoidSequence,
 )
@@ -27,6 +26,7 @@ from jaxolotl.alg.struct_ltl.reach_avoid.formula_tokenizer import (
 )
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
+from jaxolotl.ltl.reach_avoid.sequence import EpsilonType
 
 
 class JaxTokenizedReachAvoidSequence(JaxReachAvoidSequence):

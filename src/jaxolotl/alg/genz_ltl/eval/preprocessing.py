@@ -3,7 +3,6 @@
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.deep_ltl.reach_avoid import path_search
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
@@ -11,6 +10,7 @@ from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata import ltl2ldba
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
+from jaxolotl.ltl.reach_avoid import path_search
 
 
 def preprocess_formulas(

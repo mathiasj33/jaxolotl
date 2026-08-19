@@ -1,12 +1,6 @@
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import (
-    EPSILON,
-    AssignmentSet,
-    EpsilonType,
-    ReachAvoidSequence,
-)
 from jaxolotl.ltl.logic.assignment import Assignment
 from jaxolotl.ltl.logic.boolean_parser import BooleanNode, MultiOrNode, OrNode
 from jaxolotl.ltl.logic.utils import (
@@ -14,6 +8,12 @@ from jaxolotl.ltl.logic.utils import (
     compute_sat,
     formula_to_clauses,
     synthesize_formula,
+)
+from jaxolotl.ltl.reach_avoid.sequence import (
+    EPSILON,
+    AssignmentSet,
+    EpsilonType,
+    ReachAvoidSequence,
 )
 
 if TYPE_CHECKING:

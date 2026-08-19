@@ -6,12 +6,12 @@ import jax.numpy as jnp
 import numpy as np
 from tqdm import tqdm
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import (
+from jaxolotl.environments.environment import Environment
+from jaxolotl.environments.wrappers.wrapper import EnvWrapper
+from jaxolotl.ltl.reach_avoid.sequence import (
     EpsilonType,
     ReachAvoidSequence,
 )
-from jaxolotl.environments.environment import Environment
-from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 
 
 class JaxReachAvoidSequence(eqx.Module):

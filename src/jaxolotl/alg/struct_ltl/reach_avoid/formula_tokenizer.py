@@ -7,7 +7,6 @@ into sequences of tokens suitable for processing by sequence models like GRUs.
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
 from jaxolotl.ltl.logic.boolean_parser import (
     AndNode,
     BooleanNode,
@@ -20,6 +19,7 @@ from jaxolotl.ltl.logic.boolean_parser import (
     OrNode,
     VarNode,
 )
+from jaxolotl.ltl.reach_avoid.sequence import EpsilonType
 
 # Special tokens
 EPSILON_TOKEN = "<EPS>"

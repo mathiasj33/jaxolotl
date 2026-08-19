@@ -11,7 +11,6 @@ import numpy as np
 from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
     JaxReachAvoidSequence,
 )
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
     BooleanReachAvoidSequence,
 )
@@ -29,6 +28,7 @@ from jaxolotl.ltl.logic.boolean_parser import (
     OrNode,
     VarNode,
 )
+from jaxolotl.ltl.reach_avoid.sequence import EpsilonType
 
 # Define integer constants for node types
 NODE_TYPE_AND = 0

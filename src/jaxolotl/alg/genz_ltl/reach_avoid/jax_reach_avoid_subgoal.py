@@ -6,13 +6,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import (
-    EpsilonType,
-    ReachAvoidSequence,
-)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.logic.assignment import Assignment
+from jaxolotl.ltl.reach_avoid.sequence import (
+    EpsilonType,
+    ReachAvoidSequence,
+)
 
 
 @dataclass

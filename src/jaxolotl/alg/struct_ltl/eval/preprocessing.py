@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl.alg.deep_ltl.eval.preprocessing import _batch_ldbas, _build_ldba
-from jaxolotl.alg.deep_ltl.reach_avoid import path_search
 from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
     JaxReachAvoidSequence,
 )
@@ -27,6 +26,7 @@ from jaxolotl.alg.struct_ltl.reach_avoid.jax_tokenized_reach_avoid_sequence impo
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
+from jaxolotl.ltl.reach_avoid import path_search
 
 _LENGTH_AXIS = 2
 _CLAUSE_AXIS = 3

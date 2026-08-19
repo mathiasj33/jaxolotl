@@ -1,6 +1,5 @@
 """Tests for the formula tokenizer."""
 
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EPSILON
 from jaxolotl.alg.struct_ltl.reach_avoid.formula_tokenizer import (
     AND_TOKEN,
     EPSILON_TOKEN,
@@ -22,6 +21,7 @@ from jaxolotl.ltl.logic.boolean_parser import (
     OrNode,
     VarNode,
 )
+from jaxolotl.ltl.reach_avoid.sequence import EPSILON
 
 
 class TestFormulaToTokens:
