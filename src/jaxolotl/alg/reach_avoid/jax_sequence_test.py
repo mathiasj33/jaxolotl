@@ -105,6 +105,21 @@ def test_from_state_to_seq():
     assert_ragged_set_equal(jax_ras.avoid, expected_jax_ras.avoid)
 
 
+def test_from_state_to_seqs_preserves_repeats_and_sparse_states():
+    mock_env = MockEnv()
+    sequence = ReachAvoidSequence(
+        [(make_set({"green"}), frozenset())], repeat_last=5
+    )
+
+    encoded = JaxReachAvoidSequence.from_state_to_seqs(
+        {0: [sequence], 2: [sequence]}, mock_env
+    )
+
+    assert encoded.reach.shape[:2] == (3, 1)
+    npt.assert_array_equal(encoded.repeat_last[:, 0], [5, 1, 5])
+    npt.assert_array_equal(encoded.reach[1], -1)
+
+
 def assert_ragged_set_equal(actual, expected, pad_val=-1):
     """
     Asserts that two dense arrays representing ragged sets are equal.

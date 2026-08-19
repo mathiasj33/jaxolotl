@@ -87,10 +87,7 @@ def _preprocess_formula(
     if graph:
         batched_seqs = JaxGraphReachAvoidSequence.from_state_to_seqs(
             state_to_boolean_seqs,
-            env.propositions,
-            env.assignments(),
-            env.max_nodes,
-            env.max_edges,
+            env,
         )
     else:
         clz = (

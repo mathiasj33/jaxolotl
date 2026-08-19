@@ -6,6 +6,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from jaxolotl.alg.reach_avoid.batching import (
+    batch_assignments,
+    batch_state_sequences,
+)
 from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
@@ -94,10 +98,10 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         max_length: int | None = None,
     ) -> "JaxClauseReachAvoidSequence":
         """
-        Converts a list of GraphReachAvoidSequences into a batched Jax representation.
+        Converts a list of BooleanReachAvoidSequences into a batched Jax representation.
 
         Args:
-            seqs: list of ReachAvoidSequences to convert.
+            seqs: list of BooleanReachAvoidSequences to convert.
             propositions: list of proposition names in the environment.
             assignments: list of assignments in the environment.
             max_clauses: maximum number of avoid clauses to pad to. If None, uses the
@@ -111,13 +115,9 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         )
 
         # --- Assignments ---
-        assignments = env.assignments()
-        assignment_map = {name: i for i, name in enumerate(assignments)}
-        epsilon_idx = len(assignments)
-        reach_assign = -np.ones(
-            (len(seqs), max_length, len(assignments)), dtype=np.int32
+        assignment_arrays = batch_assignments(
+            seqs, env.assignments(), max_length=max_length
         )
-        avoid_assign = -np.ones_like(reach_assign)
 
         # --- Clauses ---
         propositions = env.propositions
@@ -133,25 +133,12 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         avoid_negatives = np.zeros_like(avoid_clauses, dtype=bool)
         num_avoid_clauses = np.zeros((len(seqs), max_length), dtype=np.int32)
 
-        # --- Other ---
-        repeat_last = np.ones((len(seqs),), dtype=np.int32)
-
         # --- Fill arrays ---
         for seq_idx, seq in enumerate(seqs):
-            repeat_last[seq_idx] = seq.repeat_last
-            for ra_idx, (r, a) in enumerate(seq.reach_avoid):
-                if isinstance(r, EpsilonType):
-                    reach_assign[seq_idx, ra_idx, 0] = epsilon_idx
-                else:
-                    for j, assign in enumerate(r):
-                        reach_assign[seq_idx, ra_idx, j] = assignment_map[assign]
-                for j, assign in enumerate(a):
-                    avoid_assign[seq_idx, ra_idx, j] = assignment_map[assign]
-
             for i, (reach, avoid) in enumerate(seq.clauses):
                 # Reach clauses
                 if isinstance(reach, EpsilonType):
-                    reach_clauses[seq_idx, i, 0] = epsilon_idx
+                    reach_clauses[seq_idx, i, 0] = len(env.assignments())
                 else:
                     if len(reach) != 1:
                         raise ValueError(
@@ -171,126 +158,37 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
                 num_avoid_clauses[seq_idx, i] = len(avoid)
 
         return cls(
-            reach=jnp.array(reach_assign),
-            avoid=jnp.array(avoid_assign),
+            reach=jnp.array(assignment_arrays.reach),
+            avoid=jnp.array(assignment_arrays.avoid),
             reach_clauses=jnp.array(reach_clauses),
             reach_negatives=jnp.array(reach_negatives),
             avoid_clauses=jnp.array(avoid_clauses),
             avoid_negatives=jnp.array(avoid_negatives),
             num_avoid_clauses=jnp.array(num_avoid_clauses),
-            repeat_last=jnp.array(repeat_last),
-            last_index=jnp.zeros_like(repeat_last),
+            repeat_last=jnp.array(assignment_arrays.repeat_last),
+            last_index=jnp.zeros_like(assignment_arrays.repeat_last),
         )
 
     @classmethod
-    def from_state_to_seqs(  # noqa: PLR0912
+    def from_state_to_seqs(
         cls,
         state_to_seqs: dict[int, list[BooleanReachAvoidSequence]],
         env: Environment | EnvWrapper,
     ) -> "JaxClauseReachAvoidSequence":
-        """Converts a mapping from LDBA states to lists of ReachAvoidSequences into a
-        batched Jax reach-avoid sequence.
-
-        Returns:
-            JaxReachAvoidSequence: with shape
-                reach: (num_states, max_num_seqs, max_length, num_assignments)
-                avoid: (num_states, max_num_seqs, max_length, num_assignments)
-        """
-
-        max_seqs = max(len(seqs) for seqs in state_to_seqs.values())
-        max_length = max(
-            len(seq.reach_avoid) for seqs in state_to_seqs.values() for seq in seqs
+        """Encode and pack Boolean sequences by LDBA state."""
+        padding = cls(
+            reach=jnp.asarray(-1, dtype=jnp.int32),
+            avoid=jnp.asarray(-1, dtype=jnp.int32),
+            reach_clauses=jnp.asarray(-1, dtype=jnp.int32),
+            reach_negatives=jnp.asarray(False),
+            avoid_clauses=jnp.asarray(-1, dtype=jnp.int32),
+            avoid_negatives=jnp.asarray(False),
+            num_avoid_clauses=jnp.asarray(0, dtype=jnp.int32),
+            repeat_last=jnp.asarray(1, dtype=jnp.int32),
+            last_index=jnp.asarray(0, dtype=jnp.int32),
         )
-        num_states = len(state_to_seqs)
-        # Use numpy arrays and then convert to jax arrays for efficiency
-        repeat_last = np.ones((num_states, max_seqs), dtype=np.int32)
-        reach_np = -np.ones(
-            (num_states, max_seqs, max_length, len(env.assignments())),
-            dtype=np.int32,
-        )
-        avoid_np = -np.ones_like(reach_np)
-        for state, seqs in state_to_seqs.items():
-            for seq_idx, seq in enumerate(seqs):
-                repeat_last[state, seq_idx] = seq.repeat_last
-                for i, (r, a) in enumerate(seq.reach_avoid):
-                    if isinstance(r, EpsilonType):
-                        reach_np[state, seq_idx, i, 0] = len(env.assignments())
-                    else:
-                        for j, assignment in enumerate(r):
-                            reach_np[state, seq_idx, i, j] = env.assignments().index(
-                                assignment
-                            )
-                    for j, assignment in enumerate(a):
-                        avoid_np[state, seq_idx, i, j] = env.assignments().index(
-                            assignment
-                        )
-
-        prop_map = {name: i for i, name in enumerate(env.propositions)}
-        reach_clauses = -np.ones(
-            (num_states, max_seqs, max_length, len(env.propositions)), dtype=np.int32
-        )
-        reach_negatives = np.zeros_like(reach_clauses, dtype=bool)
-        max_clauses = max(
-            len(avoid)
-            for seqs in state_to_seqs.values()
-            for seq in seqs
-            for _, avoid in seq.clauses
-            if avoid is not None
-        )
-        max_clauses = max(1, max_clauses)  # at least 1
-        avoid_clauses = -np.ones(
-            (num_states, max_seqs, max_length, max_clauses, len(env.propositions)),
-            dtype=np.int32,
-        )
-        avoid_negatives = np.zeros_like(avoid_clauses, dtype=bool)
-        num_avoid_clauses = np.zeros(
-            (
-                num_states,
-                max_seqs,
-                max_length,
-            ),
-            dtype=np.int32,
-        )
-        for state, seqs in state_to_seqs.items():
-            for seq_idx, seq in enumerate(seqs):
-                for i, (reach, avoid) in enumerate(seq.clauses):
-                    # Reach clauses
-                    if reach is not None:
-                        if isinstance(reach, EpsilonType):
-                            reach_clauses[state, seq_idx, i, 0] = len(env.assignments())
-                            continue
-                        if len(reach) != 1:
-                            raise ValueError(
-                                "Reach clauses must contain exactly one clause. "
-                                f"Got {len(reach)} clauses."
-                            )
-                        clause = reach[0]
-                        for j, atom in enumerate(list(clause.neg) + list(clause.pos)):
-                            reach_clauses[state, seq_idx, i, j] = prop_map[atom]
-                        reach_negatives[state, seq_idx, i, : len(clause.neg)] = True
-
-                    # Avoid clauses
-                    if avoid is not None:
-                        for c_idx, clause in enumerate(avoid):
-                            for j, atom in enumerate(
-                                list(clause.neg) + list(clause.pos)
-                            ):
-                                avoid_clauses[state, seq_idx, i, c_idx, j] = prop_map[
-                                    atom
-                                ]
-                            avoid_negatives[
-                                state, seq_idx, i, c_idx, : len(clause.neg)
-                            ] = True
-                        num_avoid_clauses[state, seq_idx, i] = len(avoid)
-
-        return cls(
-            reach=jnp.array(reach_np),
-            avoid=jnp.array(avoid_np),
-            reach_clauses=jnp.array(reach_clauses),
-            reach_negatives=jnp.array(reach_negatives),
-            avoid_clauses=jnp.array(avoid_clauses),
-            avoid_negatives=jnp.array(avoid_negatives),
-            num_avoid_clauses=jnp.array(num_avoid_clauses),
-            repeat_last=jnp.array(repeat_last),
-            last_index=jnp.zeros_like(repeat_last),
+        return batch_state_sequences(
+            state_to_seqs,
+            lambda sequences: cls.from_reach_avoid_seqs(sequences, env),
+            padding,
         )

@@ -3,15 +3,14 @@ from dataclasses import KW_ONLY, field, replace
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import numpy as np
-from tqdm import tqdm
 
+from jaxolotl.alg.reach_avoid.batching import (
+    batch_assignments,
+    batch_state_sequences,
+)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
-from jaxolotl.ltl.reach_avoid.sequence import (
-    EpsilonType,
-    ReachAvoidSequence,
-)
+from jaxolotl.ltl.reach_avoid.sequence import ReachAvoidSequence
 
 
 class JaxReachAvoidSequence(eqx.Module):
@@ -94,33 +93,12 @@ class JaxReachAvoidSequence(eqx.Module):
                 reach: (num_seqs, max_length, num_assignments)
                 avoid: (num_seqs, max_length, num_assignments)
         """
-        max_length = max(len(seq.reach_avoid) for seq in seqs)
-        reach = -np.ones(
-            (len(seqs), max_length, len(env.assignments())), dtype=np.int32
-        )
-        avoid = -np.ones_like(reach)
-        repeat_last = np.ones((len(seqs),), dtype=np.int32)
-
-        assignment_to_idx = {
-            assignment: idx for idx, assignment in enumerate(env.assignments())
-        }
-        for seq_idx, seq in tqdm(
-            enumerate(seqs), desc="Converting reach-avoid sequences", total=len(seqs)
-        ):
-            for i, (r, a) in enumerate(seq.reach_avoid):
-                if isinstance(r, EpsilonType):
-                    reach[seq_idx, i, 0] = len(env.assignments())
-                else:
-                    indices = [assignment_to_idx[assignment] for assignment in r]
-                    reach[seq_idx, i, : len(indices)] = indices
-                avoid_indices = [assignment_to_idx[assignment] for assignment in a]
-                avoid[seq_idx, i, : len(avoid_indices)] = avoid_indices
-            repeat_last[seq_idx] = seq.repeat_last
+        encoded = batch_assignments(seqs, env.assignments())
         return cls(
-            reach=jnp.array(reach),
-            avoid=jnp.array(avoid),
-            repeat_last=jnp.array(repeat_last),
-            last_index=jnp.zeros_like(repeat_last, dtype=jnp.int32),
+            reach=jnp.array(encoded.reach),
+            avoid=jnp.array(encoded.avoid),
+            repeat_last=jnp.array(encoded.repeat_last),
+            last_index=jnp.zeros_like(encoded.repeat_last, dtype=jnp.int32),
         )
 
     @classmethod
@@ -138,34 +116,14 @@ class JaxReachAvoidSequence(eqx.Module):
                 avoid: (num_states, max_num_seqs, max_length, num_assignments)
         """
 
-        max_seqs = max(len(seqs) for seqs in state_to_seqs.values())
-        max_length = max(
-            len(seq.reach_avoid) for seqs in state_to_seqs.values() for seq in seqs
+        padding = cls(
+            reach=jnp.asarray(-1, dtype=jnp.int32),
+            avoid=jnp.asarray(-1, dtype=jnp.int32),
+            repeat_last=jnp.asarray(1, dtype=jnp.int32),
+            last_index=jnp.asarray(0, dtype=jnp.int32),
         )
-        num_states = len(state_to_seqs)
-        # Use numpy arrays and then convert to jax arrays for efficiency
-        reach = -np.ones(
-            (num_states, max_seqs, max_length, len(env.assignments())),
-            dtype=np.int32,
-        )
-        avoid = -np.ones_like(reach)
-        for state, seqs in state_to_seqs.items():
-            for seq_idx, seq in enumerate(seqs):
-                for i, (r, a) in enumerate(seq.reach_avoid):
-                    if isinstance(r, EpsilonType):
-                        reach[state, seq_idx, i, 0] = len(env.assignments())
-                    else:
-                        for j, assignment in enumerate(r):
-                            reach[state, seq_idx, i, j] = env.assignments().index(
-                                assignment
-                            )
-                    for j, assignment in enumerate(a):
-                        avoid[state, seq_idx, i, j] = env.assignments().index(
-                            assignment
-                        )
-        return cls(
-            reach=jnp.array(reach),
-            avoid=jnp.array(avoid),
-            repeat_last=jnp.ones((num_states, max_seqs), dtype=jnp.int32),
-            last_index=jnp.zeros((num_states, max_seqs), dtype=jnp.int32),
+        return batch_state_sequences(
+            state_to_seqs,
+            lambda sequences: cls.from_reach_avoid_seqs(sequences, env),
+            padding,
         )

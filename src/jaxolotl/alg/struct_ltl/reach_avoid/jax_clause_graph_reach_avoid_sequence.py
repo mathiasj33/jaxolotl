@@ -8,6 +8,10 @@ import jax.numpy as jnp
 import jraph
 import numpy as np
 
+from jaxolotl.alg.reach_avoid.batching import (
+    batch_assignments,
+    batch_state_sequences,
+)
 from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
@@ -207,26 +211,10 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
         """
         Converts a single GraphReachAvoidSequence into a batched Jax representation.
         """
-        seq_len = len(seq.reach_avoid)
-
-        # --- Pre-computation for efficiency ---
-        assignment_map = {name: i for i, name in enumerate(assignments)}
-        epsilon_idx = len(assignments)
-
         # --- Assignment processing ---
-        reach_assign = -np.ones((seq_len, len(assignments)), dtype=np.int32)
-        avoid_assign = -np.ones_like(reach_assign)
+        assignment_arrays = batch_assignments([seq], assignments)
 
-        for t_idx, (r, a) in enumerate(seq.reach_avoid):
-            if isinstance(r, EpsilonType):
-                reach_assign[t_idx, 0] = epsilon_idx
-            else:
-                for j, assign in enumerate(r):
-                    reach_assign[t_idx, j] = assignment_map[assign]
-            for j, assign in enumerate(a):
-                avoid_assign[t_idx, j] = assignment_map[assign]
-
-        # --- Graph processing (Ragged Strategy) ---
+        # --- Graph processing ---
         # Initialize lists to hold data for each graph in the sequence
         reach_graph_parts = [
             _convert_to_arrays(g, propositions) for g, _ in seq.reach_avoid_formulas
@@ -244,8 +232,8 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
         )
 
         return cls(
-            reach=jnp.array(reach_assign),
-            avoid=jnp.array(avoid_assign),
+            reach=jnp.array(assignment_arrays.reach[0]),
+            avoid=jnp.array(assignment_arrays.avoid[0]),
             reach_graphs=reach_graphs,
             avoid_graphs=avoid_graphs,
             repeat_last=jnp.array(seq.repeat_last, dtype=jnp.int32),
@@ -258,15 +246,8 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
         seqs: list[BooleanReachAvoidSequence],
         env: Environment | EnvWrapper,
         max_length: int | None = None,
-        max_nodes: int | None = None,
-        max_edges: int | None = None,
     ) -> "JaxGraphReachAvoidSequence":
-        """Convert Boolean reach-avoid sequences into a padded JAX batch.
-
-        Graph storage is sized from the supplied formulas, not from environment-wide
-        upper bounds.  This keeps curriculum batches compact even when an
-        environment permits formulas that are larger than the sampled ones.
-        """
+        """Convert Boolean reach-avoid sequences into a padded JAX batch."""
         if not seqs:
             raise ValueError("Cannot batch an empty list of reach-avoid sequences.")
 
@@ -280,14 +261,9 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
             )
         num_seqs = len(seqs)
 
-        assignments = env.assignments()
-        assignment_map = {name: i for i, name in enumerate(assignments)}
-        epsilon_idx = len(assignments)
-        reach_assign = -np.ones(
-            (num_seqs, max_length, len(assignments)), dtype=np.int32
+        assignment_arrays = batch_assignments(
+            seqs, env.assignments(), max_length=max_length
         )
-        avoid_assign = -np.ones_like(reach_assign)
-        repeat_last = np.ones((num_seqs,), dtype=np.int32)
 
         propositions = env.propositions
         reach_parts_by_seq = [
@@ -315,7 +291,7 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
             for seq in seqs
         ]
         max_nodes, max_edges = _resolve_graph_batch_bounds(
-            [*reach_parts_by_seq, *avoid_parts_by_seq], max_nodes, max_edges
+            [*reach_parts_by_seq, *avoid_parts_by_seq]
         )
 
         all_reach_nodes = {
@@ -350,17 +326,7 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
             max_edges,
         )
 
-        for seq_idx, seq in enumerate(seqs):
-            repeat_last[seq_idx] = seq.repeat_last
-            for t_idx, (reach, avoid) in enumerate(seq.reach_avoid):
-                if isinstance(reach, EpsilonType):
-                    reach_assign[seq_idx, t_idx, 0] = epsilon_idx
-                else:
-                    for j, assign in enumerate(reach):
-                        reach_assign[seq_idx, t_idx, j] = assignment_map[assign]
-                for j, assign in enumerate(avoid):
-                    avoid_assign[seq_idx, t_idx, j] = assignment_map[assign]
-
+        for seq_idx, _seq in enumerate(seqs):
             _fill_batched_graph_parts(
                 reach_parts_by_seq[seq_idx],
                 0,
@@ -395,166 +361,46 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
         )
 
         return cls(
-            reach=jnp.array(reach_assign),
-            avoid=jnp.array(avoid_assign),
+            reach=jnp.array(assignment_arrays.reach),
+            avoid=jnp.array(assignment_arrays.avoid),
             reach_graphs=reach_graphs,
             avoid_graphs=avoid_graphs,
-            repeat_last=jnp.array(repeat_last),
-            last_index=jnp.zeros_like(repeat_last),
+            repeat_last=jnp.array(assignment_arrays.repeat_last),
+            last_index=jnp.zeros_like(assignment_arrays.repeat_last),
         )
 
     @classmethod
     def from_state_to_seqs(
         cls,
         state_to_seqs: dict[int, list[BooleanReachAvoidSequence]],
-        propositions: Sequence[str],
-        assignments: Sequence[Assignment],
-        max_nodes: int,
-        max_edges: int,
+        env: Environment | EnvWrapper,
     ) -> "JaxGraphReachAvoidSequence":
-        """
-        Converts a mapping from LDBA states to lists of GraphReachAvoidSequences
-        into a batched Jax representation.
-        """
-        num_states = len(state_to_seqs)
-        max_seqs = max((len(seqs) for seqs in state_to_seqs.values()), default=0)
-        max_len = max(
-            (len(s.reach_avoid) for seqs in state_to_seqs.values() for s in seqs),
-            default=0,
-        )
-
-        # --- Pre-computation for efficiency ---
-        assignment_map = {name: i for i, name in enumerate(assignments)}
-        epsilon_idx = len(assignments)
-
-        # --- Assignment processing ---
-        reach_assign = -np.ones(
-            (num_states, max_seqs, max_len, len(assignments)), dtype=np.int32
-        )
-        avoid_assign = -np.ones_like(reach_assign)
-        repeat_last_arr = np.ones((num_states, max_seqs), dtype=np.int32)
-
-        for state, seqs in state_to_seqs.items():
-            for s_idx, seq in enumerate(seqs):
-                repeat_last_arr[state, s_idx] = seq.repeat_last
-                for t_idx, (r, a) in enumerate(seq.reach_avoid):
-                    if isinstance(r, EpsilonType):
-                        reach_assign[state, s_idx, t_idx, 0] = epsilon_idx
-                    else:
-                        for j, assign in enumerate(r):
-                            reach_assign[state, s_idx, t_idx, j] = assignment_map[
-                                assign
-                            ]
-                    for j, assign in enumerate(a):
-                        avoid_assign[state, s_idx, t_idx, j] = assignment_map[assign]
-
-        # --- Graph processing (Ragged Strategy) ---
-        # Initialize final padded arrays and n_node/n_edge arrays
-        all_reach_nodes = {
-            "type_idx": -np.ones((num_states, max_seqs, max_nodes), dtype=np.int32),
-            "prop_idx": -np.ones((num_states, max_seqs, max_nodes), dtype=np.int32),
-            "mask": np.zeros((num_states, max_seqs, max_nodes), dtype=np.bool_),
-        }
-        all_reach_edges = {
-            "mask": np.zeros((num_states, max_seqs, max_edges), dtype=np.bool_)
-        }
-        all_reach_senders = np.zeros((num_states, max_seqs, max_edges), dtype=np.int32)
-        all_reach_receivers = np.zeros(
-            (num_states, max_seqs, max_edges), dtype=np.int32
-        )
-        all_reach_n_node = np.zeros((num_states, max_seqs, max_len), dtype=np.int32)
-        all_reach_n_edge = np.zeros((num_states, max_seqs, max_len), dtype=np.int32)
-
-        reach_batch = _BatchedGraphArrays(
-            all_reach_nodes,
-            all_reach_edges,
-            all_reach_senders,
-            all_reach_receivers,
-            all_reach_n_node,
-            all_reach_n_edge,
-            max_nodes,
-            max_edges,
-        )
-        avoid_batch = _BatchedGraphArrays(
-            {key: value.copy() for key, value in all_reach_nodes.items()},
-            {key: value.copy() for key, value in all_reach_edges.items()},
-            all_reach_senders.copy(),
-            all_reach_receivers.copy(),
-            all_reach_n_node.copy(),
-            all_reach_n_edge.copy(),
-            max_nodes,
-            max_edges,
-        )
-
-        # This loop is slow but runs only once at initialization.
-        for state in range(num_states):
-            for s_idx in range(max_seqs):
-                try:
-                    seq = state_to_seqs[state][s_idx]
-                except (KeyError, IndexError):
-                    seq = None
-
-                # --- Process Reach Graphs for the sequence ---
-                r_parts = [
-                    _convert_to_arrays(
-                        seq.reach_avoid_formulas[t][0]
-                        if seq and t < len(seq)
-                        else None,
-                        propositions,
-                    )
-                    for t in range(max_len)
-                ]
-                _fill_batched_graph_parts(
-                    r_parts,
-                    state,
-                    s_idx,
-                    reach_batch,
-                )
-
-                # --- Process Avoid Graphs for the sequence ---
-                a_parts = [
-                    _convert_to_arrays(
-                        seq.reach_avoid_formulas[t][1]
-                        if seq and t < len(seq)
-                        else None,
-                        propositions,
-                    )
-                    for t in range(max_len)
-                ]
-                _fill_batched_graph_parts(
-                    a_parts,
-                    state,
-                    s_idx,
-                    avoid_batch,
-                )
-
-        # Reshape n_node/n_edge to have batch dimensions
-        reach_graphs = jraph.GraphsTuple(
-            nodes=reach_batch.nodes,
-            edges=reach_batch.edges,
-            senders=reach_batch.senders,  # type: ignore
-            receivers=reach_batch.receivers,  # type: ignore
-            n_node=reach_batch.n_node,  # type: ignore
-            n_edge=reach_batch.n_edge,  # type: ignore
+        """Encode and pack graph sequences by LDBA state."""
+        graph_padding = jraph.GraphsTuple(
+            nodes={
+                "type_idx": jnp.asarray(-1, dtype=jnp.int32),
+                "prop_idx": jnp.asarray(-1, dtype=jnp.int32),
+                "mask": jnp.asarray(False),
+            },
+            edges={"mask": jnp.asarray(False)},
+            senders=jnp.asarray(0, dtype=jnp.int32),
+            receivers=jnp.asarray(0, dtype=jnp.int32),
+            n_node=jnp.asarray(1, dtype=jnp.int32),
+            n_edge=jnp.asarray(0, dtype=jnp.int32),
             globals=None,
         )
-        avoid_graphs = jraph.GraphsTuple(
-            nodes=avoid_batch.nodes,
-            edges=avoid_batch.edges,
-            senders=avoid_batch.senders,  # type: ignore
-            receivers=avoid_batch.receivers,  # type: ignore
-            n_node=avoid_batch.n_node,  # type: ignore
-            n_edge=avoid_batch.n_edge,  # type: ignore
-            globals=None,
+        padding = cls(
+            reach=jnp.asarray(-1, dtype=jnp.int32),
+            avoid=jnp.asarray(-1, dtype=jnp.int32),
+            reach_graphs=graph_padding,
+            avoid_graphs=graph_padding,
+            repeat_last=jnp.asarray(1, dtype=jnp.int32),
+            last_index=jnp.asarray(0, dtype=jnp.int32),
         )
-
-        return cls(
-            reach=jnp.array(reach_assign),
-            avoid=jnp.array(avoid_assign),
-            reach_graphs=reach_graphs,
-            avoid_graphs=avoid_graphs,
-            repeat_last=jnp.array(repeat_last_arr),
-            last_index=jnp.zeros((num_states, max_seqs), dtype=jnp.int32),
+        return batch_state_sequences(
+            state_to_seqs,
+            lambda sequences: cls.from_reach_avoid_seqs(sequences, env),
+            padding,
         )
 
 
@@ -618,7 +464,7 @@ def _build_graph_tuple_from_parts(
     )
 
 
-def _max_graph_storage(
+def _resolve_graph_batch_bounds(
     graph_part_sequences: list[list[GraphPart]],
 ) -> tuple[int, int]:
     """Return the flattened storage required by the largest graph sequence."""
@@ -629,30 +475,6 @@ def _max_graph_storage(
         num_edges = sum(int(n_edge) for *_, n_edge in graph_parts)
         max_nodes = max(max_nodes, num_nodes)
         max_edges = max(max_edges, num_edges)
-    return max_nodes, max_edges
-
-
-def _resolve_graph_batch_bounds(
-    graph_part_sequences: list[list[GraphPart]],
-    max_nodes: int | None,
-    max_edges: int | None,
-) -> tuple[int, int]:
-    """Use explicit graph bounds when valid, otherwise infer them from the graphs."""
-    required_nodes, required_edges = _max_graph_storage(graph_part_sequences)
-    if max_nodes is None:
-        max_nodes = required_nodes
-    elif max_nodes < required_nodes:
-        raise ValueError(
-            "max_nodes is smaller than required by the supplied sequences: "
-            f"max_nodes={max_nodes}, required_nodes={required_nodes}"
-        )
-    if max_edges is None:
-        max_edges = required_edges
-    elif max_edges < required_edges:
-        raise ValueError(
-            "max_edges is smaller than required by the supplied sequences: "
-            f"max_edges={max_edges}, required_edges={required_edges}"
-        )
     return max_nodes, max_edges
 
 
