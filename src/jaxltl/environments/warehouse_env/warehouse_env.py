@@ -213,9 +213,9 @@ class WarehouseEnv(
             cond_radius = dists >= 2.0 * params.pickup_radius
             cond_radius = jnp.all(jnp.logical_or(~mask, cond_radius))
             radius = jnp.array(params.pickup_radius)
-            in_region_a = self._pos_in_region(proposal, params.region_a, radius)
-            in_region_b = self._pos_in_region(proposal, params.region_b, radius)
-            at_door = self._pos_in_region(proposal, params.door_region, radius)
+            in_region_a = self._pos_in_region(proposal, params.region_a, radius)  # type: ignore
+            in_region_b = self._pos_in_region(proposal, params.region_b, radius)  # type: ignore
+            at_door = self._pos_in_region(proposal, params.door_region, radius)  # type: ignore
             cond_regions = jnp.logical_not(
                 jnp.logical_or(jnp.logical_or(in_region_a, in_region_b), at_door)
             )

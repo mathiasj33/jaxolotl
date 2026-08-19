@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from jaxltl.deep_ltl.curriculum.curriculum import JaxReachAvoidSequence
+from jaxltl.deep_ltl.reach_avoid.jax_reach_avoid_sequence import JaxReachAvoidSequence
 from jaxltl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxltl.environments.wrappers import EnvWrapper
 from jaxltl.environments.wrappers.wrapper import WrapperState

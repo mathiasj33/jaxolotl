@@ -1,4 +1,4 @@
-from typing import override
+from typing import NamedTuple, override
 
 import distrax
 import equinox as eqx
@@ -7,12 +7,27 @@ import jax.numpy as jnp
 
 from jaxltl import eqx_utils
 from jaxltl.deep_ltl.reach_avoid.jax_reach_avoid_sequence import JaxReachAvoidSequence
-from jaxltl.deep_ltl.wrappers.curriculum_wrapper import SequenceObservation
 from jaxltl.deep_ltl.wrappers.ldba_wrapper import LDBAWrapperState
 from jaxltl.environments.environment import EnvObservation
 from jaxltl.environments.wrappers.wrapper import EnvWrapper
 from jaxltl.eval.agent import Agent
 from jaxltl.rl.actor_critic import ActorCritic
+
+
+class SequenceObservation[TObsFeatures: NamedTuple](EnvObservation[TObsFeatures]):
+    """Observation returned by CurriculumWrapper."""
+
+    seq: JaxReachAvoidSequence
+    epsilon_mask: jax.Array  # bool, indicates if epsilon transition can be taken
+
+    @classmethod
+    def from_obs(
+        cls,
+        obs: EnvObservation[TObsFeatures],
+        seq: JaxReachAvoidSequence,
+        epsilon_enabled: jax.Array,
+    ):
+        return cls(features=obs.features, seq=seq, epsilon_mask=epsilon_enabled)
 
 
 class DeepLTLAgent(Agent[LDBAWrapperState]):

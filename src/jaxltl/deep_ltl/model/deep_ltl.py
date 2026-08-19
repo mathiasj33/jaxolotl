@@ -9,7 +9,7 @@ from equinox import nn
 from jaxtyping import PyTree
 from omegaconf import DictConfig
 
-from jaxltl.deep_ltl.curriculum.sequence_sampler import JaxReachAvoidSequence
+from jaxltl.deep_ltl.reach_avoid.jax_reach_avoid_sequence import JaxReachAvoidSequence
 from jaxltl.environments import spaces
 from jaxltl.environments.spaces import Space
 from jaxltl.networks.conv_net import ConvNet

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
 
-from jaxltl.environments.zone_env.plotter import FancyAxes
+from jaxltl.environments.zone_env_nm.plotter import FancyAxes
 
 # Color definitions matching the renderer
 _REGION_A_COLOR = "#ef4444"  # red-500
