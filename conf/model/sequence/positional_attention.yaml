@@ -1,4 +1,4 @@
 encoder: attention
 attention:
-  _target_: jaxltl.networks.positional_attention.PositionalAttention
+  _target_: jaxolotl.networks.positional_attention.PositionalAttention
   hidden_dim: 32

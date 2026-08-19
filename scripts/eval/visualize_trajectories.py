@@ -11,13 +11,13 @@ from jax import numpy as jnp
 from jaxtyping import PyTree
 from omegaconf import DictConfig
 
-import jaxltl
-from jaxltl.environments.wrappers.precomputed_reset_wrapper import (
+import jaxolotl
+from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
-from jaxltl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
-from jaxltl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
-from jaxltl.eval.utils import load_batched_models, make_eval_fn
+from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
+from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
+from jaxolotl.eval.utils import load_batched_models, make_eval_fn
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.1", config_path="../../conf", config_name="visualize_traj")
 def main(cfg: DictConfig):
     # build environment
-    env, env_params = jaxltl.make(cfg.env.name)
+    env, env_params = jaxolotl.make(cfg.env.name)
     if cfg.env.use_precomputed_resets:
         resets_path = (
-            f"{jaxltl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
+            f"{jaxolotl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
         )
         env = PrecomputedResetWrapper(env, env_params, resets_path)
     env = TimeLimitWrapper(env)
@@ -76,7 +76,7 @@ def main(cfg: DictConfig):
         if cfg.render.backend == "threejs":
             if env.name != "WarehouseEnv":
                 raise ValueError("Three.js replay is only available for WarehouseEnv.")
-            from jaxltl.environments.warehouse_env.threejs.replay import (  # noqa
+            from jaxolotl.environments.warehouse_env.threejs.replay import (  # noqa
                 replay_trajectories,
             )
 

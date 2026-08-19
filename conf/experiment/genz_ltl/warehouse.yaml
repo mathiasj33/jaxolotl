@@ -6,40 +6,40 @@ defaults:
   - /rl_alg: ppo_safe
 
 curriculum:
-  _target_: jaxltl.genz_ltl.curriculum.zone_env_curriculum.make
+  _target_: jaxolotl.genz_ltl.curriculum.zone_env_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxltl.genz_ltl.model.genz_ltl.GenZLTLModel
+  _target_: jaxolotl.genz_ltl.model.genz_ltl.GenZLTLModel
   _recursive_: false
   observation_reduction_fn:
-    # _target_: jaxltl.genz_ltl.model.observation_reduction.ZoneEnvObservationReduction
-    _target_: jaxltl.genz_ltl.model.observation_reduction.GenericObservationReduction
+    # _target_: jaxolotl.genz_ltl.model.observation_reduction.ZoneEnvObservationReduction
+    _target_: jaxolotl.genz_ltl.model.observation_reduction.GenericObservationReduction
     output_size: 68
   env_net:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [128]
     out_size: 64
     activation: ${act:tanh}
   actor:
-    _target_: jaxltl.rl.actor.composite_actor.CompositeActor
+    _target_: jaxolotl.rl.actor.composite_actor.CompositeActor
     hidden_sizes: [64, 64, 64]
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
     state_dependent_std: true
     use_epsilon: false
   critic:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:softplus}
   cost_critic:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
   lagrangian:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:softplus}
 

@@ -16,20 +16,20 @@ import jax.numpy as jnp
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-import jaxltl
-from jaxltl import DATA_DIR, eqx_utils
-from jaxltl.environments.environment import EnvParams
-from jaxltl.environments.spaces import Space
-from jaxltl.environments.wrappers import AutoResetWrapper, LogWrapper, VectorizeWrapper
-from jaxltl.environments.wrappers.auto_reset_wrapper import ResetStrategy
-from jaxltl.environments.wrappers.precomputed_reset_wrapper import (
+import jaxolotl
+from jaxolotl import DATA_DIR, eqx_utils
+from jaxolotl.environments.environment import EnvParams
+from jaxolotl.environments.spaces import Space
+from jaxolotl.environments.wrappers import AutoResetWrapper, LogWrapper, VectorizeWrapper
+from jaxolotl.environments.wrappers.auto_reset_wrapper import ResetStrategy
+from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
-from jaxltl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
-from jaxltl.eqx_utils.utils import compute_num_params
-from jaxltl.hydra_utils.utils import resolve_default_options
-from jaxltl.rl.actor_critic import ActorCritic
-from jaxltl.rl.algorithm import RLAlgorithm
+from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
+from jaxolotl.eqx_utils.utils import compute_num_params
+from jaxolotl.hydra_utils.utils import resolve_default_options
+from jaxolotl.rl.actor_critic import ActorCritic
+from jaxolotl.rl.algorithm import RLAlgorithm
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def main(cfg: DictConfig):
 
     default_options = resolve_default_options(cfg.env)
 
-    env, env_params = jaxltl.make(cfg.env.name)
+    env, env_params = jaxolotl.make(cfg.env.name)
     if cfg.env.use_precomputed_resets:
         resets_path = f"{DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
         env = PrecomputedResetWrapper(env, env_params, resets_path)

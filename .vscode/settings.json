@@ -1,8 +1,4 @@
 {
-  "python.testing.pytestArgs": [
-    "-s",
-    "test"
-  ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "editor.formatOnSave": true,

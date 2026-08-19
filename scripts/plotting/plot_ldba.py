@@ -4,12 +4,12 @@ import enum
 
 from graphviz import Source
 
-from jaxltl.deep_ltl.reach_avoid import path_search
-from jaxltl.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
-from jaxltl.environments.warehouse_env.warehouse_env import WarehouseEnv
-from jaxltl.ltl.automata import LDBA, ltl2ldba
-from jaxltl.ltl.logic import Assignment
-from jaxltl.ltl.logic.utils import synthesize_formula
+from jaxolotl.deep_ltl.reach_avoid import path_search
+from jaxolotl.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
+from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
+from jaxolotl.ltl.automata import LDBA, ltl2ldba
+from jaxolotl.ltl.logic import Assignment
+from jaxolotl.ltl.logic.utils import synthesize_formula
 
 
 class Color(enum.Enum):

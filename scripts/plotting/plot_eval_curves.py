@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from jaxltl.utils.plot_utils import smooth
+from jaxolotl.utils.plot_utils import smooth
 
 sns.set_theme(style="darkgrid")
 
@@ -17,7 +17,7 @@ def load_df(path: str | Path, smooth_radius: int = 10) -> pd.DataFrame:
     df["smooth_length"] = df.groupby("seed")["length"].transform(
         lambda x: smooth(x, radius=smooth_radius)
     )
-    df["name"] = path
+    df["name"] = path  # type: ignore
     return df
 
 

@@ -3,28 +3,28 @@
 import hydra
 from omegaconf import DictConfig
 
-import jaxltl
-from jaxltl.environments.renderer.renderer import BaseRenderer
-from jaxltl.environments.wrappers.auto_reset_wrapper import (
+import jaxolotl
+from jaxolotl.environments.renderer.renderer import BaseRenderer
+from jaxolotl.environments.wrappers.auto_reset_wrapper import (
     AutoResetWrapper,
     ResetStrategy,
 )
-from jaxltl.environments.wrappers.precomputed_reset_wrapper import (
+from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
-from jaxltl.hydra_utils.utils import resolve_default_options
+from jaxolotl.hydra_utils.utils import resolve_default_options
 
 
 @hydra.main(version_base="1.1", config_path="../conf", config_name="visualize_env")
 def main(cfg: DictConfig):
     default_options = resolve_default_options(cfg.env)
 
-    env, params = jaxltl.make(cfg.env.name)
+    env, params = jaxolotl.make(cfg.env.name)
     if cfg.env.use_precomputed_resets:
         env = PrecomputedResetWrapper(
             env,
             params,
-            jaxltl.DATA_DIR / cfg.env.name / cfg.env.precomputed_resets_path,
+            jaxolotl.DATA_DIR / cfg.env.name / cfg.env.precomputed_resets_path,
         )
     env = AutoResetWrapper(
         env, reset_strategy=ResetStrategy.FULL, auto_reset_options=default_options

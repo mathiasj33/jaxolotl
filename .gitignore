@@ -1,5 +1,6 @@
 # Project-specific ignores
 /local/
+/paper/
 outputs/
 runs/
 *.zip
@@ -17,14 +18,6 @@ train.yaml
 visualize_env.yaml
 visualize_traj.yaml
 combine_models.yaml
-
-# Local config files
-eval_curves.yaml
-eval.yaml
-precompute.yaml
-train.yaml
-visualize_env.yaml
-visualize_traj.yaml
 
 # Pixi environments
 .pixi

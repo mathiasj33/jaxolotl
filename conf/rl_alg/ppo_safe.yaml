@@ -1,4 +1,4 @@
-_target_: jaxltl.rl.ppo_safe.PPOSafe
+_target_: jaxolotl.rl.ppo_safe.PPOSafe
 
 total_timesteps: 5e6
 num_envs: 16

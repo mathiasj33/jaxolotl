@@ -8,9 +8,9 @@ from pathlib import Path
 import hydra
 from omegaconf import DictConfig
 
-import jaxltl
-from jaxltl import DATA_DIR, eqx_utils
-from jaxltl.ltl2action.curriculum.curriculum import Curriculum
+import jaxolotl
+from jaxolotl import DATA_DIR, eqx_utils
+from jaxolotl.ltl2action.curriculum.curriculum import Curriculum
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def main(cfg: DictConfig):
     logger.info("Instantiating curriculum to generate samples...")
     start_time = time.time()
 
-    env, _ = jaxltl.make(cfg.env.name)
+    env, _ = jaxolotl.make(cfg.env.name)
     curriculum: Curriculum = hydra.utils.call(cfg.curriculum, env, load_path=None)
 
     end_time = time.time()

@@ -1,4 +1,4 @@
-_target_: jaxltl.rl.ppo.PPO
+_target_: jaxolotl.rl.ppo.PPO
 
 total_timesteps: 5e5
 num_envs: 4

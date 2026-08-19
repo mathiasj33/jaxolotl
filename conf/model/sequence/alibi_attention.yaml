@@ -1,5 +1,5 @@
 encoder: attention
 attention:
-  _target_: jaxltl.networks.alibi_attention.ALiBiAttention
+  _target_: jaxolotl.networks.alibi_attention.ALiBiAttention
   hidden_dim: 32
   alibi_slope: 0.5

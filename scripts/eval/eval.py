@@ -17,14 +17,14 @@ from hydra.core.hydra_config import HydraConfig
 from jaxtyping import PyTree
 from omegaconf import DictConfig
 
-import jaxltl
-from jaxltl.environments.wrappers.precomputed_reset_wrapper import (
+import jaxolotl
+from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
-from jaxltl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
-from jaxltl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
-from jaxltl.eqx_utils.utils import compute_num_params
-from jaxltl.eval.utils import (
+from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
+from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
+from jaxolotl.eqx_utils.utils import compute_num_params
+from jaxolotl.eval.utils import (
     load_batched_models,
     make_eval_fn,
 )
@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 def main(cfg: DictConfig):
     # build environment
     env_params = cfg.get("env_params", {})
-    env, env_params = jaxltl.make(cfg.env.name, **env_params)
+    env, env_params = jaxolotl.make(cfg.env.name, **env_params)
     if cfg.env.use_precomputed_resets:
         resets_path = (
-            f"{jaxltl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
+            f"{jaxolotl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
         )
         env = PrecomputedResetWrapper(env, env_params, resets_path)
     env = TimeLimitWrapper(env)

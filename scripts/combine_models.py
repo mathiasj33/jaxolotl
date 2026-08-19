@@ -8,16 +8,16 @@ import equinox as eqx
 import hydra
 import jax
 
-import jaxltl
-from jaxltl import eqx_utils
-from jaxltl.eval.utils import load_batched_models
+import jaxolotl
+from jaxolotl import eqx_utils
+from jaxolotl.eval.utils import load_batched_models
 
 logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base="1.1", config_path="../conf", config_name="combine_models")
 def main(cfg):
-    env, env_params = jaxltl.make(cfg.env.name)
+    env, env_params = jaxolotl.make(cfg.env.name)
     path1 = Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.runs[0]}/models.eqx")
     path2 = Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.runs[1]}/models.eqx")
     model1, num_models1 = load_batched_models(

@@ -7,34 +7,34 @@ defaults:
   - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxltl.struct_ltl.curriculum.graph_warehouse_curriculum.make
+  _target_: jaxolotl.struct_ltl.curriculum.graph_warehouse_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxltl.struct_ltl.model.gcn_ltl.GCNLTLModel
+  _target_: jaxolotl.struct_ltl.model.gcn_ltl.GCNLTLModel
   _recursive_: false
   env_net:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [128]
     out_size: 64
     activation: ${act:tanh}
   actor:
-    _target_: jaxltl.rl.actor.composite_actor.CompositeActor
+    _target_: jaxolotl.rl.actor.composite_actor.CompositeActor
     hidden_sizes: [64, 64, 64]
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
     state_dependent_std: true
     use_epsilon: true
   critic:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
   sequence:
     embedding_dim: 16
     gcn:
-      _target_: jaxltl.networks.gcn.GCN
+      _target_: jaxolotl.networks.gcn.GCN
       hidden_sizes: [16, 16]
       out_size: 16
       activation: ${act:relu}

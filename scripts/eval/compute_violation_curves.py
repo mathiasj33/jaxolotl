@@ -16,14 +16,14 @@ from jaxtyping import PyTree
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-import jaxltl
-from jaxltl import DATA_DIR
-from jaxltl.environments.wrappers.precomputed_reset_wrapper import (
+import jaxolotl
+from jaxolotl import DATA_DIR
+from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
-from jaxltl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
-from jaxltl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
-from jaxltl.eval.utils import load_model_checkpoints, make_eval_fn
+from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
+from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
+from jaxolotl.eval.utils import load_model_checkpoints, make_eval_fn
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,10 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.1", config_path="../../conf", config_name="eval_curves")
 def main(cfg: DictConfig):
     # build environment
-    env, env_params = jaxltl.make(cfg.env.name)
+    env, env_params = jaxolotl.make(cfg.env.name)
     if cfg.env.use_precomputed_resets:
         resets_path = (
-            f"{jaxltl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
+            f"{jaxolotl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
         )
         env = PrecomputedResetWrapper(env, env_params, resets_path)
     env = TimeLimitWrapper(env)

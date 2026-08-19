@@ -6,30 +6,30 @@ defaults:
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxltl.ltl2action.curriculum.letter_world_curriculum.make
+  _target_: jaxolotl.ltl2action.curriculum.letter_world_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxltl.ltl2action.model.ltl2action.LTL2ActionModel
+  _target_: jaxolotl.ltl2action.model.ltl2action.LTL2ActionModel
   _recursive_: false
   env_net:
-    _target_: jaxltl.networks.conv_net.ConvNet
+    _target_: jaxolotl.networks.conv_net.ConvNet
     channels: [16, 32, 64]
     kernel_size: [2, 2]
     activation: ${act:relu}
   actor:
-    _target_: jaxltl.rl.actor.discrete_actor.DiscreteActor
+    _target_: jaxolotl.rl.actor.discrete_actor.DiscreteActor
     hidden_sizes: [64, 64, 64]
     activation: ${act:relu}
     use_epsilon: false
   critic:
-    _target_: jaxltl.networks.mlp.MLP
+    _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
   rgcn:
-    _target_: jaxltl.networks.rgcn.RGCN
+    _target_: jaxolotl.networks.rgcn.RGCN
     embedding_dim: 32
     num_layers: 8
     activation: ${act:tanh}

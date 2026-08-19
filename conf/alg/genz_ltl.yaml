@@ -1,12 +1,12 @@
 name: genz_ltl
 
 wrap_env:
-  _target_: jaxltl.genz_ltl.wrappers.utils.wrap_env
+  _target_: jaxolotl.genz_ltl.wrappers.utils.wrap_env
 
 agent:
-  _target_: jaxltl.genz_ltl.eval.agent.GenZLTLAgent.instantiate
+  _target_: jaxolotl.genz_ltl.eval.agent.GenZLTLAgent.instantiate
   vmap_choose_subgoals: true
   timeout_steps: 300
 
 preprocess_formulas:
-  _target_: jaxltl.genz_ltl.eval.preprocessing.preprocess_formulas
+  _target_: jaxolotl.genz_ltl.eval.preprocessing.preprocess_formulas
