@@ -4,3 +4,4 @@
 - The project targets Python 3.12 only; keep changes compatible with the version pinned in [pyproject.toml](pyproject.toml).
 - Treat [src/jaxolotl/](src/jaxolotl) as the main library code and [scripts/](scripts) as runnable utilities.
 - Tests are generally co-located to their associated implementation files, with a `_test` suffix.
+- When working on long-horizon tasks (more than simple refactorings, e.g. complex changes or multiple commits) always keep a concise log of your progress and design decisions in a Markdown file under `.artifacts`. This log should have a semantic name of the task and include a timestep in the header of the file.
