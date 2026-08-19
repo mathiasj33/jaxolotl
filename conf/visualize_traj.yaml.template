@@ -12,7 +12,7 @@ run: main
 eval:
   formula: "F (vase & door & X(!crate & door))"
   finite: false # whether to treat the formula as finite
-  model_index: 1
+  model_index: 1  # which seed to use for the model
   num_episodes: 8
   deterministic: false
   discount: 0.99

@@ -1,0 +1,8 @@
+- "GF red & GF green & GF yellow"
+- "F ((red | purple) & F yellow) & GF green & GF red"
+- "F (red & F (green | purple)) & G (red => F (green & F yellow)) & G (yellow => F (red))"
+- "FG red"
+- "FG red & F (yellow & F green)"
+- "FG purple & G !yellow"
+- "G ((green | yellow) => F red) & FG (green | purple)"
+- "F (purple & F (green | red)) & FG yellow"

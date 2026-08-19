@@ -1,5 +1,5 @@
 defaults:
-  - experiment: deep_ltl/zones
+  - experiment: struct_ltl/zones_nm
   - hydra: simple
   - _self_
 

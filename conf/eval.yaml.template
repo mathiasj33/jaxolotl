@@ -1,16 +1,20 @@
 defaults:
-  - experiment: deep_ltl/zones
-  - formulas: zones/finite
+  - experiment: struct_ltl/zones_nm
+  - formulas: zones_nm/finite
   - hydra: simple
   - _self_
 
-run: main
 env:
   use_precomputed_resets: true
   precomputed_resets_path: sampled_resets_test.eqx
+
+run: main
 eval:
+  finite: true # whether to treat all formulae as finite
   num_episodes: 512
   deterministic: false
   discount: 0.94
   models_per_batch: all
   formulas_per_batch: all
+  vmap_choose_subgoals: True
+  vmap_choose_sequences: True

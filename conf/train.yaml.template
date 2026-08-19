@@ -1,14 +1,13 @@
 defaults:
-  - experiment: deep_ltl/zones
+  - experiment: struct_ltl/zones_nm
   - hydra: training_run
   - _self_
 
 run: tmp
-num_seeds: 5
+num_seeds: 10
+start_seed: 0
 use_gpu: true # use gpu if available
-rl_alg:
-  total_timesteps: 20e6
-save_freq: 2e5
+save_freq: 2e6
 
 wandb:
   project: project-name

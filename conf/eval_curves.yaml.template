@@ -1,5 +1,5 @@
 defaults:
-  - experiment: deep_ltl/zones
+  - experiment: struct_ltl/zones_nm
   - hydra: simple
   - _self_
 
@@ -8,8 +8,9 @@ env:
   use_precomputed_resets: true
   precomputed_resets_path: sampled_resets_test.eqx
 eval:
-  num_episodes: 16
+  finite: true
+  num_episodes: 50
   deterministic: false
   discount: 0.998
-  models_per_batch: all
+  models_per_batch: 5
   formulas_per_batch: all
