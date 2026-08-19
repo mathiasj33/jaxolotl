@@ -417,13 +417,16 @@ class ZoneEnvNM(
         trajs: EnvState,
         lengths: jax.Array,
         params: EnvParams,
+        save_path: str | None = None,
         **plotting_kwargs,
     ) -> None:
         """Plots trajectories of environment states.
 
         Args:
             trajs: Batched EnvStates of shape (num_episodes, max_length, ...)
+            lengths: Trajectory lengths (num_episodes,) int32
             params: Environment parameters
+            save_path: Optional path at which to save the plot as a PDF
             plotting_kwargs: Additional keyword arguments for the plotting function
         """
         zone_positions = trajs.zone_centers[:, 0].tolist()
@@ -432,4 +435,10 @@ class ZoneEnvNM(
         paths = [
             trajs.position[i, : lengths[i]].tolist() for i in range(lengths.shape[0])
         ]
-        draw_trajectories(zone_positions, zone_colors, paths, **plotting_kwargs)
+        draw_trajectories(
+            zone_positions,
+            zone_colors,
+            paths,
+            save_path=save_path,
+            **plotting_kwargs,
+        )

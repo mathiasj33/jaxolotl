@@ -273,6 +273,7 @@ class Environment[
         trajs: TEnvState,
         lengths: jax.Array,
         params: TEnvParams,
+        save_path: str | None = None,
         **plotting_kwargs,
     ) -> None:
         """Plots trajectories of environment states.
@@ -281,6 +282,7 @@ class Environment[
             trajs: Batched EnvStates of shape (num_episodes, max_length, ...)
             lengths: Trajectory lengths (num_episodes,) int32
             params: Environment parameters
+            save_path: Optional path at which to save the plot as a PDF
             plotting_kwargs: Additional keyword arguments for the plotting function
         """
         raise NotImplementedError(

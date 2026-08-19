@@ -59,7 +59,7 @@ def main(cfg: DictConfig):
     key, eval_key = jax.random.split(key)
     logger.info("Starting evaluation...")
     start = time.time()
-    returns, disc_returns, lengths, trajs = eval_fn(
+    returns, disc_returns, lengths, _, trajs = eval_fn(
         agent,
         env,
         env_params,
@@ -72,15 +72,11 @@ def main(cfg: DictConfig):
     trajs = jax.tree.map(partial(jnp.squeeze, axis=[0, 1]), trajs)
     lengths = jax.tree.map(partial(jnp.squeeze, axis=[0, 1]), lengths)
 
-    idx = jnp.array([0, 1, 3, 5])
-    trajs = jax.tree.map(lambda x: x[idx], trajs)
-    lengths = jax.tree.map(lambda x: x[idx], lengths)
-
     if cfg.replay:
         if cfg.render.backend == "threejs":
             if env.name != "WarehouseEnv":
                 raise ValueError("Three.js replay is only available for WarehouseEnv.")
-            from jaxltl.environments.warehouse_env.threejs.replay import (
+            from jaxltl.environments.warehouse_env.threejs.replay import (  # noqa
                 replay_trajectories,
             )
 
@@ -114,6 +110,7 @@ def main(cfg: DictConfig):
         env_params,
         num_cols=cfg.plotting.cols,
         num_rows=cfg.plotting.rows,
+        save_path=cfg.plotting.save_path,
     )
 
 

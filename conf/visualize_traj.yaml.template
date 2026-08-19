@@ -10,7 +10,7 @@ env:
 run: main
 
 eval:
-  formula: "F (vase & door & X(!crate & door))"
+  formula: "F (vase & region_a & (region_a U (!vase & region_a)))"
   finite: false # whether to treat the formula as finite
   model_index: 1  # which seed to use for the model
   num_episodes: 8
@@ -20,12 +20,13 @@ eval:
   formulas_per_batch: all
   vmap_choose_sequences: True
 
-replay: false
+replay: true
 render:
-  backend: "pygame"  # options: pygame, threejs (only for warehouse)
+  backend: "threejs"  # options: pygame, threejs (only for warehouse)
   frames_per_step: 3
   pause_between_episodes: 0.5
 
 plotting:
   rows: 2
   cols: 4
+  save_path: null  # Set to a path such as "trajectories.pdf" to save the plot

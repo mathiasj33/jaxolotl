@@ -87,6 +87,7 @@ def draw_trajectories(
     paths: list[list[tuple[float, float]]],
     num_cols: int,
     num_rows: int,
+    save_path: str | None = None,
 ):
     if len(zone_positions) != len(paths):
         raise ValueError("Number of zone positions and paths must be the same")
@@ -109,7 +110,8 @@ def draw_trajectories(
         draw_diamond(ax, path[0], color="orange")
         draw_path(ax, path, color="green", linewidth=4)
     plt.tight_layout(pad=4)
-    plt.savefig("traj.pdf", dpi=300)
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, format="pdf")
     plt.show()
 
 

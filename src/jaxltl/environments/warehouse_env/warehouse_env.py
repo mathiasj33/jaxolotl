@@ -637,6 +637,7 @@ class WarehouseEnv(
         trajs: EnvState,
         lengths: jax.Array,
         params: WarehouseParams,
+        save_path: str | None = None,
         **plotting_kwargs,
     ) -> None:
         """Plots trajectories of environment states.
@@ -645,6 +646,7 @@ class WarehouseEnv(
             trajs: Batched EnvStates of shape (num_episodes, max_length, ...)
             lengths: Trajectory lengths (num_episodes,) int32
             params: Environment parameters
+            save_path: Optional path at which to save the plot as a PDF
             plotting_kwargs: Additional keyword arguments for the plotting function
         """
         from jaxltl.environments.warehouse_env.plotter import draw_trajectories
@@ -685,5 +687,6 @@ class WarehouseEnv(
             door_region=params.door_region,
             world_size=params.world_size,
             pickup_radius=params.pickup_radius,
+            save_path=save_path,
             **plotting_kwargs,
         )

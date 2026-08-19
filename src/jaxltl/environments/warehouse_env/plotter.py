@@ -375,6 +375,7 @@ def draw_trajectories(  # noqa: PLR0913
     pickup_radius: float,
     num_cols: int,
     num_rows: int,
+    save_path: str | None = None,
 ):
     """Draw multiple trajectories in a grid layout.
 
@@ -391,6 +392,7 @@ def draw_trajectories(  # noqa: PLR0913
         pickup_radius: Radius of objects
         num_cols: Number of columns in the grid
         num_rows: Number of rows in the grid
+        save_path: Optional path at which to save the plot as a PDF
     """
     num_trajs = len(positions)
     if num_cols * num_rows < num_trajs:
@@ -485,5 +487,6 @@ def draw_trajectories(  # noqa: PLR0913
     ]
 
     plt.tight_layout(pad=4)
-    plt.savefig("traj.pdf", dpi=300)
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, format="pdf")
     plt.show()
