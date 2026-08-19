@@ -9,7 +9,7 @@ from equinox import nn
 from jaxtyping import PyTree
 from omegaconf import DictConfig
 
-from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
+from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments import spaces

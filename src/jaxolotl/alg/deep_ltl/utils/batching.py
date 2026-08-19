@@ -1,9 +1,9 @@
 from typing import override
 
-from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
+from jaxolotl.alg.ltl2action.curriculum.curriculum import SampleBatcher
+from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
-from jaxolotl.alg.ltl2action.curriculum.curriculum import SampleBatcher
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.reach_avoid.sequence import ReachAvoidSequence

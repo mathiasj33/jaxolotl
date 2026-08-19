@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl.alg.deep_ltl.eval.preprocessing import _batch_ldbas, _build_ldba
-from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
+from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (

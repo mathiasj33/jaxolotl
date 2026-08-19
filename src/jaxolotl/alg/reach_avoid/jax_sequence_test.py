@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 import numpy.testing as npt
 
-from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
+from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments.environment import Environment

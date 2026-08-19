@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl import eqx_utils
-from jaxolotl.alg.deep_ltl.reach_avoid.jax_reach_avoid_sequence import (
+from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
