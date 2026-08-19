@@ -73,10 +73,6 @@ class FormulaClosureWrapper[
         return state, formula_obs
 
     @eqx.filter_jit
-    def cheap_reset(self, key, state, params, options):
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

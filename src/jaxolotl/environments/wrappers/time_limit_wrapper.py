@@ -47,16 +47,6 @@ class TimeLimitWrapper[
         ), obs
 
     @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ):
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

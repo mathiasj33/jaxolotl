@@ -66,16 +66,6 @@ class SubgoalWrapper[
         return wrapped_state, reduced_obs
 
     @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: SubgoalState,
-        params: TEnvParams,
-        options: CurriculumResetOptions | None = None,
-    ) -> tuple[SubgoalState, SubgoalObservation]:
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

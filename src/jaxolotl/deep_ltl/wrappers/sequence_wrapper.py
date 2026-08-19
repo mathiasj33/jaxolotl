@@ -77,16 +77,6 @@ class SequenceWrapper[
         )
 
     @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: SequenceState,
-        params: TEnvParams,
-        options: CurriculumResetOptions | None = None,
-    ) -> tuple[SequenceState, SequenceObservation[TObsFeatures]]:
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

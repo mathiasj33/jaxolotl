@@ -148,16 +148,6 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
             zone_colors=colors,
         )
 
-    @override
-    def _cheap_reset(
-        self,
-        key: jax.Array,
-        state: EnvState,
-        params: EnvParams,
-        options: ResetOptions | None = None,
-    ) -> EnvState:
-        raise NotImplementedError("Cheap reset is not implemented for ZoneEnv.")
-
     def _sample_zones(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, jax.Array]:

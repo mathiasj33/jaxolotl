@@ -38,9 +38,6 @@ class MockEnv(Environment):
     def _reset(self):
         pass
 
-    def _cheap_reset(self):
-        pass
-
     def _step(self):
         pass
 

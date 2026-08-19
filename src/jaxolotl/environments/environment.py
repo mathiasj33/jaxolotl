@@ -111,34 +111,6 @@ class Environment[
 
     @eqx.filter_jit
     @eqx.debug.assert_max_traces(max_traces=2)
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: TEnvState,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> tuple[TEnvState, EnvObservation[TObsFeatures]]:
-        """Performs a cheap reset of the environment given the current state.
-        Since JIT requires resetting on every step, this method can be used to implement
-        a faster reset to improve performance. See AutoResetWrapper for further details.
-        """
-
-        state = self._cheap_reset(key, state, params, options)
-        return state, self.compute_obs(state, params)
-
-    @abstractmethod
-    def _cheap_reset(
-        self,
-        key: jax.Array,
-        state: TEnvState,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> TEnvState:
-        """Environment-specific cheap reset."""
-        pass
-
-    @eqx.filter_jit
-    @eqx.debug.assert_max_traces(max_traces=2)
     def step(
         self,
         key: jax.Array,

@@ -15,7 +15,6 @@ class AutoResetState[TObsFeatures: NamedTuple](WrapperState):
 
 class ResetStrategy(StrEnum):
     INITIAL = auto()
-    CHEAP = auto()
     FULL = auto()
 
 
@@ -28,10 +27,9 @@ class AutoResetWrapper[
 
     Due to JIT compilation requirements, we have to compute a new reset state at every
     step of the environment. Since this can be computationally expensive in some environments
-    (e.g. sampling layouts etc.), we provide three different reset strategies:
+    (e.g. sampling layouts etc.), we provide two different reset strategies:
 
         - Initial: Always reset to the initial state obtained from the first reset call.
-        - Cheap: Use the environment's cheap_reset method to compute a new state.
         - Full: Use the full reset method to compute a new state.
 
     Brax by default uses the 'Initial' strategy, whereas Gymnax environments use 'Full'.
@@ -77,19 +75,6 @@ class AutoResetWrapper[
         re_state, obs = super().reset(key, state, params, options)
         return self._wrap_reset_state(re_state, obs), obs
 
-    @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: AutoResetState[TObsFeatures],
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> tuple[AutoResetState[TObsFeatures], EnvObservation[TObsFeatures]]:
-        if options is None:
-            options = self.auto_reset_options
-        re_state, obs = super().cheap_reset(key, state, params, options)
-        return self._wrap_reset_state(re_state, obs), obs
-
     def _wrap_reset_state(
         self, state: Any, obs: EnvObservation[TObsFeatures]
     ) -> AutoResetState[TObsFeatures]:
@@ -121,10 +106,6 @@ class AutoResetWrapper[
                     state=state_re,
                     initial_state=state.initial_state,
                     initial_obs=state.initial_obs,
-                )
-            case ResetStrategy.CHEAP:
-                state_re, obs_re = self.cheap_reset(
-                    key_reset, next_state, params, self.auto_reset_options
                 )
             case ResetStrategy.FULL:
                 state_re, obs_re = self.reset(

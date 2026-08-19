@@ -42,17 +42,6 @@ class LogWrapper[
         re_state, obs = super().reset(key, state, params, options)
         return self._wrap_reset_state(re_state), obs
 
-    @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: LogEnvState,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> tuple[LogEnvState, EnvObservation[TObsFeatures]]:
-        re_state, obs = super().cheap_reset(key, state, params, options)
-        return self._wrap_reset_state(re_state), obs
-
     def _wrap_reset_state(self, state: Any) -> LogEnvState:
         return LogEnvState(
             state=state,

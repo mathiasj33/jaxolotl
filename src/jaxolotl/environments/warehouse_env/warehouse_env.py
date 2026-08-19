@@ -235,16 +235,6 @@ class WarehouseEnv(
         return centers
 
     @override
-    def _cheap_reset(
-        self,
-        key: jax.Array,
-        state: EnvState,
-        params: WarehouseParams,
-        options: ResetOptions | None = None,
-    ) -> EnvState:
-        raise NotImplementedError("Cheap reset is not implemented for WarehouseEnv.")
-
-    @override
     def _step(
         self,
         key: jax.Array,

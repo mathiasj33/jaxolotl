@@ -23,10 +23,6 @@ class FakeEnv(Environment):
         del key, state, params, options
         return eqx.Module()
 
-    def _cheap_reset(self, key, state, params, options=None):
-        del key, params, options
-        return state
-
     def _step(self, key, state, action, params):
         del key, action, params
         return state, jnp.array(0.0), jnp.array(False), {}

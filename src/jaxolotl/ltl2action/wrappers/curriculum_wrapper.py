@@ -110,16 +110,6 @@ class CurriculumWrapper[
         return state, obs
 
     @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: CurriculumState,
-        params: TEnvParams,
-        options: CurriculumResetOptions | None = None,
-    ) -> tuple[CurriculumState, EnvObservation[TObsFeatures]]:
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

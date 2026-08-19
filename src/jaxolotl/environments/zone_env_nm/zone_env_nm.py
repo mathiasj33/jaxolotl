@@ -145,16 +145,6 @@ class ZoneEnvNM(
             masked_colors=jnp.zeros(len(self.propositions), dtype=jnp.bool),
         )
 
-    @override
-    def _cheap_reset(
-        self,
-        key: jax.Array,
-        state: EnvState,
-        params: EnvParams,
-        options: ResetOptions | None = None,
-    ) -> EnvState:
-        raise NotImplementedError("Cheap reset is not implemented for ZoneEnv.")
-
     def _sample_zones(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, jax.Array]:

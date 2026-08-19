@@ -62,16 +62,6 @@ class LDBASubgoalWrapper[
         return state, obs
 
     @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: LDBAWrapperState,
-        params: TEnvParams,
-        options: ResetOptions | None = None,
-    ) -> tuple[LDBAWrapperState, EnvObservation[TObsFeatures]]:
-        raise NotImplementedError()
-
-    @eqx.filter_jit
     def step(
         self,
         key: jax.Array,

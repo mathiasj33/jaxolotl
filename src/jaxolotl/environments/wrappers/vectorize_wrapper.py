@@ -36,16 +36,6 @@ class VectorizeWrapper[
     ) -> tuple[WrapperState, EnvObservation[TObsFeatures]]:
         return super().reset(key, state, params, options)
 
-    @partial(jax.vmap, in_axes=(None, 0, 0, None, None))
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: WrapperState,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> tuple[WrapperState, EnvObservation[TObsFeatures]]:
-        return super().cheap_reset(key, state, params, options)
-
     @partial(jax.vmap, in_axes=(None, 0, 0, 0, None))
     def step(
         self,

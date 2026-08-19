@@ -60,13 +60,3 @@ class PrecomputedResetWrapper[
             key, shape=(), minval=0, maxval=self.num_reset_states
         )
         return jax.tree.map(lambda x: x[index], self.reset_states)
-
-    @eqx.filter_jit
-    def cheap_reset(
-        self,
-        key: jax.Array,
-        state: WrapperState,
-        params: TEnvParams,
-        options: TResetOptions | None = None,
-    ) -> tuple[WrapperState, EnvObservation[TObsFeatures]]:
-        return self.reset(key, state, params, options)

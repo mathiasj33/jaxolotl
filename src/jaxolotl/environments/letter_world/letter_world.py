@@ -163,16 +163,6 @@ class LetterWorld(
         return jnp.all(final_reachable)
 
     @override
-    def _cheap_reset(
-        self,
-        key: jax.Array,
-        state: EnvState,
-        params: EnvParams,
-        options: ResetOptions | None = None,
-    ) -> EnvState:
-        raise NotImplementedError("Cheap reset is not implemented for LetterWorld.")
-
-    @override
     def _step(
         self,
         key: jax.Array,
