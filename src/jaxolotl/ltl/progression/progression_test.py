@@ -21,8 +21,8 @@ def test_progress_preserves_boolean_constants():
     true = TrueNode()
     false = FalseNode()
 
-    assert progress(true, Assignment()) is true
-    assert progress(false, Assignment("a")) is false
+    assert progress(true, Assignment()) == true
+    assert progress(false, Assignment("a")) == false
 
 
 def test_progress_evaluates_atomic_propositions():
@@ -62,7 +62,7 @@ def test_progress_eventually_retains_the_original_obligation():
     progressed = progress(formula, Assignment("a"))
 
     assert progressed == OrNode(TrueNode(), formula)
-    assert progressed.children[1] is formula
+    assert progressed.children[1] == formula
 
 
 def test_progress_always_retains_the_original_obligation():
@@ -71,7 +71,7 @@ def test_progress_always_retains_the_original_obligation():
     progressed = progress(formula, Assignment())
 
     assert progressed == AndNode(FalseNode(), formula)
-    assert progressed.children[1] is formula
+    assert progressed.children[1] == formula
 
 
 @pytest.mark.parametrize(

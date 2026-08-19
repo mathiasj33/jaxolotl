@@ -12,13 +12,13 @@ defaults:
   - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxolotl.struct_ltl.curriculum.tokenized_warehouse_curriculum.make
+  _target_: jaxolotl.alg.struct_ltl.curriculum.tokenized_warehouse_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxolotl.struct_ltl.model.tokenized_ltl.TokenizedLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.tokenized_ltl.TokenizedLTLModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.mlp.MLP

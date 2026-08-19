@@ -4,8 +4,8 @@ import enum
 
 from graphviz import Source
 
-from jaxolotl.deep_ltl.reach_avoid import path_search
-from jaxolotl.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
+from jaxolotl.alg.deep_ltl.reach_avoid import path_search
+from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
 from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
 from jaxolotl.ltl.automata import LDBA, ltl2ldba
 from jaxolotl.ltl.logic import Assignment

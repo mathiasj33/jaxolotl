@@ -4,7 +4,7 @@ import distrax
 import jax
 from jax.nn.initializers import Initializer
 
-from jaxolotl.deep_ltl.model.epsilon_distribution import EpsilonDistribution
+from jaxolotl.alg.deep_ltl.model.epsilon_distribution import EpsilonDistribution
 from jaxolotl.networks.mlp import MLP
 from jaxolotl.rl.actor.actor import Actor
 

@@ -8,7 +8,7 @@ import jraph
 from equinox import nn
 from jax.nn.initializers import Initializer
 
-from jaxolotl.ltl2action.utils.jax_formula_closure import JaxFormulaGraph
+from jaxolotl.alg.ltl2action.utils.jax_formula_closure import JaxFormulaGraph
 from jaxolotl.networks.callable_module import CallableModule
 from jaxolotl.networks.network_utils import make_linear
 

@@ -6,13 +6,13 @@ defaults:
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxolotl.ltl2action.curriculum.zone_env_nm_curriculum.make
+  _target_: jaxolotl.alg.ltl2action.curriculum.zone_env_nm_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxolotl.ltl2action.model.ltl2action.LTL2ActionModel
+  _target_: jaxolotl.alg.ltl2action.model.ltl2action.LTL2ActionModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.mlp.MLP

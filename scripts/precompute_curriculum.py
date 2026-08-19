@@ -10,7 +10,7 @@ from omegaconf import DictConfig
 
 import jaxolotl
 from jaxolotl import DATA_DIR, eqx_utils
-from jaxolotl.ltl2action.curriculum.curriculum import Curriculum
+from jaxolotl.alg.ltl2action.curriculum.curriculum import Curriculum
 
 logger = logging.getLogger(__name__)
 
