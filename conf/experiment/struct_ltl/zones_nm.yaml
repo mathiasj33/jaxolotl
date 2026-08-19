@@ -1,23 +1,20 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env_complex
-  - /alg: genz_ltl
-  - /rl_alg: ppo_safe
+  - /env: zone_env_nm
+  - /alg: struct_ltl
+  - /rl_alg: ppo
+  - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxltl.genz_ltl.curriculum.zone_env_curriculum.make
+  _target_: jaxltl.struct_ltl.curriculum.zone_env_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxltl.genz_ltl.model.genz_ltl.GenZLTLModel
+  _target_: jaxltl.struct_ltl.model.struct_ltl.StructLTLModel
   _recursive_: false
-  observation_reduction_fn:
-    _target_: jaxltl.genz_ltl.model.observation_reduction.ZoneEnvObservationReduction
-    # _target_: jaxltl.genz_ltl.model.observation_reduction.GenericObservationReduction
-    # output_size: 78
   env_net:
     _target_: jaxltl.networks.mlp.MLP
     hidden_sizes: [128]
@@ -29,19 +26,23 @@ model:
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
     state_dependent_std: true
-    use_epsilon: false
+    use_epsilon: true
   critic:
     _target_: jaxltl.networks.mlp.MLP
     hidden_sizes: [64, 64]
-    activation: ${act:softplus}
-  cost_critic:
-    _target_: jaxltl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
     activation: ${act:tanh}
-  lagrangian:
-    _target_: jaxltl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
-    activation: ${act:softplus}
+  sequence:
+    embedding_dim: 16
+    clause_mlp:
+      _target_: jaxltl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
+    disjunct_mlp:
+      _target_: jaxltl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
 
 rl_alg:
   total_timesteps: 20e6
@@ -50,17 +51,11 @@ rl_alg:
   num_minibatches: 32
   update_epochs: 10
   gamma: 0.998
-  cost_gamma: 0.998
   gae_lambda: 0.95
   clip_eps: 0.2
   ent_coef: 0.003
-  vf_coef: 1.0
-  cost_vf_coef: 1.0
-  lag_coef: 1.0
+  vf_coef: 1.0  # TODO
   lr: 3e-4
   max_grad_norm: 0.5
   anneal_lr: false
   adam_eps: 1e-8
-  target_cost: -0.05
-  min_lag: 1e-2
-  max_lag: 5.0

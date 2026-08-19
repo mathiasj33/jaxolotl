@@ -1,4 +1,4 @@
-"""A more complex version of the ZoneEnv environment, in which touching certain zones makes other zones disappear."""
+"""A non-myopic version of ZoneEnv, in which touching a purple zone makes green zones disappear."""
 
 import dataclasses
 from dataclasses import dataclass
@@ -10,7 +10,7 @@ import jax.numpy as jnp
 from jax import lax
 
 from jaxltl.environments import environment, spaces
-from jaxltl.environments.zone_env_complex.plotter import draw_trajectories
+from jaxltl.environments.zone_env_nm.plotter import draw_trajectories
 from jaxltl.ltl.logic.assignment import Assignment
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class ResetOptions(NamedTuple):
     pass
 
 
-class ZoneEnvComplex(
+class ZoneEnvNM(
     environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOptions]
 ):
     default_params = EnvParams(
@@ -397,7 +397,7 @@ class ZoneEnvComplex(
     def assignments() -> list[Assignment]:
         """Returns all possible assignments in the environment."""
         assignments = [
-            Assignment(frozenset({color})) for color in ZoneEnvComplex.propositions
+            Assignment(frozenset({color})) for color in ZoneEnvNM.propositions
         ]
         assignments.append(Assignment(frozenset()))  # empty assignment
         return assignments

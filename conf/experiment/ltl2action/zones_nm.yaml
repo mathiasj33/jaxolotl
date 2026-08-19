@@ -1,12 +1,12 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env_complex
+  - /env: zone_env_nm
   - /alg: ltl2action
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxltl.ltl2action.curriculum.zone_env_complex_curriculum.make
+  _target_: jaxltl.ltl2action.curriculum.zone_env_nm_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256

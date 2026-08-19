@@ -62,7 +62,7 @@ class DummySubgoalState(eqx.Module):
 
 
 class MockComplexEnvState(eqx.Module):
-    """Mocks zone_env_complex.EnvState to contain the masked_colors array."""
+    """Mocks zone_env_nm.EnvState to contain the masked_colors array."""
 
     masked_colors: jax.Array
 
@@ -124,7 +124,7 @@ def test_sample_new_goal_excludes_current_assignment_and_reach():
 
     # Patch the class reference in the wrapper file so isinstance() evaluates to True
     # Update the module path below to exactly match where _sample_new_goal checks it.
-    patch_path = "jaxltl.genz_ltl.wrappers.subgoal_wrapper.zone_env_complex.EnvState"
+    patch_path = "jaxltl.genz_ltl.wrappers.subgoal_wrapper.zone_env_nm.EnvState"
 
     with patch(patch_path, MockComplexEnvState):
         for a in range(num_assignments):

@@ -1,19 +1,18 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env_complex
-  - /alg: struct_ltl
+  - /env: zone_env_nm
+  - /alg: deep_ltl
   - /rl_alg: ppo
-  - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxltl.struct_ltl.curriculum.zone_env_curriculum.make
+  _target_: jaxltl.deep_ltl.curriculum.zone_env_nm_curriculum.make
 
 curriculum_wrapper:
   episode_window: 256
 
 model:
-  _target_: jaxltl.struct_ltl.model.struct_ltl.StructLTLModel
+  _target_: jaxltl.deep_ltl.model.deep_ltl.DeepLTLModel
   _recursive_: false
   env_net:
     _target_: jaxltl.networks.mlp.MLP
@@ -33,14 +32,9 @@ model:
     activation: ${act:tanh}
   sequence:
     embedding_dim: 16
-    clause_mlp:
+    deep_sets:
       _target_: jaxltl.networks.deep_sets.DeepSets
-      hidden_sizes: []
-      out_size: 16
-      activation: ${act:relu}
-    disjunct_mlp:
-      _target_: jaxltl.networks.deep_sets.DeepSets
-      hidden_sizes: []
+      hidden_sizes: [32]
       out_size: 16
       activation: ${act:relu}
 
@@ -54,7 +48,7 @@ rl_alg:
   gae_lambda: 0.95
   clip_eps: 0.2
   ent_coef: 0.003
-  vf_coef: 1.0  # TODO
+  vf_coef: 1.0
   lr: 3e-4
   max_grad_norm: 0.5
   anneal_lr: false

@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from jaxltl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxltl.environments.wrappers import EnvWrapper
 from jaxltl.environments.wrappers.wrapper import WrapperState
-from jaxltl.environments.zone_env_complex import zone_env_complex
+from jaxltl.environments.zone_env_nm import zone_env_nm
 from jaxltl.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import JaxReachAvoidSubgoal
 from jaxltl.ltl2action.wrappers.curriculum_wrapper import CurriculumResetOptions
 
@@ -116,13 +116,11 @@ class SubgoalWrapper[
         valid_reach_mask = jnp.ones(num_assignments, dtype=bool)
         valid_reach_mask = valid_reach_mask.at[assignment].set(False)
         unwrapped_state = state.unwrapped()
-        if isinstance(unwrapped_state, zone_env_complex.EnvState):
+        if isinstance(unwrapped_state, zone_env_nm.EnvState):
             logger.info(
-                "Applying zone_env_complex-specific logic to exclude green assignment!"
+                "Applying zone_env_nm-specific logic to exclude green assignment!"
             )
-            GREEN_ASSIGNMENT_IDX = (
-                1  # green is the second assignment in zone_env_complex
-            )
+            GREEN_ASSIGNMENT_IDX = 1  # green is the second assignment in zone_env_nm
             exclude_green = unwrapped_state.masked_colors[GREEN_ASSIGNMENT_IDX]
             # Conditionally exclude the green index based on the tracer
             valid_reach_mask = jnp.where(
