@@ -2,8 +2,10 @@ from pathlib import Path
 
 from jaxolotl.alg.curriculum import (
     Curriculum,
+    CurriculumStage,
     MultiRandomStage,
     RandomCurriculumStage,
+    SampleBatcher,
 )
 from jaxolotl.alg.struct_ltl.curriculum.boolean_samplers import (
     BooleanReachAvoidSampler,
@@ -22,121 +24,133 @@ all_except_or_formulas = cache.props + cache.ands + cache.and_nots
 all_formulas = all_except_or_formulas + cache.ors
 
 
-def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
+def make_stages() -> list[CurriculumStage]:
+    return [
+        # 1. Reach propositions individually
+        RandomCurriculumStage(
+            sampler=BooleanReachAvoidSampler(
+                depth=1,
+                reach_formulas=cache.props,
+                avoid_formulas=[],
+                avoid_prob=0.0,
+                assignments=assignments,
+            ),
+            threshold=0.9,
+        ),
+        # 2. Reach combinations of propositions (no avoids)
+        RandomCurriculumStage(
+            sampler=BooleanReachAvoidSampler(
+                depth=1,
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=[],
+                avoid_prob=0.0,
+                assignments=assignments,
+            ),
+            threshold=0.95,
+        ),
+        # 3. Reach combinations of depth 2
+        RandomCurriculumStage(
+            sampler=BooleanReachAvoidSampler(
+                depth=2,
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=[],
+                avoid_prob=0.0,
+                assignments=assignments,
+            ),
+            threshold=0.9,
+        ),
+        # 4. Introduce avoids
+        RandomCurriculumStage(
+            sampler=BooleanReachAvoidSampler(
+                depth=1,
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=all_except_or_formulas,
+                avoid_prob=0.5,
+                assignments=assignments,
+            ),
+            threshold=0.95,
+        ),
+        # 5. Reach depth 2 with avoids
+        RandomCurriculumStage(
+            sampler=BooleanReachAvoidSampler(
+                depth=(1, 2),
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=all_except_or_formulas,
+                avoid_prob=0.5,
+                assignments=assignments,
+            ),
+            threshold=0.95,
+        ),
+        # 6. Mixed reach-avoid and reach-stay
+        MultiRandomStage(
+            stages=[
+                RandomCurriculumStage(
+                    sampler=BooleanReachAvoidSampler(
+                        depth=(1, 2),
+                        reach_formulas=all_except_or_formulas,
+                        avoid_formulas=all_formulas,
+                        avoid_prob=0.5,
+                        assignments=assignments,
+                    ),
+                    threshold=None,
+                ),
+                RandomCurriculumStage(
+                    sampler=BooleanReachStaySampler(
+                        reach_formulas=all_except_or_formulas,
+                        avoid_formulas=all_except_or_formulas,
+                        avoid_prob=0.2,
+                        num_stay=30,
+                        assignments=assignments,
+                    ),
+                    threshold=None,
+                ),
+            ],
+            probs=[0.4, 0.6],
+            threshold=0.9,
+        ),
+        # 7. More complex mixed stage
+        MultiRandomStage(
+            stages=[
+                RandomCurriculumStage(
+                    sampler=BooleanReachAvoidSampler(
+                        depth=(1, 2),
+                        reach_formulas=all_except_or_formulas,
+                        avoid_formulas=all_formulas,
+                        avoid_prob=0.5,
+                        assignments=assignments,
+                    ),
+                    threshold=None,
+                ),
+                RandomCurriculumStage(
+                    sampler=BooleanReachStaySampler(
+                        reach_formulas=all_except_or_formulas,
+                        avoid_formulas=all_formulas,
+                        avoid_prob=0.5,
+                        num_stay=60,
+                        assignments=assignments,
+                    ),
+                    threshold=None,
+                ),
+            ],
+            probs=[0.8, 0.2],
+            threshold=None,
+        ),
+    ]
+
+
+def make(
+    env: Environment | EnvWrapper,
+    load_path: Path | None = None,
+    batcher: SampleBatcher | None = None,
+    ablation: bool = False,
+) -> Curriculum:
+    stages = make_stages()
+    if ablation:
+        stages = stages[-1:]
     return Curriculum(
-        [
-            # 1. Reach propositions individually
-            RandomCurriculumStage(
-                sampler=BooleanReachAvoidSampler(
-                    depth=1,
-                    reach_formulas=cache.props,
-                    avoid_formulas=[],
-                    avoid_prob=0.0,
-                    assignments=assignments,
-                ),
-                threshold=0.9,
-            ),
-            # 2. Reach combinations of propositions (no avoids)
-            RandomCurriculumStage(
-                sampler=BooleanReachAvoidSampler(
-                    depth=1,
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=[],
-                    avoid_prob=0.0,
-                    assignments=assignments,
-                ),
-                threshold=0.95,
-            ),
-            # 3. Reach combinations of depth 2
-            RandomCurriculumStage(
-                sampler=BooleanReachAvoidSampler(
-                    depth=2,
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=[],
-                    avoid_prob=0.0,
-                    assignments=assignments,
-                ),
-                threshold=0.9,
-            ),
-            # 4. Introduce avoids
-            RandomCurriculumStage(
-                sampler=BooleanReachAvoidSampler(
-                    depth=1,
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=all_except_or_formulas,
-                    avoid_prob=0.5,
-                    assignments=assignments,
-                ),
-                threshold=0.95,
-            ),
-            # 5. Reach depth 2 with avoids
-            RandomCurriculumStage(
-                sampler=BooleanReachAvoidSampler(
-                    depth=(1, 2),
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=all_except_or_formulas,
-                    avoid_prob=0.5,
-                    assignments=assignments,
-                ),
-                threshold=0.95,
-            ),
-            # 6. Mixed reach-avoid and reach-stay
-            MultiRandomStage(
-                stages=[
-                    RandomCurriculumStage(
-                        sampler=BooleanReachAvoidSampler(
-                            depth=(1, 2),
-                            reach_formulas=all_except_or_formulas,
-                            avoid_formulas=all_formulas,
-                            avoid_prob=0.5,
-                            assignments=assignments,
-                        ),
-                        threshold=None,
-                    ),
-                    RandomCurriculumStage(
-                        sampler=BooleanReachStaySampler(
-                            reach_formulas=all_except_or_formulas,
-                            avoid_formulas=all_except_or_formulas,
-                            avoid_prob=0.2,
-                            num_stay=30,
-                            assignments=assignments,
-                        ),
-                        threshold=None,
-                    ),
-                ],
-                probs=[0.4, 0.6],
-                threshold=0.9,
-            ),
-            # 7. More complex mixed stage
-            MultiRandomStage(
-                stages=[
-                    RandomCurriculumStage(
-                        sampler=BooleanReachAvoidSampler(
-                            depth=(1, 2),
-                            reach_formulas=all_except_or_formulas,
-                            avoid_formulas=all_formulas,
-                            avoid_prob=0.5,
-                            assignments=assignments,
-                        ),
-                        threshold=None,
-                    ),
-                    RandomCurriculumStage(
-                        sampler=BooleanReachStaySampler(
-                            reach_formulas=all_except_or_formulas,
-                            avoid_formulas=all_formulas,
-                            avoid_prob=0.5,
-                            num_stay=60,
-                            assignments=assignments,
-                        ),
-                        threshold=None,
-                    ),
-                ],
-                probs=[0.8, 0.2],
-                threshold=None,
-            ),
-        ],
+        stages,
         num_samples=int(1e4),
-        batcher=BooleanSequenceBatcher(),
+        batcher=BooleanSequenceBatcher() if batcher is None else batcher,
         env=env,
         load_path=load_path,
     )

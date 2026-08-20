@@ -12,7 +12,9 @@ defaults:
   - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxolotl.alg.struct_ltl.curriculum.tokenized_warehouse_curriculum.make
+  _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make
+  batcher:
+    _target_: jaxolotl.alg.struct_ltl.utils.tokenized_batching.TokenizedSequenceBatcher
 
 curriculum_wrapper:
   episode_window: 256

@@ -37,3 +37,12 @@ Finish refactoring points 6 and 7:
 - Moved the shared curriculum model and environment wrapper into
   `jaxolotl.alg.curriculum`; updated all consumers.
 - Verified the extraction with Ruff and the complete test suite (95 passed).
+- Centralized curriculum loading and `CurriculumWrapper` construction while
+  preserving DeepLTL, GenZ-LTL, and LTL2Action wrapper ordering.
+- Replaced duplicated warehouse graph/token curricula and warehouse/zone
+  ablations with parameterized central factories and compatibility shims.
+- Updated graph and token Hydra configs to inject their batcher explicitly.
+- Added regression coverage for factory wiring, batcher selection, stage counts,
+  ablation selection, and compatibility entry points.
+- Final verification: Ruff passed, all 106 tests passed, and both configured
+  Hydra batchers instantiated successfully.

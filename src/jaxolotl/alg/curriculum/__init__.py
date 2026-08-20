@@ -6,6 +6,7 @@ from jaxolotl.alg.curriculum.curriculum import (
     SampleBatcher,
     Sampler,
 )
+from jaxolotl.alg.curriculum.factory import wrap_for_training
 from jaxolotl.alg.curriculum.wrapper import (
     CurriculumResetOptions,
     CurriculumState,
@@ -22,4 +23,5 @@ __all__ = [
     "RandomCurriculumStage",
     "SampleBatcher",
     "Sampler",
+    "wrap_for_training",
 ]

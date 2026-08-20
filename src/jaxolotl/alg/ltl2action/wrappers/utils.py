@@ -1,8 +1,6 @@
-import hydra
 from omegaconf import DictConfig
 
-from jaxolotl import DATA_DIR
-from jaxolotl.alg.curriculum import CurriculumWrapper
+from jaxolotl.alg.curriculum import wrap_for_training
 from jaxolotl.alg.ltl2action.wrappers.formula_closure_wrapper import (
     FormulaClosureWrapper,
 )
@@ -15,9 +13,5 @@ def wrap_env(
 ) -> EnvWrapper:
     env = FormulaClosureWrapper(env)
     if training:
-        precomputed_curriculum_path = (
-            DATA_DIR / cfg.env.name / cfg.alg.name / "curriculum.eqx"
-        )
-        curriculum = hydra.utils.call(cfg.curriculum, env, precomputed_curriculum_path)
-        env = CurriculumWrapper(env, curriculum, cfg.curriculum_wrapper.episode_window)
+        env = wrap_for_training(env, cfg)
     return env
