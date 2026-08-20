@@ -102,6 +102,16 @@ class JaxReachAvoidSequence(eqx.Module):
         )
 
     @classmethod
+    def padding_values(cls) -> "JaxReachAvoidSequence":
+        """Return semantic scalar padding values for every array field."""
+        return cls(
+            reach=jnp.asarray(-1, dtype=jnp.int32),
+            avoid=jnp.asarray(-1, dtype=jnp.int32),
+            repeat_last=jnp.asarray(1, dtype=jnp.int32),
+            last_index=jnp.asarray(0, dtype=jnp.int32),
+        )
+
+    @classmethod
     def from_state_to_seqs(
         cls,
         state_to_seqs: dict[int, list[ReachAvoidSequence]],
@@ -116,14 +126,8 @@ class JaxReachAvoidSequence(eqx.Module):
                 avoid: (num_states, max_num_seqs, max_length, num_assignments)
         """
 
-        padding = cls(
-            reach=jnp.asarray(-1, dtype=jnp.int32),
-            avoid=jnp.asarray(-1, dtype=jnp.int32),
-            repeat_last=jnp.asarray(1, dtype=jnp.int32),
-            last_index=jnp.asarray(0, dtype=jnp.int32),
-        )
         return batch_state_sequences(
             state_to_seqs,
             lambda sequences: cls.from_reach_avoid_seqs(sequences, env),
-            padding,
+            cls.padding_values(),
         )

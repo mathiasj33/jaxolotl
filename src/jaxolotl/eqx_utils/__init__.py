@@ -1,3 +1,4 @@
+from .batching import pad_and_stack
 from .lax import filter_map, filter_scan, filter_while_loop
 from .serialization import (
     load,
@@ -17,6 +18,7 @@ __all__ = [
     "save",
     "save_with_treedef",
     "load_metadata",
+    "pad_and_stack",
     "add_batch_dim",
     "pytree_where",
     "ensemble_index",

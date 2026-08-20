@@ -32,6 +32,16 @@ class JaxReachAvoidSubgoal(eqx.Module):
     )  # shape: (num_assignments,) bitvector of assignments to avoid
 
     @classmethod
+    def padding_values(cls) -> "JaxReachAvoidSubgoal":
+        """Return semantic scalar padding values for every array field."""
+        return cls(
+            reach=jnp.asarray(-1, dtype=jnp.int32),
+            avoid=jnp.asarray(-1, dtype=jnp.int32),
+            reach_one_hot=jnp.asarray(0, dtype=jnp.int32),
+            avoid_one_hot=jnp.asarray(0, dtype=jnp.int32),
+        )
+
+    @classmethod
     def from_state_to_seqs(
         cls,
         state_to_seqs: dict[int, list[ReachAvoidSequence]],

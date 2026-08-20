@@ -370,12 +370,8 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
         )
 
     @classmethod
-    def from_state_to_seqs(
-        cls,
-        state_to_seqs: dict[int, list[BooleanReachAvoidSequence]],
-        env: Environment | EnvWrapper,
-    ) -> "JaxGraphReachAvoidSequence":
-        """Encode and pack graph sequences by LDBA state."""
+    def padding_values(cls) -> "JaxGraphReachAvoidSequence":
+        """Return semantic scalar padding values for every array field."""
         graph_padding = jraph.GraphsTuple(
             nodes={
                 "type_idx": jnp.asarray(-1, dtype=jnp.int32),
@@ -389,7 +385,7 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
             n_edge=jnp.asarray(0, dtype=jnp.int32),
             globals=None,
         )
-        padding = cls(
+        return cls(
             reach=jnp.asarray(-1, dtype=jnp.int32),
             avoid=jnp.asarray(-1, dtype=jnp.int32),
             reach_graphs=graph_padding,
@@ -397,10 +393,18 @@ class JaxGraphReachAvoidSequence(JaxReachAvoidSequence):
             repeat_last=jnp.asarray(1, dtype=jnp.int32),
             last_index=jnp.asarray(0, dtype=jnp.int32),
         )
+
+    @classmethod
+    def from_state_to_seqs(
+        cls,
+        state_to_seqs: dict[int, list[BooleanReachAvoidSequence]],
+        env: Environment | EnvWrapper,
+    ) -> "JaxGraphReachAvoidSequence":
+        """Encode and pack graph sequences by LDBA state."""
         return batch_state_sequences(
             state_to_seqs,
             lambda sequences: cls.from_reach_avoid_seqs(sequences, env),
-            padding,
+            cls.padding_values(),
         )
 
 

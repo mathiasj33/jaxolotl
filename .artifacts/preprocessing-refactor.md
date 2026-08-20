@@ -36,3 +36,13 @@ padding without changing the public Hydra preprocessing entry points.
   adapters while preserving their public entry points.
 - Added focused tests for LDBA padding, construction ordering, pipeline
   delegation, transforms, and empty input validation.
+- Added `eqx_utils.pad_and_stack`, which pads each corresponding PyTree leaf to
+  its maximum shape using an explicit semantic padding-value PyTree.
+- Added reusable `padding_values()` definitions to assignment, clause, token,
+  graph, and GenZ subgoal representations.
+- Replaced five bespoke evaluation batchers with thin calls to the shared
+  helper. Graph padding retains one masked node and zero edges; one-hot fields
+  now pad with zero rather than an integer sentinel.
+- Focused semantic-padding tests pass for all representation families.
+- Final verification: Ruff passed for `src` and `scripts`; the full test suite
+  passed with 98 tests.
