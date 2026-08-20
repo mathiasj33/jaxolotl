@@ -27,7 +27,7 @@ def main(cfg: DictConfig):
     def body(key, _):
         key, subkey = jax.random.split(key)
         subkeys = jax.random.split(subkey, cfg.rl_alg.num_envs)
-        states, _ = vmap_reset(subkeys, None, params)
+        states, _ = vmap_reset(subkeys, None, params, None)
         return key, states
 
     start_time = time.time()
