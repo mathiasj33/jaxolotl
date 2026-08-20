@@ -8,7 +8,7 @@ env:
   use_precomputed_resets: true
   precomputed_resets_path: sampled_resets_test.eqx
 
-run: main
+run: pretrained
 eval:
   finite: true # whether to treat all formulae as finite
   num_episodes: 512

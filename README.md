@@ -29,7 +29,16 @@ We use [Rabinizer 4](https://www7.in.tum.de/~kretinsk/rabinizer4.html) for the
 conversion of LTL formulae into LDBAs. Download the program using [this
 link](https://www7.in.tum.de/~kretinsk/rabinizer4.zip) and unzip it into the
 `dependencies` subfolder. Rabinizer requires Java 17 to be installed on your system and
-`$JAVA_HOME` to be set accordingly. To test the installation, run the following:
+`$JAVA_HOME` to be set accordingly. You can install Rabinizer with the following commands:
+```bash
+mkdir -p dependencies \
+    && curl -L https://www7.in.tum.de/~kretinsk/rabinizer4.zip -o rabinizer4.zip \
+    && unzip -q rabinizer4.zip -d dependencies \
+    && rm -f rabinizer4.zip
+```
+
+
+To test the installation, run the following:
 ```bash
 ./dependencies/rabinizer4/bin/ltl2ldba -h
 ```

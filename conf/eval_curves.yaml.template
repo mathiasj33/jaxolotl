@@ -3,7 +3,7 @@ defaults:
   - hydra: simple
   - _self_
 
-run: main
+run: pretrained
 env:
   use_precomputed_resets: true
   precomputed_resets_path: sampled_resets_test.eqx
