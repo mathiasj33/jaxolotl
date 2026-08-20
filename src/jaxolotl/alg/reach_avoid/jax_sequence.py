@@ -102,7 +102,7 @@ class JaxReachAvoidSequence(eqx.Module):
         )
 
     @classmethod
-    def from_state_to_seqs(  # TODO: reduce duplication
+    def from_state_to_seqs(
         cls,
         state_to_seqs: dict[int, list[ReachAvoidSequence]],
         env: Environment | EnvWrapper,

@@ -5,9 +5,11 @@ from typing import cast
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.deep_ltl.eval.preprocessing import _batch_ldbas, _build_ldba
 from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
+)
+from jaxolotl.alg.reach_avoid.preprocessing import (
+    preprocess_formulas as preprocess_reach_avoid_formulas,
 )
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
     BooleanReachAvoidSequence,
@@ -26,7 +28,7 @@ from jaxolotl.alg.struct_ltl.reach_avoid.jax_tokenized_reach_avoid_sequence impo
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
-from jaxolotl.ltl.reach_avoid import path_search
+from jaxolotl.ltl.reach_avoid.sequence import ReachAvoidSequence
 
 _LENGTH_AXIS = 2
 _CLAUSE_AXIS = 3
@@ -43,38 +45,30 @@ def preprocess_formulas(
     if tokenize and graph:
         raise ValueError("Only one of `tokenize` or `graph` can be enabled.")
 
-    ldbas, seqs = [], []
-    for formula in formulas:
-        ldba, batched_seqs = _preprocess_formula(
-            formula,
-            env,
-            tokenize=tokenize,
-            graph=graph,
-        )
-        ldbas.append(ldba)
-        seqs.append(batched_seqs)
-    ldba = _batch_ldbas(ldbas)
     if graph:
-        batched_seqs = _batch_graph_sequences(seqs)  # type: ignore[arg-type]
+        encoder = JaxGraphReachAvoidSequence.from_state_to_seqs
+        batcher = _batch_graph_sequences
     elif tokenize:
-        batched_seqs = _batch_tokenized_sequences(seqs)  # type: ignore[arg-type]
+        encoder = JaxTokenizedReachAvoidSequence.from_state_to_seqs
+        batcher = _batch_tokenized_sequences
     else:
-        batched_seqs = _batch_sequences(seqs)  # type: ignore[arg-type]
-    return ldba, batched_seqs
+        encoder = JaxClauseReachAvoidSequence.from_state_to_seqs
+        batcher = _batch_sequences
+    return preprocess_reach_avoid_formulas(
+        formulas,
+        env,
+        encoder,  # type: ignore[arg-type]
+        batcher,  # type: ignore[arg-type]
+        transform_sequences=_to_boolean_sequences,
+    )
 
 
-def _preprocess_formula(
-    formula: str,
+def _to_boolean_sequences(
+    state_to_sequences: dict[int, list[ReachAvoidSequence]],
     env: Environment | EnvWrapper,
-    tokenize: bool = False,
-    graph: bool = False,
-) -> tuple[JaxLDBA, JaxReachAvoidSequence]:
-    """Preprocesses the formula into a JaxLDBA and batched JaxReachAvoidSequence."""
-
-    ldba = _build_ldba(formula, env)
-    jldba = JaxLDBA.from_ldba(ldba, env)
-    state_to_seqs = path_search.compute_sequences(ldba, num_loops=2)
-    state_to_boolean_seqs = {
+) -> dict[int, list[BooleanReachAvoidSequence]]:
+    """Synthesize and expand Boolean formulas for reach-avoid sequences."""
+    return {
         state: [
             expanded_seq
             for seq in seq_list
@@ -82,19 +76,8 @@ def _preprocess_formula(
                 seq, env
             ).expand_clauses()
         ]
-        for state, seq_list in state_to_seqs.items()
+        for state, seq_list in state_to_sequences.items()
     }
-    if graph:
-        batched_seqs = JaxGraphReachAvoidSequence.from_state_to_seqs(
-            state_to_boolean_seqs,
-            env,
-        )
-    else:
-        clz = (
-            JaxTokenizedReachAvoidSequence if tokenize else JaxClauseReachAvoidSequence
-        )
-        batched_seqs = clz.from_state_to_seqs(state_to_boolean_seqs, env)
-    return jldba, batched_seqs
 
 
 def _batch_sequences(

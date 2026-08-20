@@ -6,11 +6,12 @@ import jax.numpy as jnp
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
+from jaxolotl.alg.reach_avoid.preprocessing import (
+    preprocess_formulas as preprocess_reach_avoid_formulas,
+)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
-from jaxolotl.ltl.automata import ltl2ldba
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
-from jaxolotl.ltl.reach_avoid import path_search
 
 
 def preprocess_formulas(
@@ -19,64 +20,11 @@ def preprocess_formulas(
     """Converts a list of formulas into a batched JaxLDBA and batched JaxReachAvoidSubgoal,
     with a set of subgoals for every LDBA state."""
 
-    ldbas, subgoals = [], []
-    for formula in formulas:
-        ldba, batched_subgoals = _preprocess_formula(formula, env)
-        ldbas.append(ldba)
-        subgoals.append(batched_subgoals)
-    ldba = _batch_ldbas(ldbas)
-    batched_subgoals = _batch_subgoals(subgoals)
-    return ldba, batched_subgoals
-
-
-def _preprocess_formula(
-    formula: str, env: Environment | EnvWrapper
-) -> tuple[JaxLDBA, JaxReachAvoidSubgoal]:
-    """Preprocesses the formula into a JaxLDBA and batched JaxReachAvoidSubgoal."""
-
-    ldba = _build_ldba(formula, env)
-    jldba = JaxLDBA.from_ldba(ldba, env)
-    state_to_seqs = path_search.compute_sequences(ldba, num_loops=2)
-    batched_subgoals = JaxReachAvoidSubgoal.from_state_to_seqs(state_to_seqs, env)
-    return jldba, batched_subgoals
-
-
-def _build_ldba(formula: str, env: Environment | EnvWrapper):
-    ldba = ltl2ldba(formula, env.propositions)
-    ldba.prune(env.assignments())
-    ldba.complete_sink_state()
-    ldba.compute_sccs()
-    return ldba
-
-
-def _batch_ldbas(ldbas: list[JaxLDBA]) -> JaxLDBA:
-    """Batch multiple JaxLDBAs into a single JaxLDBA with an added batch dimension."""
-
-    num_states = jnp.array([ldba.num_states for ldba in ldbas], dtype=jnp.int32)
-    max_num_states = jnp.max(num_states)
-    batch_size = len(ldbas)
-    num_assignments = ldbas[0].transitions.shape[1] - 1
-
-    transitions = -jnp.ones(
-        (batch_size, max_num_states, num_assignments + 1), dtype=jnp.int32
-    )
-    accepting = jnp.zeros((batch_size, max_num_states, num_assignments), dtype=bool)
-    sink_states = jnp.zeros((batch_size, max_num_states), dtype=bool)
-    initial_states = jnp.zeros((batch_size,), dtype=jnp.int32)
-
-    for i, ldba in enumerate(ldbas):
-        transitions = transitions.at[i, : ldba.num_states, :].set(ldba.transitions)
-        accepting = accepting.at[i, : ldba.num_states, :].set(ldba.accepting)
-        sink_states = sink_states.at[i, : ldba.num_states].set(ldba.sink_states)
-        initial_states = initial_states.at[i].set(ldba.initial_state)
-
-    return JaxLDBA(
-        num_states=num_states,
-        initial_state=initial_states,
-        transitions=transitions,
-        accepting=accepting,
-        sink_states=sink_states,
-        finite=jnp.array([ldba.finite for ldba in ldbas]),
+    return preprocess_reach_avoid_formulas(
+        formulas,
+        env,
+        JaxReachAvoidSubgoal.from_state_to_seqs,
+        _batch_subgoals,
     )
 
 
