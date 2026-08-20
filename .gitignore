@@ -9,6 +9,7 @@ dependencies/
 ldba.png
 .VSCodeCounter/
 threejs_output/
+.artifacts
 
 # Local config files
 eval_curves.yaml

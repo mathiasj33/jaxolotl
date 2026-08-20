@@ -58,6 +58,9 @@ jax = { version = "*", extras = ["cuda12"] }
 [tool.pixi.environments]
 gpu = ["gpu"]
 
+[tool.pytest.ini_options]
+markers = ["e2e: end-to-end integration tests (requires --e2e)"]
+
 [tool.ruff.lint]
 fixable = ["ALL"]
 ignore = [
