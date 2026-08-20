@@ -343,8 +343,10 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
             bins = jnp.zeros((params.num_lidar_bins,), dtype=jnp.float32)
             alias = (angle - bin_angle) / bin_size
             bins = bins.at[bin_idx].set(sensor)
-            bins = bins.at[bin_idx + 1].set(sensor * alias)
-            bins = bins.at[bin_idx - 1].set(sensor * (1.0 - alias))
+            bins = bins.at[(bin_idx + 1) % params.num_lidar_bins].set(sensor * alias)
+            bins = bins.at[(bin_idx - 1) % params.num_lidar_bins].set(
+                sensor * (1.0 - alias)
+            )
             return bins
 
         sensors = jax.vmap(zone_sensor_binned, in_axes=0)(centers)  # (N, num_bins)
