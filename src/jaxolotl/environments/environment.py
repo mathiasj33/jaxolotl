@@ -66,20 +66,13 @@ class Environment[
     propositions: tuple[str, ...]
     assignments_array: jax.Array  # shape: (num_assignments, num_propositions) int32
 
-    max_nodes: int  # max. nodes of boolean formula graphs for this environment
-    max_edges: int  # max. edges of boolean formula graphs for this environment
-
     def __init__(
         self,
         default_params: TEnvParams,
         propositions: tuple[str, ...],
-        max_nodes: int = 5,
-        max_edges: int = 5,
     ):
         self.default_params = default_params
         self.propositions = propositions
-        self.max_nodes = max_nodes
-        self.max_edges = max_edges
         self.assignments_array = self._compute_assignments_array()
 
     @eqx.filter_jit

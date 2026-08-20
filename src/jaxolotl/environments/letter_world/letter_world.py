@@ -45,8 +45,6 @@ class LetterWorld(
 ):
     default_params = EnvParams(max_steps_in_episode=75, grid_size=7, letter_freq=2)
     propositions = ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l")
-    max_nodes = 7
-    max_edges = 4
     _index_to_action = jnp.array(
         [[0, 1], [1, 0], [0, -1], [-1, 0]], dtype=jnp.int32
     )  # right, down, left, up
@@ -58,8 +56,6 @@ class LetterWorld(
         super().__init__(
             default_params=EnvParams(**params),
             propositions=self.propositions,
-            max_nodes=self.max_nodes,
-            max_edges=self.max_edges,
         )
 
     @override

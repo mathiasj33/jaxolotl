@@ -120,16 +120,12 @@ class WarehouseEnv(
     )
 
     propositions = ("region_a", "region_b", "door", "vase", "crate")
-    max_nodes = 29
-    max_edges = 26
 
     def __init__(self, **kwargs):
         params = dataclasses.asdict(self.default_params) | kwargs
         super().__init__(
             default_params=WarehouseParams(**params),
             propositions=self.propositions,
-            max_nodes=self.max_nodes,
-            max_edges=self.max_edges,
         )
 
     @override
