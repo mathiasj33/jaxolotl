@@ -1,40 +1,7 @@
-import matplotlib.axes as maxes
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 
-
-class StaticColorAxisBBox(mpatches.FancyBboxPatch):
-    def set_edgecolor(self, color):
-        if hasattr(self, "_original_edgecolor"):
-            return
-        self._original_edgecolor = color
-        self._set_edgecolor(color)  # type: ignore
-
-    def set_linewidth(self, w):
-        del w
-        super().set_linewidth(1.5)
-
-
-class FancyAxes(maxes.Axes):
-    name = "fancy_box_axes"
-    _edgecolor: str
-
-    def __init__(self, *args, **kwargs):
-        self._edgecolor = kwargs.pop("edgecolor", None)
-        self._linewidth = kwargs.pop("linewidth", None)
-        super().__init__(*args, **kwargs)
-
-    def _gen_axes_patch(self):
-        return StaticColorAxisBBox(
-            (0, 0),
-            1.0,
-            1.0,
-            boxstyle="round, rounding_size=0.06, pad=0",
-            edgecolor=self._edgecolor,
-            linewidth=5,
-        )
-
+from jaxolotl.utils.plot_utils import FancyAxes
 
 _color_map = {
     "red": "#f34121",
@@ -87,6 +54,7 @@ def draw_trajectories(
     paths: list[list[tuple[float, float]]],
     num_cols: int,
     num_rows: int,
+    save_path: str | None = None,
 ):
     if len(zone_positions) != len(paths):
         raise ValueError("Number of zone positions and paths must be the same")
@@ -109,7 +77,8 @@ def draw_trajectories(
         draw_diamond(ax, path[0], color="orange")
         draw_path(ax, path, color="green", linewidth=4)
     plt.tight_layout(pad=4)
-    plt.savefig("traj.pdf", dpi=300)
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300)
     plt.show()
 
 

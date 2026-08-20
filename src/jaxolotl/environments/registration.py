@@ -1,12 +1,13 @@
+from functools import partial
+
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.letter_world.letter_world import LetterWorld
 from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
 from jaxolotl.environments.zone_env.zone_env import ZoneEnv
-from jaxolotl.environments.zone_env_nm.zone_env_nm import ZoneEnvNM
 
 _name_to_env = {
     "ZoneEnv": ZoneEnv,
-    "ZoneEnv-NM": ZoneEnvNM,
+    "ZoneEnv-NM": partial(ZoneEnv, non_myopic=True),
     "LetterWorld": LetterWorld,
     "WarehouseEnv": WarehouseEnv,
 }

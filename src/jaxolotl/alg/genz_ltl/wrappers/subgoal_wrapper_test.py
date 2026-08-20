@@ -125,7 +125,7 @@ def test_sample_new_goal_excludes_current_assignment_and_reach():
 
     # Patch the class reference in the wrapper file so isinstance() evaluates to True
     # Update the module path below to exactly match where _sample_new_goal checks it.
-    patch_path = "jaxolotl.alg.genz_ltl.wrappers.subgoal_wrapper.zone_env_nm.EnvState"
+    patch_path = "jaxolotl.alg.genz_ltl.wrappers.subgoal_wrapper.zone_env.EnvState"
 
     with patch(patch_path, MockComplexEnvState):
         for a in range(num_assignments):

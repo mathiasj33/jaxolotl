@@ -12,7 +12,8 @@ from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
 from jaxolotl.environments.wrappers.wrapper import WrapperState
-from jaxolotl.environments.zone_env_nm import zone_env_nm
+from jaxolotl.environments.zone_env import zone_env
+from jaxolotl.ltl.logic.assignment import Assignment
 
 logger = logging.getLogger(__name__)
 
@@ -108,14 +109,11 @@ class SubgoalWrapper[
         valid_reach_mask = jnp.ones(num_assignments, dtype=bool)
         valid_reach_mask = valid_reach_mask.at[assignment].set(False)
         unwrapped_state = state.unwrapped()
-        if isinstance(unwrapped_state, zone_env_nm.EnvState):
-            logger.info(
-                "Applying zone_env_nm-specific logic to exclude green assignment!"
-            )
-            # TODO: refactor this to be generic exclusion of assignments
-            green_assignment_idx = 1  # green is the second assignment in zone_env_nm
+        if isinstance(unwrapped_state, zone_env.EnvState):
+            assignment_to_index = {a: i for i, a in enumerate(self._env.assignments())}
+            green_assignment_idx = assignment_to_index[Assignment("green")]
             exclude_green = unwrapped_state.masked_colors[green_assignment_idx]
-            # Conditionally exclude the green index based on the tracer
+            # Conditionally exclude the green index
             valid_reach_mask = jnp.where(
                 exclude_green,
                 valid_reach_mask.at[green_assignment_idx].set(False),

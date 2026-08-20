@@ -2,7 +2,7 @@ from collections.abc import Iterable
 
 from jaxolotl.ltl.automata.ldba import LDBA
 from jaxolotl.ltl.automata.rabinizer import run_rabinizer
-from jaxolotl.utils import memory
+from jaxolotl.utils.utils import memory
 
 
 @memory.cache

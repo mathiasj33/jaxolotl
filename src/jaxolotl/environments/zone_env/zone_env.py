@@ -45,6 +45,8 @@ class EnvParams(environment.EnvParams):
     max_speed: float
     max_force: float
     max_angular_velocity: float
+    # Non-myopic version (ZoneEnv-NM)
+    non_myopic: bool = False
 
 
 class EnvState(eqx.Module):
@@ -57,6 +59,7 @@ class EnvState(eqx.Module):
     # Zones (static for an episode)
     zone_centers: jax.Array  # shape: (N, 2)
     zone_colors: jax.Array  # shape: (N,) int in [0, C)
+    masked_colors: jax.Array  # shape: (C,) bool  for non-myopic version
 
 
 class ObsFeatures(NamedTuple):
@@ -142,6 +145,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
             acceleration=acceleration,
             zone_centers=centers,
             zone_colors=colors,
+            masked_colors=jnp.zeros(len(self.propositions), dtype=jnp.bool),
         )
 
     def _sample_zones(
@@ -265,6 +269,23 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         half_size = params.world_size / 2.0
         terminated = jnp.any(jnp.abs(position) > half_size)
 
+        if params.non_myopic:
+            # Touching purple makes green disappear in the non-myopic version.
+            green_id = self.propositions.index("green")
+            purple_id = self.propositions.index("purple")
+            dists = jnp.linalg.norm(state.zone_centers - position, axis=1)  # (N,)
+            inside = dists < params.zone_radius  # (N,)
+            inside_purple = jnp.any(
+                jnp.logical_and(state.zone_colors == purple_id, inside)
+            )
+            masked_colors = jnp.where(
+                inside_purple,
+                state.masked_colors.at[green_id].set(True),
+                state.masked_colors,
+            )
+        else:
+            masked_colors = state.masked_colors
+
         next_state = EnvState(
             position=position,
             velocity=velocity,
@@ -273,6 +294,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
             acceleration=acceleration,
             zone_centers=state.zone_centers,
             zone_colors=state.zone_colors,
+            masked_colors=masked_colors,
         )
         return next_state, reward, terminated, {}
 
@@ -338,6 +360,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
 
         color_ids = jnp.arange(len(self.propositions), dtype=jnp.int32)
         lidar = jax.vmap(compute_color_lidar)(color_ids)  # (C, num_bins)
+        lidar = jnp.where(state.masked_colors[:, None], 0.0, lidar)
         return lidar
 
     @override
@@ -350,6 +373,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         pos = state.position  # (2,)
         centers = state.zone_centers  # (N,2)
         colors = state.zone_colors  # (N,)
+        masked_colors = state.masked_colors  # (C,)
 
         dists = jnp.linalg.norm(centers - pos, axis=1)  # (N,)
         inside = dists < params.zone_radius  # (N,)
@@ -357,7 +381,10 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         def compute_color_prop(color_id: jax.Array) -> jax.Array:
             mask_color = colors == color_id  # (N,)
             inside_color = jnp.logical_and(mask_color, inside)  # (N,)
-            return jax.lax.cond(jnp.any(inside_color), lambda: color_id, lambda: -1)
+            is_masked = masked_colors[color_id]
+            return jax.lax.cond(
+                jnp.any(inside_color) & ~is_masked, lambda: color_id, lambda: -1
+            )
 
         color_ids = jnp.arange(len(self.propositions), dtype=jnp.int32)
         propositions = jax.vmap(compute_color_prop)(color_ids)  # (C,)
@@ -367,7 +394,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
     @override
     def assignments() -> list[Assignment]:
         """Returns all possible assignments in the environment."""
-        assignments = [Assignment(frozenset({color})) for color in ZoneEnv.propositions]
+        assignments = [Assignment(color) for color in ZoneEnv.propositions]
         assignments.append(Assignment(frozenset()))  # empty assignment
         return assignments
 
@@ -386,6 +413,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         trajs: EnvState,
         lengths: jax.Array,
         params: EnvParams,
+        save_path: str | None = None,
         **plotting_kwargs,
     ) -> None:
         """Plots trajectories of environment states.
@@ -401,4 +429,6 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         paths = [
             trajs.position[i, : lengths[i]].tolist() for i in range(lengths.shape[0])
         ]
-        draw_trajectories(zone_positions, zone_colors, paths, **plotting_kwargs)
+        draw_trajectories(
+            zone_positions, zone_colors, paths, save_path=save_path, **plotting_kwargs
+        )

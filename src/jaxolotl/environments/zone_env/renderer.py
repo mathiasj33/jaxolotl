@@ -70,6 +70,8 @@ class Renderer(ContinuousTimeRenderer[ObsFeatures, ResetOptions]):
         centers = self._world_to_screen(state.zone_centers).tolist()
         for i, center in enumerate(centers):
             color_id = int(state.zone_colors[i])
+            if state.masked_colors[color_id]:
+                continue  # Skip rendering masked zones
             col = self._zone_colors.get(color_id, (0, 0, 0))
             self._draw_circle(self._screen, col, center, self._zone_radius_px)
 
