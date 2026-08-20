@@ -1,7 +1,6 @@
 """Utility functions for batching formulas into closure graphs."""
 
 import jax
-import jax.numpy as jnp
 from tqdm import tqdm
 
 import jaxolotl
@@ -30,49 +29,6 @@ def preprocess_formulas(
         closure.build(env.assignments())
         closures.append(closure)
     return JaxFormulaClosureGraph.from_closure_graphs(closures, env)
-
-
-def _pad_jax_closure_graphs(
-    closures: list[JaxFormulaClosureGraph],
-) -> JaxFormulaClosureGraph:
-    """Pads a list of JaxFormulaClosureGraphs into a single batched JaxFormulaClosureGraph.
-
-    Args:
-        closures: A list of JaxFormulaClosureGraphs to pad.
-
-    Returns:
-        A batched JaxFormulaClosureGraph.
-    """
-    max_states = max(c.num_states for c in closures)
-
-    def pad(graph: JaxFormulaClosureGraph) -> JaxFormulaClosureGraph:
-        pad_size = max_states - graph.num_states
-        padded_transitions = jnp.pad(
-            graph.transitions,
-            ((0, pad_size), (0, 0)),
-            constant_values=-1,
-        )
-        padded_graphs = jax.tree.map(
-            lambda x: jnp.pad(
-                x,
-                ((0, pad_size),) + ((0, 0),) * (x.ndim - 1),
-                constant_values=-1,
-            ),
-            graph.graphs,
-        )
-        return JaxFormulaClosureGraph(
-            num_states=graph.num_states,
-            initial_state=graph.initial_state,
-            true_state=graph.true_state,
-            false_state=graph.false_state,
-            transitions=padded_transitions,
-            graphs=padded_graphs,
-        )
-
-    return jax.tree.map(
-        lambda *args: jnp.stack(args),
-        *[pad(c) for c in closures],
-    )
 
 
 if __name__ == "__main__":

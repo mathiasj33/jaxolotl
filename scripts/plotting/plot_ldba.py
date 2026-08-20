@@ -4,12 +4,11 @@ import enum
 
 from graphviz import Source
 
-from jaxolotl.alg.deep_ltl.reach_avoid import path_search
-from jaxolotl.alg.deep_ltl.reach_avoid.reach_avoid_sequence import EpsilonType
 from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
 from jaxolotl.ltl.automata import LDBA, ltl2ldba
 from jaxolotl.ltl.logic import Assignment
 from jaxolotl.ltl.logic.utils import synthesize_formula
+from jaxolotl.ltl.reach_avoid import EPSILON, path_search
 
 
 class Color(enum.Enum):
@@ -115,7 +114,7 @@ if __name__ == "__main__":
             for path in paths[state]:  # type: ignore
                 path_str = []
                 for reach, avoid in path:
-                    if isinstance(reach, EpsilonType):
+                    if reach == EPSILON:
                         reach_graph = "ε"
                     else:
                         reach_graph = synthesize_formula(
