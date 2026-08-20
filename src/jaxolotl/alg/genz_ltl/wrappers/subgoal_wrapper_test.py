@@ -16,7 +16,7 @@ class _DummyParams(eqx.Module):
 
 class FakeEnv(Environment):
     def __init__(self):
-        props = ("p", "q", "r")
+        props = ("purple", "green", "red")
         super().__init__(default_params=_DummyParams(), propositions=props)
 
     def _reset(self, key, state, params, options=None):
@@ -43,8 +43,7 @@ class FakeEnv(Environment):
 
     @staticmethod
     def assignments():
-        # zero-or-one propositions: [{'p'},{'q'},{'r'},{}]
-        return Assignment.zero_or_one_propositions({"p", "q", "r"})
+        return Assignment.zero_or_one_propositions({"purple", "green", "red"})
 
     def get_renderer(self, params, **kwargs):
         raise NotImplementedError()
@@ -113,7 +112,7 @@ def test_sample_new_goal_excludes_current_assignment_and_reach():
     # -------------------------------------------------------------------------
     # TEST 2: Complex behavior (Green is excluded)
     # -------------------------------------------------------------------------
-    green_assignment_idx = 1
+    green_assignment_idx = env.assignments().index(Assignment("green"))
 
     # Create an array where green (index 1) is marked as masked/excluded
     masked_colors = jnp.zeros(num_assignments, dtype=bool)
