@@ -1,5 +1,4 @@
 name: WarehouseEnv
-use_precomputed_resets: true # setting to true ignores default options
+use_precomputed_resets: true
 precomputed_resets_path: sampled_resets_train.eqx
 precomputed_curriculum_path: None
-default_options: null

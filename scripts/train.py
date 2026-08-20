@@ -31,7 +31,6 @@ from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
 )
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.eqx_utils.utils import compute_num_params
-from jaxolotl.hydra_utils.utils import resolve_default_options
 from jaxolotl.rl.actor_critic import ActorCritic
 from jaxolotl.rl.algorithm import RLAlgorithm
 
@@ -44,8 +43,6 @@ def main(cfg: DictConfig):
         jax.config.update("jax_default_device", jax.devices("cpu")[0])
         logger.info("Using CPU for training")
 
-    default_options = resolve_default_options(cfg.env)
-
     env, env_params = jaxolotl.make(cfg.env.name)
     if cfg.env.use_precomputed_resets:
         resets_path = f"{DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
@@ -53,9 +50,7 @@ def main(cfg: DictConfig):
     env = TimeLimitWrapper(env)
 
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=True)
-    env = AutoResetWrapper(
-        env, reset_strategy=ResetStrategy.FULL, auto_reset_options=default_options
-    )
+    env = AutoResetWrapper(env, reset_strategy=ResetStrategy.FULL)
     env = LogWrapper(env)
     env = VectorizeWrapper(env)
 

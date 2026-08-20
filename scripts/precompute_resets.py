@@ -14,8 +14,6 @@ from jaxolotl import eqx_utils
 
 logger = logging.getLogger(__name__)
 
-from jaxolotl.hydra_utils.utils import resolve_default_options
-
 
 @hydra.main(version_base="1.3", config_path="../conf", config_name="precompute")
 def main(cfg: DictConfig):
@@ -25,13 +23,11 @@ def main(cfg: DictConfig):
     seed = 0 if cfg.train else 42
     key = jax.random.key(seed)
 
-    default_options = resolve_default_options(cfg.env)
-
     @jax.jit
     def body(key, _):
         key, subkey = jax.random.split(key)
         subkeys = jax.random.split(subkey, cfg.rl_alg.num_envs)
-        states, _ = vmap_reset(subkeys, None, params, default_options)
+        states, _ = vmap_reset(subkeys, None, params)
         return key, states
 
     start_time = time.time()
