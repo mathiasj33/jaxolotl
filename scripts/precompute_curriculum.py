@@ -10,7 +10,8 @@ from omegaconf import DictConfig
 
 import jaxolotl
 from jaxolotl import DATA_DIR, eqx_utils
-from jaxolotl.alg.curriculum import Curriculum
+from jaxolotl.alg.curriculum.curriculum import CurriculumStage, SampleBatcher
+from jaxolotl.alg.curriculum.factory import make_curriculum
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,16 @@ def main(cfg: DictConfig):
     start_time = time.time()
 
     env, _ = jaxolotl.make(cfg.env.name)
-    curriculum: Curriculum = hydra.utils.call(cfg.curriculum, env, load_path=None)
+    stages: list[CurriculumStage] = hydra.utils.call(cfg.curriculum.make_stages, env)
+    batcher: SampleBatcher = hydra.utils.instantiate(cfg.alg.batcher)
+    curriculum = make_curriculum(
+        env=env,
+        stages=stages,
+        num_samples=int(cfg.curriculum.num_samples),
+        batcher=batcher,
+        load_path=None,
+        skip_curriculum=cfg.curriculum.get("skip_curriculum", False),
+    )
 
     end_time = time.time()
     logger.info(f"Sample generation finished in {end_time - start_time:.2f} seconds.")

@@ -1,53 +1,9 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env_nm
-  - /alg: ltl2action
-  - /rl_alg: ppo
-
-curriculum:
-  _target_: jaxolotl.alg.ltl2action.curriculum.zone_env_nm_curriculum.make
-
-curriculum_wrapper:
-  episode_window: 256
-
-model:
-  _target_: jaxolotl.alg.ltl2action.model.ltl2action.LTL2ActionModel
-  _recursive_: false
-  env_net:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [128]
-    out_size: 64
-    activation: ${act:tanh}
-  actor:
-    _target_: jaxolotl.rl.actor.continuous_actor.ContinuousActor
-    hidden_sizes: [64, 64, 64]
-    hidden_activation: ${act:relu}
-    output_activation: ${act:tanh}
-    state_dependent_std: true
-    use_epsilon: false
-  critic:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
-    activation: ${act:tanh}
-  rgcn:
-    _target_: jaxolotl.networks.rgcn.RGCN
-    embedding_dim: 32
-    num_layers: 8
-    activation: ${act:tanh}
+  - /experiment/ltl2action/zones
+  - override /env: zone_env_nm
+  - _self_
 
 rl_alg:
-  total_timesteps: 20e6
-  num_envs: 16
-  num_steps: 4096
-  num_minibatches: 32
-  update_epochs: 10
-  gamma: 0.998
-  gae_lambda: 0.95
-  clip_eps: 0.2
-  ent_coef: 0.003
   vf_coef: 1.0
-  lr: 3e-4
-  max_grad_norm: 0.5
-  anneal_lr: false
-  adam_eps: 1e-8

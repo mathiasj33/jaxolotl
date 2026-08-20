@@ -8,3 +8,6 @@ agent:
 
 preprocess_formulas:
   _target_: jaxolotl.alg.ltl2action.utils.preprocessing.preprocess_formulas
+
+batcher:
+  _target_: jaxolotl.alg.ltl2action.batching.FormulaClosureBatcher

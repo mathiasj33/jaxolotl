@@ -1,14 +1,8 @@
-import random
-from pathlib import Path
-
 import jax.numpy as jnp
 import numpy as np
 
 from jaxolotl.alg.curriculum import (
-    Curriculum,
-    RandomCurriculumStage,
     SampleBatcher,
-    Sampler,
 )
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
@@ -16,19 +10,6 @@ from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
 )
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
-from jaxolotl.ltl.logic.assignment import Assignment
-
-
-class SubgoalSampler(Sampler[ReachAvoidSubgoal]):
-    def __init__(self, assignments: list[Assignment]):
-        self.assignments = assignments
-
-    def sample(self) -> ReachAvoidSubgoal:
-        reach = random.choice(self.assignments)
-        available = [a for a in self.assignments if a != reach]
-        num_avoid = random.randint(0, len(available))
-        avoid = random.sample(available, num_avoid)
-        return ReachAvoidSubgoal(reach=reach, avoid=avoid)
 
 
 class SubgoalBatcher(SampleBatcher[ReachAvoidSubgoal, JaxReachAvoidSubgoal]):
@@ -56,20 +37,3 @@ class SubgoalBatcher(SampleBatcher[ReachAvoidSubgoal, JaxReachAvoidSubgoal]):
         reach_one_hot = jnp.array(reach_one_hot)
         avoid_one_hot = jnp.array(avoid_one_hot)
         return JaxReachAvoidSubgoal(reach, avoid, reach_one_hot, avoid_one_hot)
-
-
-def make(
-    env: Environment | EnvWrapper, load_path: Path | None = None
-) -> Curriculum[ReachAvoidSubgoal, JaxReachAvoidSubgoal]:
-    return Curriculum(
-        [
-            RandomCurriculumStage(
-                sampler=SubgoalSampler(env.assignments()),
-                threshold=None,
-            )
-        ],
-        num_samples=int(1e5),
-        batcher=SubgoalBatcher(),
-        env=env,
-        load_path=load_path,
-    )

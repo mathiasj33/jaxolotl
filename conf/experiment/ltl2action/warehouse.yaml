@@ -6,9 +6,9 @@ defaults:
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxolotl.alg.ltl2action.curriculum.warehouse_curriculum.make
-
-curriculum_wrapper:
+  make_stages:
+    _target_: jaxolotl.alg.ltl2action.curriculum.warehouse_curriculum.make_stages
+  num_samples: 1e4
   episode_window: 256
 
 model:

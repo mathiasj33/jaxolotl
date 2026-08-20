@@ -1,18 +1,13 @@
-from pathlib import Path
-
 from jaxolotl.alg.curriculum import (
-    Curriculum,
     CurriculumStage,
     MultiRandomStage,
     RandomCurriculumStage,
-    SampleBatcher,
 )
 from jaxolotl.alg.struct_ltl.curriculum.boolean_samplers import (
     BooleanReachAvoidSampler,
     BooleanReachStaySampler,
 )
 from jaxolotl.alg.struct_ltl.curriculum.formula_cache import FormulaCache
-from jaxolotl.alg.struct_ltl.utils.batching import BooleanSequenceBatcher
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.environments.zone_env.zone_env import ZoneEnv
@@ -150,21 +145,3 @@ def make_stages(env: Environment | EnvWrapper) -> list[CurriculumStage]:
             threshold=None,
         ),
     ]
-
-
-def make(
-    env: Environment | EnvWrapper,
-    load_path: Path | None = None,
-    batcher: SampleBatcher | None = None,
-    ablation: bool = False,
-) -> Curriculum:
-    stages = make_stages(env)
-    if ablation:
-        stages = stages[-1:]
-    return Curriculum(
-        stages,
-        num_samples=int(1e3),
-        batcher=BooleanSequenceBatcher() if batcher is None else batcher,
-        env=env,
-        load_path=load_path,
-    )

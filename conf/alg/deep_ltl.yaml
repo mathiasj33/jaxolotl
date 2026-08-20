@@ -9,3 +9,6 @@ agent:
 
 preprocess_formulas:
   _target_: jaxolotl.alg.deep_ltl.eval.preprocessing.preprocess_formulas
+
+batcher:
+  _target_: jaxolotl.alg.deep_ltl.batching.ReachAvoidSequenceBatcher

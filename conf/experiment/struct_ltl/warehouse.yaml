@@ -7,9 +7,9 @@ defaults:
   - /model/sequence: alibi_attention
 
 curriculum:
-  _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make
-
-curriculum_wrapper:
+  make_stages:
+    _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make_stages
+  num_samples: 1e4
   episode_window: 256
 
 model:

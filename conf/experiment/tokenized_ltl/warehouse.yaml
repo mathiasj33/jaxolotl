@@ -1,66 +1,16 @@
 # @package __global__
-# Tokenized LTL Ablation Study for WarehouseEnv
-#
-# This configuration replaces the structured clause/disjunct embeddings
-# with a GRU over tokenized Boolean formula representations.
-# Uses attention for sequence encoding (matching struct_ltl).
 
 defaults:
-  - /env: warehouse_env
-  - /alg: tokenized_ltl
-  - /rl_alg: ppo
-  - /model/sequence: alibi_attention
-
-curriculum:
-  _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make
-  batcher:
-    _target_: jaxolotl.alg.struct_ltl.utils.tokenized_batching.TokenizedSequenceBatcher
-
-curriculum_wrapper:
-  episode_window: 256
+  - /experiment/struct_ltl/warehouse
+  - override /alg: tokenized_ltl
+  - _self_
 
 model:
   _target_: jaxolotl.alg.struct_ltl.model.tokenized_ltl.TokenizedLTLModel
-  _recursive_: false
-  env_net:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [128]
-    out_size: 64
-    activation: ${act:tanh}
-  actor:
-    _target_: jaxolotl.rl.actor.composite_actor.CompositeActor
-    hidden_sizes: [64, 64, 64]
-    hidden_activation: ${act:relu}
-    output_activation: ${act:tanh}
-    state_dependent_std: true
-    use_epsilon: true
-  critic:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
-    activation: ${act:tanh}
   sequence:
     # Token embedding dimension (same as struct_ltl embedding_dim for fair comparison)
     embedding_dim: 16
     # Hidden size for the token-level GRU that processes tokens within a step
     # Produces reach and avoid embeddings of this size; concatenated = 2*token_hidden_size
     token_hidden_size: 16
-    # Use attention for sequence encoding (matching struct_ltl)
-    encoder: attention
-    attention:
-      alibi_slope: 5.0
 
-rl_alg:
-  total_timesteps: 2e8
-  num_envs: 128
-  num_steps: 1024
-  num_minibatches: 4
-  update_epochs: 5
-  gamma: 0.998
-  gae_lambda: 0.95
-  clip_eps: 0.2
-  ent_coef: 0.003
-  vf_coef: 0.5
-  lr: 5e-4
-  max_grad_norm: 1.0
-  anneal_lr: false
-  adam_eps: 1e-8

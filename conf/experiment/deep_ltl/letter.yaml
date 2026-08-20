@@ -6,9 +6,9 @@ defaults:
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxolotl.alg.deep_ltl.curriculum.letter_world_curriculum.make
-
-curriculum_wrapper:
+  make_stages:
+    _target_: jaxolotl.alg.deep_ltl.curriculum.letter_world_curriculum.make_stages
+  num_samples: 1e5
   episode_window: 512
 
 model:

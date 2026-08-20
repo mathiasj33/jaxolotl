@@ -1,5 +1,6 @@
 name: struct_ltl
 
+# The wrapping and agent are the same as in DeepLTL.
 wrap_env:
   _target_: jaxolotl.alg.deep_ltl.wrappers.utils.wrap_env
 
@@ -9,3 +10,6 @@ agent:
 
 preprocess_formulas:
   _target_: jaxolotl.alg.struct_ltl.eval.preprocessing.preprocess_formulas
+
+batcher:
+  _target_: jaxolotl.alg.struct_ltl.batching.BooleanSequenceBatcher

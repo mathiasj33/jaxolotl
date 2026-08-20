@@ -1,14 +1,11 @@
-from pathlib import Path
-
 from jaxolotl.alg.curriculum import (
-    Curriculum,
     RandomCurriculumStage,
 )
+from jaxolotl.alg.curriculum.curriculum import CurriculumStage
 from jaxolotl.alg.ltl2action.curriculum.simple_samplers import (
     BooleanReachAvoidFormulaSampler,
     SimpleReachAvoidFormulaSampler,
 )
-from jaxolotl.alg.ltl2action.eval.batching import FormulaClosureBatcher
 from jaxolotl.alg.struct_ltl.curriculum.formula_cache import FormulaCache
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
@@ -21,44 +18,38 @@ all_except_or_formulas = cache.props + cache.ands + cache.and_nots
 all_formulas = all_except_or_formulas + cache.ors
 
 
-def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
-    return Curriculum(
-        stages=[
-            RandomCurriculumStage(
-                SimpleReachAvoidFormulaSampler(
-                    depth=1,
-                    reach=1,
-                    avoid=(0, 1),
-                    propositions=list(env.propositions),
-                ),
-                threshold=0.9,
+def make_stages(env: Environment | EnvWrapper) -> list[CurriculumStage]:
+    return [
+        RandomCurriculumStage(
+            SimpleReachAvoidFormulaSampler(
+                depth=1,
+                reach=1,
+                avoid=(0, 1),
+                propositions=list(env.propositions),
             ),
-            RandomCurriculumStage(
-                BooleanReachAvoidFormulaSampler(
-                    depth=(1, 2),
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=all_except_or_formulas,
-                    assignments=assignments,
-                    avoid_prob=0.2,
-                ),
-                threshold=0.95,
+            threshold=0.9,
+        ),
+        RandomCurriculumStage(
+            BooleanReachAvoidFormulaSampler(
+                depth=(1, 2),
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=all_except_or_formulas,
+                assignments=assignments,
+                avoid_prob=0.2,
             ),
-            RandomCurriculumStage(
-                BooleanReachAvoidFormulaSampler(
-                    depth=(1, 2),
-                    reach_formulas=all_except_or_formulas,
-                    avoid_formulas=all_except_or_formulas,
-                    assignments=assignments,
-                    avoid_prob=0.5,
-                ),
-                threshold=None,
+            threshold=0.95,
+        ),
+        RandomCurriculumStage(
+            BooleanReachAvoidFormulaSampler(
+                depth=(1, 2),
+                reach_formulas=all_except_or_formulas,
+                avoid_formulas=all_except_or_formulas,
+                assignments=assignments,
+                avoid_prob=0.5,
             ),
-        ],
-        num_samples=10_000,
-        batcher=FormulaClosureBatcher(),
-        env=env,
-        load_path=load_path,
-    )
+            threshold=None,
+        ),
+    ]
 
 
 if __name__ == "__main__":

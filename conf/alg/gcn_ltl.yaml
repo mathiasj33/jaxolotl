@@ -1,12 +1,11 @@
+defaults:
+  - struct_ltl
+  - _self_
+
 name: gcn_ltl
 
-wrap_env:
-  _target_: jaxolotl.alg.deep_ltl.wrappers.utils.wrap_env
-
-agent:
-  _target_: jaxolotl.alg.deep_ltl.eval.agent.DeepLTLAgent.instantiate
-  vmap_choose_sequences: true
-
 preprocess_formulas:
-  _target_: jaxolotl.alg.struct_ltl.eval.preprocessing.preprocess_formulas
   graph: true
+
+batcher:
+  _target_: jaxolotl.alg.struct_ltl.batching.GraphSequenceBatcher

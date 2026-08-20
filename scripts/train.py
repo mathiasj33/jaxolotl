@@ -147,18 +147,18 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
         # average returns
         window_returns = metric["episode_return"][metric["done"]][
-            -cfg.curriculum_wrapper.episode_window :
+            -cfg.curriculum.episode_window :
         ]
         avg_returns = jnp.mean(window_returns)
 
         # positive returns
         window_pos_returns = metric["positive_return"][metric["done"]][
-            -cfg.curriculum_wrapper.episode_window :
+            -cfg.curriculum.episode_window :
         ]
         avg_pos_returns = jnp.mean(window_pos_returns)
 
         window_stages = metric["curriculum_stage"][metric["done"]][
-            -cfg.curriculum_wrapper.episode_window :
+            -cfg.curriculum.episode_window :
         ]
         avg_stage = jnp.mean(window_stages)
         min_stage = jnp.min(window_stages)

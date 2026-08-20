@@ -1,38 +1,12 @@
 # @package __global__
 
 defaults:
-  - /env: warehouse_env
-  - /alg: gcn_ltl
-  - /rl_alg: ppo
-  - /model/sequence: alibi_attention
-
-curriculum:
-  _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make
-  batcher:
-    _target_: jaxolotl.alg.struct_ltl.utils.graph_batching.GraphSequenceBatcher
-
-curriculum_wrapper:
-  episode_window: 256
+  - /experiment/struct_ltl/warehouse
+  - override /alg: gcn_ltl
+  - _self_
 
 model:
   _target_: jaxolotl.alg.struct_ltl.model.gcn_ltl.GCNLTLModel
-  _recursive_: false
-  env_net:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [128]
-    out_size: 64
-    activation: ${act:tanh}
-  actor:
-    _target_: jaxolotl.rl.actor.composite_actor.CompositeActor
-    hidden_sizes: [64, 64, 64]
-    hidden_activation: ${act:relu}
-    output_activation: ${act:tanh}
-    state_dependent_std: true
-    use_epsilon: true
-  critic:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
-    activation: ${act:tanh}
   sequence:
     embedding_dim: 16
     gcn:
@@ -41,21 +15,3 @@ model:
       out_size: 16
       activation: ${act:relu}
       residual: false
-    attention:
-      alibi_slope: 5.0
-
-rl_alg:
-  total_timesteps: 2e8
-  num_envs: 128
-  num_steps: 1024
-  num_minibatches: 4
-  update_epochs: 5
-  gamma: 0.998
-  gae_lambda: 0.95
-  clip_eps: 0.2
-  ent_coef: 0.003
-  vf_coef: 0.5
-  lr: 5e-4
-  max_grad_norm: 1.0
-  anneal_lr: false
-  adam_eps: 1e-8

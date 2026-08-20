@@ -10,3 +10,6 @@ agent:
 
 preprocess_formulas:
   _target_: jaxolotl.alg.genz_ltl.eval.preprocessing.preprocess_formulas
+
+batcher:
+  _target_: jaxolotl.alg.genz_ltl.batching.SubgoalBatcher

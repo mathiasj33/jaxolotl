@@ -1,21 +1,15 @@
-from pathlib import Path
-
 from jaxolotl.alg.curriculum import (
-    Curriculum,
     CurriculumStage,
     MultiRandomStage,
     RandomCurriculumStage,
-    SampleBatcher,
 )
 from jaxolotl.alg.struct_ltl.curriculum.boolean_samplers import (
     BooleanReachAvoidSampler,
     BooleanReachStaySampler,
 )
 from jaxolotl.alg.struct_ltl.curriculum.formula_cache import FormulaCache
-from jaxolotl.alg.struct_ltl.utils.batching import BooleanSequenceBatcher
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.warehouse_env.warehouse_env import WarehouseEnv
-from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 
 propositions = WarehouseEnv.propositions
 assignments = WarehouseEnv.assignments()
@@ -24,7 +18,7 @@ all_except_or_formulas = cache.props + cache.ands + cache.and_nots
 all_formulas = all_except_or_formulas + cache.ors
 
 
-def make_stages() -> list[CurriculumStage]:
+def make_stages(_env: Environment) -> list[CurriculumStage]:
     return [
         # 1. Reach propositions individually
         RandomCurriculumStage(
@@ -136,35 +130,3 @@ def make_stages() -> list[CurriculumStage]:
             threshold=None,
         ),
     ]
-
-
-def make(
-    env: Environment | EnvWrapper,
-    load_path: Path | None = None,
-    batcher: SampleBatcher | None = None,
-    ablation: bool = False,
-) -> Curriculum:
-    stages = make_stages()
-    if ablation:
-        stages = stages[-1:]
-    return Curriculum(
-        stages,
-        num_samples=int(1e4),
-        batcher=BooleanSequenceBatcher() if batcher is None else batcher,
-        env=env,
-        load_path=load_path,
-    )
-
-
-if __name__ == "__main__":
-    sampler = BooleanReachAvoidSampler(
-        depth=(1, 2),
-        reach_formulas=all_except_or_formulas,
-        avoid_formulas=all_formulas,
-        avoid_prob=0.5,
-        assignments=assignments,
-    )
-    formulas = [sampler.sample() for _ in range(10)]
-    for f in formulas:
-        print(f.clauses)
-        print(f.reach_avoid)
