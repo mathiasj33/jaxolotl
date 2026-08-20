@@ -47,6 +47,11 @@ def load_batched_models(
     model: ActorCritic = model_fn(act_space=env.action_space(env_params))
     models = eqx_utils.add_batch_dim(model, num_models)
     models = eqx_utils.load(model_path, models)
+    num_seeds = cfg.eval.get("num_seeds", None)
+    if num_seeds is not None:
+        params, static = eqx.partition(models, eqx.is_array)
+        models = eqx.combine(jax.tree.map(lambda x: x[:num_seeds], params), static)
+        num_models = num_seeds
     return models, num_models
 
 
