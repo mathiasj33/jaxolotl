@@ -38,7 +38,7 @@ from jaxolotl.rl.algorithm import RLAlgorithm
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../conf", config_name="train")
+@hydra.main(version_base="1.3", config_path="../conf", config_name="train")
 def main(cfg: DictConfig):
     if not cfg.use_gpu:
         jax.config.update("jax_default_device", jax.devices("cpu")[0])

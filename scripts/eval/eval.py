@@ -32,7 +32,7 @@ from jaxolotl.eval.utils import (
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../../conf", config_name="eval")
+@hydra.main(version_base="1.3", config_path="../../conf", config_name="eval")
 def main(cfg: DictConfig):
     # build environment
     env_params = cfg.get("env_params", {})

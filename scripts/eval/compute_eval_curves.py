@@ -28,7 +28,7 @@ from jaxolotl.eval.utils import load_model_checkpoints, make_eval_fn
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../../conf", config_name="eval_curves")
+@hydra.main(version_base="1.3", config_path="../../conf", config_name="eval_curves")
 def main(cfg: DictConfig):
     # build environment
     env, env_params = jaxolotl.make(cfg.env.name)

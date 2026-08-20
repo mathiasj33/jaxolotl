@@ -15,7 +15,7 @@ from jaxolotl.alg.curriculum import Curriculum
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../conf", config_name="train")
+@hydra.main(version_base="1.3", config_path="../conf", config_name="train")
 def main(cfg: DictConfig):
     logger.info("Instantiating curriculum to generate samples...")
     start_time = time.time()

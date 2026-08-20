@@ -15,7 +15,7 @@ from jaxolotl.eval.utils import load_batched_models
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../conf", config_name="combine_models")
+@hydra.main(version_base="1.3", config_path="../conf", config_name="combine_models")
 def main(cfg):
     env, env_params = jaxolotl.make(cfg.env.name)
     path1 = Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.runs[0]}/models.eqx")

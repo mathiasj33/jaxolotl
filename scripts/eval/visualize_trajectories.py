@@ -22,7 +22,7 @@ from jaxolotl.eval.utils import load_batched_models, make_eval_fn
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.1", config_path="../../conf", config_name="visualize_traj")
+@hydra.main(version_base="1.3", config_path="../../conf", config_name="visualize_traj")
 def main(cfg: DictConfig):
     # build environment
     env, env_params = jaxolotl.make(cfg.env.name)

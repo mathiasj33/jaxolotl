@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 from jaxolotl.hydra_utils.utils import resolve_default_options
 
 
-@hydra.main(version_base="1.1", config_path="../conf", config_name="precompute")
+@hydra.main(version_base="1.3", config_path="../conf", config_name="precompute")
 def main(cfg: DictConfig):
     num_batch_resets = math.ceil(cfg.num_resets / cfg.rl_alg.num_envs)
     env, params = jaxolotl.make(cfg.env.name)
