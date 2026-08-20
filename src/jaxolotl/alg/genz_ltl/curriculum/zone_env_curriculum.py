@@ -4,15 +4,15 @@ from pathlib import Path
 import jax.numpy as jnp
 import numpy as np
 
-from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
-    JaxReachAvoidSubgoal,
-    ReachAvoidSubgoal,
-)
-from jaxolotl.alg.ltl2action.curriculum.curriculum import (
+from jaxolotl.alg.curriculum import (
     Curriculum,
     RandomCurriculumStage,
     SampleBatcher,
     Sampler,
+)
+from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
+    JaxReachAvoidSubgoal,
+    ReachAvoidSubgoal,
 )
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper

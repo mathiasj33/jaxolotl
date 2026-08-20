@@ -2,9 +2,9 @@ import hydra
 from omegaconf import DictConfig
 
 from jaxolotl import DATA_DIR
+from jaxolotl.alg.curriculum import CurriculumWrapper
 from jaxolotl.alg.deep_ltl.wrappers.ldba_wrapper import LDBAWrapper
 from jaxolotl.alg.deep_ltl.wrappers.sequence_wrapper import SequenceWrapper
-from jaxolotl.alg.ltl2action.wrappers.curriculum_wrapper import CurriculumWrapper
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 

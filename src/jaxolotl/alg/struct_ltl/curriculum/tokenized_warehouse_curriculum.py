@@ -6,7 +6,7 @@ sequence representations instead of structured clause representations.
 
 from pathlib import Path
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import (
+from jaxolotl.alg.curriculum import (
     Curriculum,
     MultiRandomStage,
     RandomCurriculumStage,

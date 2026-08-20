@@ -2,7 +2,7 @@ from pathlib import Path
 
 import jaxolotl
 from jaxolotl import eqx_utils
-from jaxolotl.alg.ltl2action.curriculum.curriculum import (
+from jaxolotl.alg.curriculum import (
     Curriculum,
     RandomCurriculumStage,
 )
@@ -44,24 +44,6 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                 ),
                 threshold=None,
             ),
-            # RandomCurriculumStage(
-            #     ZoneReachAvoidFormulaSampler(
-            #         depth=2,
-            #         reach=1,
-            #         avoid=1,
-            #         propositions=list(env.propositions),
-            #     ),
-            #     threshold=0.9,
-            # ),
-            # RandomCurriculumStage(
-            #     ZoneReachAvoidFormulaSampler(
-            #         depth=(1, 2),
-            #         reach=(1, 2),
-            #         avoid=(0, 2),
-            #         propositions=list(env.propositions),
-            #     ),
-            #     threshold=None,
-            # ),
         ],
         num_samples=10_000,
         batcher=FormulaClosureBatcher(),

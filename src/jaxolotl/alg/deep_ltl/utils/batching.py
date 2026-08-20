@@ -1,6 +1,6 @@
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import SampleBatcher
+from jaxolotl.alg.curriculum import SampleBatcher
 from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )

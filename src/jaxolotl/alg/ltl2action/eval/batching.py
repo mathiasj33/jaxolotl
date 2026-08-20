@@ -1,6 +1,6 @@
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import SampleBatcher
+from jaxolotl.alg.curriculum import SampleBatcher
 from jaxolotl.alg.ltl2action.utils.jax_formula_closure import JaxFormulaClosureGraph
 from jaxolotl.alg.ltl2action.utils.preprocessing import preprocess_formulas
 from jaxolotl.environments.environment import Environment

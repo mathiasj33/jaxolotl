@@ -1,7 +1,7 @@
 import random
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
+from jaxolotl.alg.curriculum import Sampler
 from jaxolotl.ltl.logic.assignment import Assignment
 from jaxolotl.ltl.reach_avoid.sequence import (
     EPSILON,

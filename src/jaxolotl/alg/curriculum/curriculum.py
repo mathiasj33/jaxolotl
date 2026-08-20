@@ -1,3 +1,14 @@
+"""Generic implementation of a training curriculum as used in e.g. DeepLTL.
+
+Curricula are defined using curriculum stages that sample generic tasks of type TSample.
+In order to allow end-to-end compilation in JAX, the SampleBatcher is used to batch a
+list of samples into a PyTree of type TJaxSample.
+
+The entire curriculum is precomputed before training for efficiency reasons. For cases
+where this pre-computation is expensive, the curriculum can be saved to disk and loaded
+later (see scripts/precompute_curriculum.py).
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path

@@ -5,10 +5,10 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
+from jaxolotl.alg.curriculum import CurriculumResetOptions
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
-from jaxolotl.alg.ltl2action.wrappers.curriculum_wrapper import CurriculumResetOptions
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
 from jaxolotl.environments.wrappers.wrapper import WrapperState
@@ -112,6 +112,7 @@ class SubgoalWrapper[
             logger.info(
                 "Applying zone_env_nm-specific logic to exclude green assignment!"
             )
+            # TODO: refactor this to be generic exclusion of assignments
             green_assignment_idx = 1  # green is the second assignment in zone_env_nm
             exclude_green = unwrapped_state.masked_colors[green_assignment_idx]
             # Conditionally exclude the green index based on the tracer

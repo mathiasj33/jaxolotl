@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import (
+from jaxolotl.alg.curriculum import (
     Curriculum,
     RandomCurriculumStage,
 )

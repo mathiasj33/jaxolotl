@@ -4,11 +4,11 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
+from jaxolotl.alg.curriculum import CurriculumResetOptions
 from jaxolotl.alg.ltl2action.utils.jax_formula_closure import (
     JaxFormulaClosureGraph,
     JaxFormulaGraph,
 )
-from jaxolotl.alg.ltl2action.wrappers.curriculum_wrapper import CurriculumResetOptions
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
 from jaxolotl.environments.wrappers.wrapper import WrapperState

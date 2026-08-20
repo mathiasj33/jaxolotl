@@ -2,7 +2,7 @@ import hydra
 from omegaconf import DictConfig
 
 from jaxolotl import DATA_DIR
-from jaxolotl.alg.ltl2action.wrappers.curriculum_wrapper import CurriculumWrapper
+from jaxolotl.alg.curriculum import CurriculumWrapper
 from jaxolotl.alg.ltl2action.wrappers.formula_closure_wrapper import (
     FormulaClosureWrapper,
 )

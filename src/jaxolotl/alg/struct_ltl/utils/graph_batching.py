@@ -2,7 +2,7 @@
 
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import SampleBatcher
+from jaxolotl.alg.curriculum import SampleBatcher
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
     BooleanReachAvoidSequence,
 )

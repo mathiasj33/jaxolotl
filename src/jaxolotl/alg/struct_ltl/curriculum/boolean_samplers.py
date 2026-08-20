@@ -4,7 +4,7 @@ import random
 from collections.abc import Sequence
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
+from jaxolotl.alg.curriculum import Sampler
 from jaxolotl.alg.struct_ltl.curriculum.formula_cache import FormulaCache
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
     BooleanReachAvoidSequence,

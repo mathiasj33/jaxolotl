@@ -2,7 +2,7 @@ import random
 from collections.abc import Sequence
 from typing import override
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import Sampler
+from jaxolotl.alg.curriculum import Sampler
 from jaxolotl.ltl.logic.assignment import Assignment
 from jaxolotl.ltl.logic.boolean_parser import BooleanNode, FalseNode
 from jaxolotl.ltl.logic.utils import compute_sat

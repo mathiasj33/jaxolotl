@@ -1,15 +1,15 @@
 from pathlib import Path
 
+from jaxolotl.alg.curriculum import (
+    Curriculum,
+    MultiRandomStage,
+    RandomCurriculumStage,
+)
 from jaxolotl.alg.deep_ltl.curriculum.simple_samplers import (
     SimpleReachAvoidSampler,
     SimpleReachStaySampler,
 )
 from jaxolotl.alg.deep_ltl.utils.batching import ReachAvoidSequenceBatcher
-from jaxolotl.alg.ltl2action.curriculum.curriculum import (
-    Curriculum,
-    MultiRandomStage,
-    RandomCurriculumStage,
-)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 

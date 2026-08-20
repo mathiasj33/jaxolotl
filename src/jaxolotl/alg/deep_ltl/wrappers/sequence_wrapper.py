@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.ltl2action.wrappers.curriculum_wrapper import CurriculumResetOptions
+from jaxolotl.alg.curriculum import CurriculumResetOptions
 from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )

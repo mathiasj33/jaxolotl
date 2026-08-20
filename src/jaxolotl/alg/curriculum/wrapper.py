@@ -1,3 +1,9 @@
+"""Curriculum wrapper for curriculum learning.
+
+Keeps track of the current curriculum stage based on performance and supplies tasks
+accordingly.
+"""
+
 from typing import Any, NamedTuple
 
 import equinox as eqx
@@ -5,7 +11,7 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import PyTree
 
-from jaxolotl.alg.ltl2action.curriculum.curriculum import Curriculum
+from jaxolotl.alg.curriculum.curriculum import Curriculum
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
 from jaxolotl.environments.wrappers.wrapper import WrapperState
@@ -22,7 +28,7 @@ class CurriculumState(WrapperState):
 
 
 class CurriculumResetOptions(NamedTuple):
-    """Reset options for environments that can be used with a curriculum."""
+    """Reset options for wrappers that can be used with a curriculum."""
 
     task: PyTree  # task selected by the curriculum wrapper
 
