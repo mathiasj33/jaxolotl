@@ -8,11 +8,11 @@ import jax.numpy as jnp
 import jraph
 import numpy as np
 
-from jaxolotl.alg.reach_avoid.batching import (
+from jaxolotl.alg.common.reach_avoid.batching import (
     batch_assignments,
     batch_state_sequences,
 )
-from jaxolotl.alg.reach_avoid.jax_sequence import (
+from jaxolotl.alg.common.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (

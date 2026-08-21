@@ -7,7 +7,7 @@ from equinox import nn
 from jaxtyping import PyTree
 from omegaconf import DictConfig
 
-from jaxolotl.alg.reach_avoid.jax_sequence import (
+from jaxolotl.alg.common.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments.observation_spec import ObservationSpec

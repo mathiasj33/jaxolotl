@@ -1,7 +1,7 @@
 """Utilities for preprocessing LTL formulas into JaxLDBAs and JaxReachAvoidSequences."""
 
-from jaxolotl.alg.reach_avoid import preprocessing
-from jaxolotl.alg.reach_avoid.jax_sequence import (
+from jaxolotl.alg.common.reach_avoid import preprocessing
+from jaxolotl.alg.common.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments.environment import Environment

@@ -6,10 +6,10 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl import eqx_utils
-from jaxolotl.alg.deep_ltl.wrappers.ldba_wrapper import LDBAWrapperState
-from jaxolotl.alg.reach_avoid.jax_sequence import (
+from jaxolotl.alg.common.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
+from jaxolotl.alg.deep_ltl.wrappers.ldba_wrapper import LDBAWrapperState
 from jaxolotl.environments.environment import EnvObservation
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eval.agent import Agent

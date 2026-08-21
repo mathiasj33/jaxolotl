@@ -4,10 +4,10 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.curriculum import CurriculumResetOptions
-from jaxolotl.alg.reach_avoid.jax_sequence import (
+from jaxolotl.alg.common.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
+from jaxolotl.alg.curriculum import CurriculumResetOptions
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
 from jaxolotl.environments.wrappers.wrapper import WrapperState

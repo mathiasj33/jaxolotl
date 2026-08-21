@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.reach_avoid.batching import (
+from jaxolotl.alg.common.reach_avoid.batching import (
     batch_assignments,
     batch_state_sequences,
 )

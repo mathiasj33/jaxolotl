@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from jaxolotl.alg.reach_avoid.batching import (
+from jaxolotl.alg.common.reach_avoid.batching import (
     batch_assignments,
     batch_state_sequences,
 )

@@ -1,8 +1,8 @@
 import jax.numpy as jnp
 import numpy.testing as npt
 
+from jaxolotl.alg.common.reach_avoid.jax_sequence import JaxReachAvoidSequence
 from jaxolotl.alg.deep_ltl.eval.preprocessing import _batch_sequences
-from jaxolotl.alg.reach_avoid.jax_sequence import JaxReachAvoidSequence
 
 
 def _sequence(shape: tuple[int, int, int], repeat_last: int) -> JaxReachAvoidSequence:

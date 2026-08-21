@@ -1,10 +1,10 @@
 """Utilities for preprocessing LTL formulas into JaxLDBAs and JaxReachAvoidSubgoals."""
 
+from jaxolotl.alg.common.reach_avoid.preprocessing import (
+    preprocess_formulas as preprocess_reach_avoid_formulas,
+)
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
-)
-from jaxolotl.alg.reach_avoid.preprocessing import (
-    preprocess_formulas as preprocess_reach_avoid_formulas,
 )
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
