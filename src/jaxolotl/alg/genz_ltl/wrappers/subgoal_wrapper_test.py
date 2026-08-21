@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, NamedTuple
 from unittest.mock import patch
 
 import equinox as eqx
@@ -7,11 +7,16 @@ import jax.numpy as jnp
 
 from jaxolotl.alg.genz_ltl.wrappers.subgoal_wrapper import SubgoalWrapper
 from jaxolotl.environments.environment import Environment
+from jaxolotl.environments.observation_spec import ArraySpec
 from jaxolotl.ltl.logic.assignment import Assignment
 
 
 class _DummyParams(eqx.Module):
     max_steps_in_episode: int = 10
+
+
+class _DummyObsSpec(NamedTuple):
+    features: ArraySpec
 
 
 class FakeEnv(Environment):
@@ -37,6 +42,10 @@ class FakeEnv(Environment):
 
     def _observation_space(self, params):
         raise NotImplementedError()
+
+    def _observation_spec(self, params):
+        del params
+        return _DummyObsSpec(features=ArraySpec((1,), jnp.float32))
 
     def _action_space(self, params):
         raise NotImplementedError()

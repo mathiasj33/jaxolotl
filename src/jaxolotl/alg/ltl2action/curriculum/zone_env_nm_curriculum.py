@@ -6,10 +6,10 @@ from jaxolotl.alg.curriculum import (
     Curriculum,
     RandomCurriculumStage,
 )
+from jaxolotl.alg.ltl2action.batching import FormulaClosureBatcher
 from jaxolotl.alg.ltl2action.curriculum.simple_samplers import (
     SimpleReachAvoidFormulaSampler,
 )
-from jaxolotl.alg.ltl2action.batching import FormulaClosureBatcher
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 

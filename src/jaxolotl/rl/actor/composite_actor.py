@@ -99,7 +99,7 @@ class CompositeActor(Actor):
             self.epsilon_prob = None
 
     def __call__(
-        self, features: jax.Array, epsilon_mask: jax.Array
+        self, features: jax.Array, epsilon_mask: jax.Array | None
     ) -> distrax.Distribution:
         """Input shape: (batch_size, in_size).
 
@@ -122,6 +122,7 @@ class CompositeActor(Actor):
         joint_dist = distrax.Joint((cont_action_dist, disc_action_dist))
 
         if self.use_epsilon:
+            assert epsilon_mask is not None
             log_eps = jax.vmap(self.epsilon_prob)(encoded)  # type: ignore
             return EpsilonDistribution(joint_dist, log_eps.squeeze(-1), epsilon_mask)
         return joint_dist

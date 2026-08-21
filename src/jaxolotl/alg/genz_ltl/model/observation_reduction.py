@@ -1,7 +1,4 @@
-"""Subgoal-induced observation reduction for GenZ-LTL.
-
-Initial implementation supports ZoneEnv only.
-"""
+"""Subgoal-induced observation reduction for GenZ-LTL."""
 
 from abc import ABC, abstractmethod
 from typing import NamedTuple, override
@@ -12,7 +9,16 @@ import jax.numpy as jnp
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
+from jaxolotl.environments.observation_spec import (
+    ArraySpec,
+    ObservationSpec,
+)
 from jaxolotl.environments.zone_env import zone_env
+from jaxolotl.networks.observation_encoder import flatten_observation
+
+
+class ReducedObservation(NamedTuple):
+    reduced: jax.Array
 
 
 class ObservationReductionFunction[TObsFeatures: NamedTuple, TEnvParams](ABC):
@@ -21,41 +27,49 @@ class ObservationReductionFunction[TObsFeatures: NamedTuple, TEnvParams](ABC):
     @abstractmethod
     def __call__(
         self, features: TObsFeatures, subgoal: JaxReachAvoidSubgoal
-    ) -> jax.Array:
+    ) -> ReducedObservation:
         """Reduce the given features based on the subgoal."""
         raise NotImplementedError()
 
     @abstractmethod
-    def output_size(self, params: TEnvParams) -> int:
-        """The size of the reduced observation vector."""
+    def output_spec(
+        self,
+        input_spec: ObservationSpec,
+        params: TEnvParams,
+        num_assignments: int,
+        num_propositions: int,
+    ) -> ObservationSpec:
+        """Return the array specification produced by this reduction."""
         raise NotImplementedError()
 
 
 class GenericObservationReduction(ObservationReductionFunction[NamedTuple, NamedTuple]):
     """A generic observation reduction that concatenates all observation features and
-    encodes the subgoal as a bitvector (see section 4.1 of the GenZ-LTL paper)."""
-
-    def __init__(self, output_size: int):
-        self._output_size = output_size
+    encodes the subgoal as a bitvector (see Section 4.1 of the GenZ-LTL paper)."""
 
     @override
     def __call__(
         self, features: NamedTuple, subgoal: JaxReachAvoidSubgoal
-    ) -> jax.Array:
+    ) -> ReducedObservation:
         """Concatenate all features into a single vector."""
-        vector = self._flatten_features(features)
+        vector = flatten_observation(features)
         vector = jnp.concatenate(
             [vector, subgoal.reach_one_hot, subgoal.avoid_one_hot],
             axis=0,
         )
-        return vector
-
-    def _flatten_features(self, features: NamedTuple) -> jax.Array:
-        return jnp.concatenate([v.flatten() for v in jax.tree.leaves(features)], axis=0)
+        return ReducedObservation(reduced=vector)
 
     @override
-    def output_size(self, _: NamedTuple) -> int:
-        return self._output_size
+    def output_spec(
+        self,
+        input_spec: ObservationSpec,
+        params: NamedTuple,
+        num_assignments: int,
+        num_propositions: int,
+    ) -> ObservationSpec:
+        del params
+        size = input_spec.flat_observation_size + num_propositions + num_assignments
+        return ObservationSpec(reduced=ArraySpec((size,), jnp.float32))
 
 
 class ZoneEnvObservationReduction(
@@ -66,7 +80,7 @@ class ZoneEnvObservationReduction(
     @override
     def __call__(
         self, features: zone_env.ObsFeatures, subgoal: JaxReachAvoidSubgoal
-    ) -> jax.Array:
+    ) -> ReducedObservation:
         """Reduce ZoneEnv observations to [agent_obs, reach_obs, avoid_obs].
 
         Returns:
@@ -81,9 +95,19 @@ class ZoneEnvObservationReduction(
             jnp.reshape(subgoal.avoid != -1, (-1, 1)), features.lidar[subgoal.avoid], 0
         )
         avoid_obs = jnp.max(avoid_lidars, axis=0)
-        return jnp.concatenate([agent_obs, reach_obs, avoid_obs], axis=0)
+        return ReducedObservation(
+            reduced=jnp.concatenate([agent_obs, reach_obs, avoid_obs], axis=0)
+        )
 
     @override
-    def output_size(self, params: zone_env.EnvParams) -> int:
-        """Output size of the reduced observation vector."""
-        return 5 + 2 * params.num_lidar_bins
+    def output_spec(
+        self,
+        input_spec: ObservationSpec,
+        params: zone_env.EnvParams,
+        num_assignments: int,
+        num_propositions: int,
+    ) -> ObservationSpec:
+        del input_spec, num_assignments, num_propositions
+        return ObservationSpec(
+            reduced=ArraySpec((5 + 2 * params.num_lidar_bins,), jnp.float32)
+        )

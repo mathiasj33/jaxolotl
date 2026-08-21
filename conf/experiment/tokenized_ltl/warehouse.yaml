@@ -6,7 +6,7 @@ defaults:
   - _self_
 
 model:
-  _target_: jaxolotl.alg.struct_ltl.model.tokenized_ltl.TokenizedLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.tokenized_model.TokenizedLTLModel
   sequence:
     # Token embedding dimension (same as struct_ltl embedding_dim for fair comparison)
     embedding_dim: 16

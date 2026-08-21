@@ -62,7 +62,7 @@ class DiscreteActor(Actor):
             self.epsilon_prob = None
 
     def __call__(
-        self, features: jax.Array, epsilon_mask: jax.Array
+        self, features: jax.Array, epsilon_mask: jax.Array | None
     ) -> distrax.Distribution:
         """Input shape: (batch_size, in_size).
 
@@ -72,6 +72,7 @@ class DiscreteActor(Actor):
         action_probs = jax.vmap(self.action_probs)(encoded)
         action_dist = distrax.Categorical(logits=action_probs)
         if self.use_epsilon:
+            assert epsilon_mask is not None
             log_eps = jax.vmap(self.epsilon_prob)(encoded)  # type: ignore
             return EpsilonDistribution(action_dist, log_eps.squeeze(-1), epsilon_mask)
         else:

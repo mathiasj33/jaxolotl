@@ -17,6 +17,7 @@ import jax.numpy as jnp
 from jax import lax
 
 from jaxolotl.environments import environment, spaces
+from jaxolotl.environments.observation_spec import ArraySpec, ObservationSpec
 from jaxolotl.environments.zone_env.plotter import draw_trajectories
 from jaxolotl.ltl.logic.assignment import Assignment
 
@@ -99,12 +100,14 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         )
 
     @override
-    def _observation_space(self, params: EnvParams) -> spaces.Space:
-        return spaces.Box(
-            low=0.0,
-            high=jnp.inf,
-            shape=(5 + len(self.propositions) * int(params.num_lidar_bins),),
-            dtype=jnp.float32,
+    def _observation_spec(self, params: EnvParams) -> ObservationSpec:
+        return ObservationSpec(
+            acceleration=ArraySpec((2,), jnp.float32),
+            velocity=ArraySpec((2,), jnp.float32),
+            angular_velocity=ArraySpec((1,), jnp.float32),
+            lidar=ArraySpec(
+                (len(self.propositions), params.num_lidar_bins), jnp.float32
+            ),
         )
 
     @override

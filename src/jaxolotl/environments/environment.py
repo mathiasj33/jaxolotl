@@ -11,6 +11,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
+from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
 from jaxolotl.ltl.logic.assignment import Assignment
 
@@ -158,14 +159,14 @@ class Environment[
         in self.propositions (or -1 for padding)."""
         pass
 
-    def observation_space(self, params: TEnvParams | None = None) -> Space:
-        """Observation space of the environment."""
+    def observation_spec(self, params: TEnvParams | None = None) -> ObservationSpec:
+        """Return a structured spec matching ``EnvObservation.features``."""
         if params is None:
             params = self.default_params
-        return self._observation_space(params)
+        return self._observation_spec(params)
 
     @abstractmethod
-    def _observation_space(self, params: TEnvParams) -> Space:
+    def _observation_spec(self, params: TEnvParams) -> ObservationSpec:
         pass
 
     def action_space(self, params: TEnvParams | None = None) -> Space:

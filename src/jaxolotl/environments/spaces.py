@@ -1,4 +1,4 @@
-"""Spaces supported in jaxolotl environments.
+"""Action spaces supported in jaxolotl environments.
 
 Adapted from gymnax (https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/spaces.py)."""
 

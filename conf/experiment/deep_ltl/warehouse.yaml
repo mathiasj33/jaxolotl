@@ -12,10 +12,10 @@ curriculum:
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.deep_ltl.model.deep_ltl.DeepLTLModel
+  _target_: jaxolotl.alg.deep_ltl.model.model.DeepLTLModel
   _recursive_: false
   env_net:
-    _target_: jaxolotl.networks.mlp.MLP
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
     hidden_sizes: [128]
     out_size: 64
     activation: ${act:tanh}

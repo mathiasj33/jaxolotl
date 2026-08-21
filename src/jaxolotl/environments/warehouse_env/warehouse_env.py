@@ -19,6 +19,7 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl.environments import environment, spaces
+from jaxolotl.environments.observation_spec import ArraySpec, ObservationSpec
 from jaxolotl.ltl.logic.assignment import Assignment
 
 if TYPE_CHECKING:
@@ -129,15 +130,15 @@ class WarehouseEnv(
         )
 
     @override
-    def _observation_space(self, params: WarehouseParams) -> spaces.Space:
-        lidar_size = 2 * params.num_lidar_bins
-        # 5 (phys) + 2 (pos) + 2 (carry) + lidar + 6 (3 regions * 2 coords)
-        flat_dim = 9 + lidar_size + 6
-        return spaces.Box(
-            low=-jnp.inf,
-            high=jnp.inf,
-            shape=(flat_dim,),
-            dtype=jnp.float32,
+    def _observation_spec(self, params: WarehouseParams) -> ObservationSpec:
+        return ObservationSpec(
+            acceleration=ArraySpec((2,), jnp.float32),
+            velocity=ArraySpec((2,), jnp.float32),
+            angular_velocity=ArraySpec((1,), jnp.float32),
+            lidar=ArraySpec((2, params.num_lidar_bins), jnp.float32),
+            global_position=ArraySpec((2,), jnp.float32),
+            region_vectors=ArraySpec((3, 2), jnp.float32),
+            carrying_status=ArraySpec((2,), jnp.float32),
         )
 
     @override

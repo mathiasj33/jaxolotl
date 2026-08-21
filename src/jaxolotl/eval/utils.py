@@ -37,7 +37,7 @@ def load_batched_models(
     num_models = metadata["num_models"]
     model_fn = hydra.utils.instantiate(
         cfg.model,
-        obs_shape=env.observation_space(env_params).shape,
+        obs_spec=env.observation_spec(env_params),
         num_assignments=len(env.assignments()),
         num_propositions=len(env.propositions),
         env_params=env_params,
@@ -72,7 +72,7 @@ def load_model_checkpoints(
 
     model_fn = hydra.utils.instantiate(
         cfg.model,
-        obs_shape=env.observation_space(env_params).shape,
+        obs_spec=env.observation_spec(env_params),
         num_assignments=len(env.assignments()),
         num_propositions=len(env.propositions),
         env_params=env_params,

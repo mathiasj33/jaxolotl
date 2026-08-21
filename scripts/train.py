@@ -19,6 +19,7 @@ from omegaconf import DictConfig, OmegaConf
 import jaxolotl
 from jaxolotl import DATA_DIR, eqx_utils
 from jaxolotl.environments.environment import EnvParams
+from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
 from jaxolotl.environments.wrappers import (
     AutoResetWrapper,
@@ -64,7 +65,7 @@ def main(cfg: DictConfig):
     )
     models = make_models(
         cfg.model,
-        env.observation_space(env_params).shape,
+        env.observation_spec(env_params),
         env.action_space(env_params),
         len(env.assignments()),
         len(env.propositions),
@@ -209,7 +210,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
 def build_model(
     model_cfg: DictConfig,
-    obs_shape: tuple[int, ...],
+    obs_spec: ObservationSpec,
     act_space: Space,
     num_assignments: int,
     num_propositions: int,
@@ -218,7 +219,7 @@ def build_model(
 ) -> ActorCritic:
     model_fn = hydra.utils.instantiate(
         model_cfg,
-        obs_shape=obs_shape,
+        obs_spec=obs_spec,
         num_assignments=num_assignments,
         num_propositions=num_propositions,
         env_params=env_params,

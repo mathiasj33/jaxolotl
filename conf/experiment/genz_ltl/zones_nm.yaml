@@ -12,14 +12,12 @@ curriculum:
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.genz_ltl.model.genz_ltl.GenZLTLModel
+  _target_: jaxolotl.alg.genz_ltl.model.model.GenZLTLModel
   _recursive_: false
   observation_reduction_fn:
     _target_: jaxolotl.alg.genz_ltl.model.observation_reduction.ZoneEnvObservationReduction
-    # _target_: jaxolotl.alg.genz_ltl.model.observation_reduction.GenericObservationReduction
-    # output_size: 78
   env_net:
-    _target_: jaxolotl.networks.mlp.MLP
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
     hidden_sizes: [128]
     out_size: 64
     activation: ${act:tanh}

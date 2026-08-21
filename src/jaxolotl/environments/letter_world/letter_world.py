@@ -14,6 +14,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from jaxolotl.environments import environment, spaces
+from jaxolotl.environments.observation_spec import ArraySpec, ObservationSpec
 from jaxolotl.ltl.logic.assignment import Assignment
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class EnvState(eqx.Module):
 
 class ObsFeatures(NamedTuple):
     # shape: (G, G, L + 1) letters pos relative to agent and agent pos
-    features: jax.Array
+    grid: jax.Array
 
 
 class ResetOptions(NamedTuple):
@@ -59,12 +60,12 @@ class LetterWorld(
         )
 
     @override
-    def _observation_space(self, params: EnvParams) -> spaces.Space:
-        return spaces.Box(
-            low=0.0,
-            high=1.0,
-            shape=(params.grid_size, params.grid_size, len(self.propositions) + 1),
-            dtype=jnp.int32,
+    def _observation_spec(self, params: EnvParams) -> ObservationSpec:
+        return ObservationSpec(
+            grid=ArraySpec(
+                (params.grid_size, params.grid_size, len(self.propositions) + 1),
+                jnp.int32,
+            )
         )
 
     @override
@@ -187,7 +188,7 @@ class LetterWorld(
         )
         agent_channel = agent_channel.at[center, center, 0].set(1)
         obs = jnp.concatenate([relative_letters, agent_channel], axis=-1)
-        return ObsFeatures(features=obs)
+        return ObsFeatures(grid=obs)
 
     @override
     def compute_propositions(self, state: EnvState, params: EnvParams) -> jax.Array:

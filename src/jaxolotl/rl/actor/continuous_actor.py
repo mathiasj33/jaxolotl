@@ -84,7 +84,7 @@ class ContinuousActor(Actor):
             self.epsilon_prob = None
 
     def __call__(
-        self, features: jax.Array, epsilon_mask: jax.Array
+        self, features: jax.Array, epsilon_mask: jax.Array | None
     ) -> distrax.Distribution:
         """Input shape: (batch_size, in_size).
 
@@ -100,9 +100,11 @@ class ContinuousActor(Actor):
             std = jnp.exp(self.log_std)[None, :].reshape(mean.shape)  # type: ignore
         std += 1e-3  # numerical stability
         if self.use_epsilon:
+            assert epsilon_mask is not None
             log_eps = jax.vmap(self.epsilon_prob)(encoded)  # type: ignore
         action_dist = distrax.MultivariateNormalDiag(loc=mean, scale_diag=std)
         if self.use_epsilon:
+            assert epsilon_mask is not None
             return EpsilonDistribution(action_dist, log_eps.squeeze(-1), epsilon_mask)
         else:
             return action_dist

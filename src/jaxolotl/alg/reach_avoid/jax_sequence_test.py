@@ -1,4 +1,4 @@
-from typing import override
+from typing import NamedTuple, override
 
 import jax
 import jax.numpy as jnp
@@ -9,6 +9,7 @@ from jaxolotl.alg.reach_avoid.jax_sequence import (
     JaxReachAvoidSequence,
 )
 from jaxolotl.environments.environment import Environment
+from jaxolotl.environments.observation_spec import ArraySpec
 from jaxolotl.ltl.logic.assignment import Assignment
 from jaxolotl.ltl.reach_avoid.sequence import (
     EPSILON,
@@ -18,6 +19,10 @@ from jaxolotl.ltl.reach_avoid.sequence import (
 
 def make_set(*assignments: set[str]) -> frozenset[Assignment]:
     return frozenset(Assignment(frozenset(a)) for a in assignments)
+
+
+class MockObsSpec(NamedTuple):
+    features: ArraySpec
 
 
 class MockEnv(Environment):
@@ -51,6 +56,9 @@ class MockEnv(Environment):
 
     def _observation_space(self):
         pass
+
+    def _observation_spec(self):
+        return MockObsSpec(features=ArraySpec((1,), jnp.float32))
 
     def _action_space(self):
         pass
@@ -107,9 +115,7 @@ def test_from_state_to_seq():
 
 def test_from_state_to_seqs_preserves_repeats_and_sparse_states():
     mock_env = MockEnv()
-    sequence = ReachAvoidSequence(
-        [(make_set({"green"}), frozenset())], repeat_last=5
-    )
+    sequence = ReachAvoidSequence([(make_set({"green"}), frozenset())], repeat_last=5)
 
     encoded = JaxReachAvoidSequence.from_state_to_seqs(
         {0: [sequence], 2: [sequence]}, mock_env

@@ -95,7 +95,7 @@ class JaxLDBA(NamedTuple):
                         if transition.accepting:
                             accepting[state, index] = True
 
-        assert np.all(transitions[:, :-1] >= 0), "Incomplete LDBA transitions."
+        assert np.all(transitions[:, :-1] >= 0), "Incomplete LDBA transitions."  # type: ignore
 
         return cls(
             num_states=num_states,

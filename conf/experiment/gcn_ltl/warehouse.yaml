@@ -6,7 +6,7 @@ defaults:
   - _self_
 
 model:
-  _target_: jaxolotl.alg.struct_ltl.model.gcn_ltl.GCNLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.gcn_model.GCNLTLModel
   sequence:
     embedding_dim: 16
     gcn:

@@ -13,10 +13,10 @@ curriculum:
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.struct_ltl.model.struct_ltl.StructLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
   _recursive_: false
   env_net:
-    _target_: jaxolotl.networks.mlp.MLP
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
     hidden_sizes: [128]
     out_size: 64
     activation: ${act:tanh}
@@ -54,7 +54,7 @@ rl_alg:
   gae_lambda: 0.95
   clip_eps: 0.2
   ent_coef: 0.003
-  vf_coef: 1.0  # TODO
+  vf_coef: 0.5
   lr: 3e-4
   max_grad_norm: 0.5
   anneal_lr: false
