@@ -17,7 +17,6 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 import jaxolotl
-from jaxolotl import DATA_DIR
 from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
     PrecomputedResetWrapper,
 )
@@ -41,18 +40,9 @@ def main(cfg: DictConfig):
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
     env = VectorizeWrapper(env)
 
-    # load and preprocess formulas
-    logger.info("Processing formulas...")
-    if hasattr(cfg, "formulas"):
-        formula_strings = cfg.formulas
-    else:
-        formulas_file = DATA_DIR / cfg.env.name / "eval_formulas.txt"
-        with open(formulas_file) as f:
-            formula_strings = [line.strip() for line in f.readlines() if line.strip()]
-    formulas: PyTree = hydra.utils.call(
-        cfg.alg.preprocess_formulas, formula_strings, env
-    )
-    logger.info(f"Processed {len(formula_strings)} formulas.")
+    # preprocess formulas
+    formulas: PyTree = hydra.utils.call(cfg.alg.preprocess_formulas, cfg.formulas, env)
+    logger.info(f"Processed {len(cfg.formulas)} formulas.")
 
     # load models
     key = jax.random.key(0)
@@ -63,7 +53,7 @@ def main(cfg: DictConfig):
     agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     # set up evaluator
-    eval_fn = make_eval_fn(cfg, num_seeds, len(formula_strings), return_trajs=False)
+    eval_fn = make_eval_fn(cfg, num_seeds, len(cfg.formulas), return_trajs=False)
 
     # evaluate
     logger.info("Starting evaluation...")

@@ -2,6 +2,8 @@ defaults:
   - env: zone_env_nm
   - alg: struct_ltl
   - experiment: ${env}/${alg}
+  - formula_type: finite
+  - formulas: ${env}/${formula_type}
   - hydra: simple
   - _self_
 
@@ -10,7 +12,7 @@ env:
   use_precomputed_resets: true
   precomputed_resets_path: sampled_resets_test.eqx
 eval:
-  finite: true
+  finite: ${formula_type.finite}
   num_episodes: 50
   deterministic: false
   discount: 0.998

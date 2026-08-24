@@ -37,7 +37,6 @@ mkdir -p dependencies \
     && rm -f rabinizer4.zip
 ```
 
-
 To test the installation, run the following:
 ```bash
 ./dependencies/rabinizer4/bin/ltl2ldba -h
@@ -102,7 +101,7 @@ pixi run -e gpu python scripts/plotting/plot_training_curves.py
 
 To evaluate the trained models:
 ```bash
-pixi run -e gpu python scripts/eval/eval.py alg=struct_ltl env=warehouse run=tmp formulas=warehouse/finite eval.finite=True
+pixi run -e gpu python scripts/eval/eval.py alg=struct_ltl env=warehouse formula_type=finite run=tmp
 ```
 
 Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See [eval.yaml](conf/eval.yaml.template) for other configuration options.
@@ -120,7 +119,7 @@ pixi run -e gpu python scripts/eval/visualize_trajectories.py alg=struct_ltl env
 
 To compute evaluation curves:
 ```bash
-pixi run -e gpu python scripts/eval/compute_eval_curves.py alg=struct_ltl env=warehouse run=tmp +formulas=warehouse/finite
+pixi run -e gpu python scripts/eval/compute_eval_curves.py alg=struct_ltl env=warehouse formula_type=finite run=tmp
 ```
 
 Note that only final pretrained models are provided, so evaluation curves can only be computed for new runs.

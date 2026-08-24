@@ -2,7 +2,8 @@ defaults:
   - env: zone_env_nm
   - alg: struct_ltl
   - experiment: ${env}/${alg}
-  - formulas: zones_nm/finite
+  - formula_type: finite
+  - formulas: ${env}/${formula_type}
   - hydra: simple
   - _self_
 
@@ -12,7 +13,7 @@ env:
 
 run: pretrained
 eval:
-  finite: true # whether to treat all formulae as finite
+  finite: ${formula_type.finite}
   num_episodes: 512
   deterministic: false
   discount: 0.94
