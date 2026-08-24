@@ -120,6 +120,9 @@ class Evaluator(eqx.Module):
                 eval_state.disc_returns
                 + jnp.power(self.discount, index) * transition.reward
             )
+            disc_returns = jnp.where(
+                eval_state.completed, eval_state.disc_returns, disc_returns
+            )
             lengths = eval_state.lengths + jnp.where(eval_state.completed, 0, 1)
             is_sink: jax.Array = transition.info["is_sink"].astype(jnp.int32)
             violations = jnp.where(eval_state.completed, 0, is_sink)
