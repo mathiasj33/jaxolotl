@@ -19,10 +19,10 @@ class EvaluationCase:
     name: str
     alg: str
     env: str
-    formulas: str
+    formula_type: str
     run: str
     expected_success_rate: float
-    tolerance: float = 0.02
+    tolerance: float = 0.01
     extra_overrides: tuple[str, ...] = ("+eval.num_seeds=1",)
 
     @property
@@ -30,7 +30,7 @@ class EvaluationCase:
         return (
             f"alg={self.alg}",
             f"env={self.env}",
-            f"formulas={self.formulas}",
+            f"formula_type={self.formula_type}",
             f"run={self.run}",
             *self.extra_overrides,
         )
@@ -41,33 +41,33 @@ EVALUATION_CASES = (
         name="StructLTL/Zones-NM",
         alg="struct_ltl",
         env="zone_env_nm",
-        formulas="zones_nm/finite",
+        formula_type="finite",
         run="pretrained",
-        expected_success_rate=0.946,
+        expected_success_rate=0.952,
     ),
     EvaluationCase(
         name="DeepLTL/Zones-NM",
         alg="deep_ltl",
         env="zone_env_nm",
-        formulas="zones_nm/finite",
+        formula_type="finite",
         run="pretrained",
-        expected_success_rate=0.917,
+        expected_success_rate=0.910,
     ),
     EvaluationCase(
         name="GenZ-LTL/Zones-NM",
         alg="genz_ltl",
         env="zone_env_nm",
-        formulas="zones_nm/finite",
+        formula_type="finite",
         run="pretrained",
-        expected_success_rate=0.812,
+        expected_success_rate=0.811,
     ),
     EvaluationCase(
         name="LTL2Action/Zones-NM",
         alg="ltl2action",
         env="zone_env_nm",
-        formulas="zones_nm/finite",
+        formula_type="finite",
         run="pretrained",
-        expected_success_rate=0.621,
+        expected_success_rate=0.557,
     ),
 )
 
