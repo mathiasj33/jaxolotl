@@ -5,9 +5,9 @@ import jax
 import jax.numpy as jnp
 from jax.nn.initializers import Initializer
 
+from jaxolotl.alg.common.epsilon_distribution import EpsilonDistribution
 from jaxolotl.networks.mlp import MLP
 from jaxolotl.rl.actor.actor import Actor
-from jaxolotl.rl.distributions import EpsilonDistribution
 
 
 class ContinuousActor(Actor):
