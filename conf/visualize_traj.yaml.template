@@ -1,5 +1,7 @@
 defaults:
-  - experiment: struct_ltl/warehouse
+  - env: warehouse
+  - alg: struct_ltl
+  - experiment: ${env}/${alg}
   - hydra: simple
   - _self_
 

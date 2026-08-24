@@ -26,11 +26,17 @@ def load_df(path: str | Path) -> pd.DataFrame:
 
     avg_data["timestep"] = avg_data["bin"] * bin_size
 
-    avg_data["name"] = Path(path).parent.parent.name
+    path = Path(path)
+    method = path.parent.parent.name
+    run = path.parent.name
+    avg_data["name"] = f"{method}/{run}"
     return avg_data
 
 
-log_files = ["runs/ZoneEnv-NM/struct_ltl/main/logs.csv"]
+log_files = [
+    "runs/ZoneEnv-NM/struct_ltl/verify/logs.csv",
+    "../jaxltl/runs/ZoneEnv-NM/struct_ltl/main/logs.csv",
+]
 
 dfs = [load_df(path) for path in log_files]
 df = pd.concat(dfs, ignore_index=True)

@@ -1,18 +1,16 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env
-  - /alg: deep_ltl
   - /rl_alg: ppo
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.deep_ltl.curriculum.zone_env_curriculum.make_stages
-  num_samples: 1e5
+    _target_: jaxolotl.alg.ltl2action.curriculum.zone_env_curriculum.make_stages
+  num_samples: 1e4
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.deep_ltl.model.model.DeepLTLModel
+  _target_: jaxolotl.alg.ltl2action.model.model.LTL2ActionModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
@@ -25,18 +23,16 @@ model:
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
     state_dependent_std: true
-    use_epsilon: true
+    use_epsilon: false
   critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
-  sequence:
-    embedding_dim: 16
-    deep_sets:
-      _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: [32]
-      out_size: 16
-      activation: ${act:relu}
+  rgcn:
+    _target_: jaxolotl.networks.rgcn.RGCN
+    embedding_dim: 32
+    num_layers: 8
+    activation: ${act:tanh}
 
 rl_alg:
   total_timesteps: 20e6

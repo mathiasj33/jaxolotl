@@ -1,8 +1,7 @@
 # @package __global__
 
 defaults:
-  - /experiment/struct_ltl/warehouse
-  - override /alg: gcn_ltl
+  - /experiment/warehouse/struct_ltl
   - _self_
 
 model:

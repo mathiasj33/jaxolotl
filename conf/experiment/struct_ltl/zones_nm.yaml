@@ -1,9 +1,0 @@
-# @package __global__
-
-defaults:
-  - /experiment/struct_ltl/zones
-  - override /env: zone_env_nm
-  - _self_
-
-rl_alg:
-  vf_coef: 1.0

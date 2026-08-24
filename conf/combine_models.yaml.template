@@ -1,5 +1,7 @@
 defaults:
-  - experiment: ltl2action/warehouse
+  - env: warehouse
+  - alg: ltl2action
+  - experiment: ${env}/${alg}
   - hydra: simple
   - _self_
 

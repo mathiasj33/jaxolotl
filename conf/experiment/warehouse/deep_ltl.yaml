@@ -1,19 +1,16 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env
-  - /alg: struct_ltl
   - /rl_alg: ppo
-  - /model/sequence: alibi_attention
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.struct_ltl.curriculum.zone_env_curriculum.make_stages
-  num_samples: 1e3
+    _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make_stages
+  num_samples: 1e4
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
+  _target_: jaxolotl.alg.deep_ltl.model.model.DeepLTLModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
@@ -21,7 +18,7 @@ model:
     out_size: 64
     activation: ${act:tanh}
   actor:
-    _target_: jaxolotl.rl.actor.continuous_actor.ContinuousActor
+    _target_: jaxolotl.rl.actor.composite_actor.CompositeActor
     hidden_sizes: [64, 64, 64]
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
@@ -33,29 +30,24 @@ model:
     activation: ${act:tanh}
   sequence:
     embedding_dim: 16
-    clause_mlp:
+    deep_sets:
       _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: []
-      out_size: 16
-      activation: ${act:relu}
-    disjunct_mlp:
-      _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: []
+      hidden_sizes: [32]
       out_size: 16
       activation: ${act:relu}
 
 rl_alg:
-  total_timesteps: 20e6
-  num_envs: 16
-  num_steps: 4096
-  num_minibatches: 32
-  update_epochs: 10
+  total_timesteps: 2e8
+  num_envs: 128
+  num_steps: 1024
+  num_minibatches: 4
+  update_epochs: 5
   gamma: 0.998
   gae_lambda: 0.95
   clip_eps: 0.2
   ent_coef: 0.003
   vf_coef: 0.5
-  lr: 3e-4
-  max_grad_norm: 0.5
+  lr: 5e-4
+  max_grad_norm: 1.0
   anneal_lr: false
   adam_eps: 1e-8

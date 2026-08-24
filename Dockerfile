@@ -36,5 +36,5 @@ ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="/opt/pixi/bin:${PATH}"
 
 # Default to an interactive shell; run experiments with:
-# pixi run -e gpu python scripts/train.py experiment=struct_ltl/warehouse run=tmp
+# pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 CMD ["bash"]

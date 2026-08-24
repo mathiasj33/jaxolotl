@@ -1,5 +1,7 @@
 defaults:
-  - experiment: struct_ltl/zones_nm
+  - env: zone_env_nm
+  - alg: struct_ltl
+  - experiment: ${env}/${alg}
   - hydra: training_run
   - _self_
 

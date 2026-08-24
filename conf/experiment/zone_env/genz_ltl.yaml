@@ -1,8 +1,6 @@
 # @package __global__
 
 defaults:
-  - /env: zone_env
-  - /alg: genz_ltl
   - /rl_alg: ppo_safe
 
 curriculum:

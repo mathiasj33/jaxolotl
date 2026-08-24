@@ -67,27 +67,26 @@ docker run --rm -it --gpus all \
 
 We use [Hydra](https://hydra.cc/docs/intro/) to configure experiments. The below
 commands assume you want to train and evaluate StructLTL for the Warehouse
-environment. You can set the experiment Hydra configuration via command line; see the
-`conf` subfolder for the pre-made experiment configuration files.
+environment. Select the algorithm and environment via `alg` and `env` configuration keys. Hydra loads the matching `${env}/${alg}` configuration from `conf/experiment`.
 
 ### Precomputing Resets
 
 For efficiency, we precompute the environment resets for both training and evaluation:
 ```bash
-pixi run -e gpu python scripts/precompute_resets.py experiment=struct_ltl/warehouse train=true
-pixi run -e gpu python scripts/precompute_resets.py experiment=struct_ltl/warehouse train=false
+pixi run -e gpu python scripts/precompute_resets.py env=warehouse train=true
+pixi run -e gpu python scripts/precompute_resets.py env=warehouse train=false
 ```
 
 For LTL2Action, we also recommend precomputing the training curriculum:
 ```bash
-pixi run -e gpu python scripts/precompute_curriculum.py experiment=ltl2action/warehouse
+pixi run -e gpu python scripts/precompute_curriculum.py alg=ltl2action env=warehouse
 ```
 
 ### Training
 
 To train a policy:
 ```bash
-pixi run -e gpu python scripts/train.py experiment=struct_ltl/warehouse run=tmp
+pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 ```
 
 To plot training performance:
@@ -103,7 +102,7 @@ pixi run -e gpu python scripts/plotting/plot_training_curves.py
 
 To evaluate the trained models:
 ```bash
-pixi run -e gpu python scripts/eval/eval.py experiment=struct_ltl/warehouse run=tmp formulas=warehouse/finite eval.finite=True
+pixi run -e gpu python scripts/eval/eval.py alg=struct_ltl env=warehouse run=tmp formulas=warehouse/finite eval.finite=True
 ```
 
 Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See [eval.yaml](conf/eval.yaml.template) for other configuration options.
@@ -116,12 +115,12 @@ Pretrained models can be evaluated with `run=pretrained` (once they have been in
 
 To visualize trajectories for the trained policy on an LTL formula (both for drawing trajectories and rendering them in real-time):
 ```bash
-pixi run -e gpu python scripts/eval/visualize_trajectories.py experiment=struct_ltl/warehouse run=pretrained eval.formula="F (vase & region_a & X(!vase & region_a))"
+pixi run -e gpu python scripts/eval/visualize_trajectories.py alg=struct_ltl env=warehouse run=pretrained eval.formula="F (vase & region_a & X(!vase & region_a))"
 ```
 
 To compute evaluation curves:
 ```bash
-pixi run -e gpu python scripts/eval/compute_eval_curves.py experiment=struct_ltl/warehouse run=tmp +formulas=warehouse/finite
+pixi run -e gpu python scripts/eval/compute_eval_curves.py alg=struct_ltl env=warehouse run=tmp +formulas=warehouse/finite
 ```
 
 Note that only final pretrained models are provided, so evaluation curves can only be computed for new runs.
@@ -134,7 +133,7 @@ pixi run -e gpu python scripts/plotting/plot_eval_curves.py
 
 ### Ablation Studies
 
-This repository includes code for reproducing the ablation studies D.2.1 and D.2.2. See `conf/experiment/tokenized_ltl/warehouse.yaml` for a configuration of StructLTL with a flat sequence model, and `conf/experiment/gcn_ltl/warehouse.yaml` for the GNN configuration. To train StructLTL with a GRU encoder instead of the attention mechanism, specify `model/sequence=gru`. 
+This repository includes code for reproducing the ablation studies D.2.1 and D.2.2. See `conf/experiment/warehouse/tokenized_ltl.yaml` for a configuration of StructLTL with a flat sequence model, and `conf/experiment/warehouse/gcn_ltl.yaml` for the GNN configuration. To train StructLTL with a GRU encoder instead of the attention mechanism, specify `model/sequence=gru`.
 
 ## License
 
@@ -144,9 +143,9 @@ This project is licensed under the terms of the [MIT License](/LICENSE).
 
 If you find this code useful in your research, please consider citing our paper:
 ```bibtex
-@inproceedings{structltl,
-    title     = {Zero-Shot Instruction Following in {RL} via Structured {LTL} Representations},
-    author    = {Mathias Jackermeier and Mattia Giuri and Jacques Cloete and Alessandro Abate},
+@inproceedings{jaxolotl,
+    title     = {Jaxolotl: {A} Unified High-Performance Benchmark Suite for {LTL}-Based Multi-Task {RL}},
+    author    = {Mathias Jackermeier and Jacques Cloete and Alessandro Abate},
     booktitle = {arXiv},
     year      = {2026}
 }

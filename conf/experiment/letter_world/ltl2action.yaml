@@ -1,8 +1,6 @@
 # @package __global__
 
 defaults:
-  - /env: letter_world
-  - /alg: ltl2action
   - /rl_alg: ppo
 
 curriculum:

@@ -1,19 +1,16 @@
 # @package __global__
 
 defaults:
-  - /env: warehouse_env
-  - /alg: struct_ltl
   - /rl_alg: ppo
-  - /model/sequence: alibi_attention
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.struct_ltl.curriculum.warehouse_curriculum.make_stages
+    _target_: jaxolotl.alg.ltl2action.curriculum.warehouse_curriculum.make_stages
   num_samples: 1e4
   episode_window: 256
 
 model:
-  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
+  _target_: jaxolotl.alg.ltl2action.model.model.LTL2ActionModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
@@ -26,29 +23,20 @@ model:
     hidden_activation: ${act:relu}
     output_activation: ${act:tanh}
     state_dependent_std: true
-    use_epsilon: true
+    use_epsilon: false
   critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
-  sequence:
+  rgcn:
+    _target_: jaxolotl.networks.rgcn.RGCN
     embedding_dim: 16
-    clause_mlp:
-      _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: []
-      out_size: 16
-      activation: ${act:relu}
-    disjunct_mlp:
-      _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: []
-      out_size: 16
-      activation: ${act:relu}
-    attention:
-      alibi_slope: 5.0
+    num_layers: 8
+    activation: ${act:tanh}
 
 rl_alg:
   total_timesteps: 2e8
-  num_envs: 128
+  num_envs: 64
   num_steps: 1024
   num_minibatches: 4
   update_epochs: 5

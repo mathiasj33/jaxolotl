@@ -17,7 +17,8 @@ SUCCESS_RATE_PATTERN = re.compile(
 @dataclass(frozen=True)
 class EvaluationCase:
     name: str
-    experiment: str
+    alg: str
+    env: str
     formulas: str
     run: str
     expected_success_rate: float
@@ -27,7 +28,8 @@ class EvaluationCase:
     @property
     def hydra_overrides(self) -> tuple[str, ...]:
         return (
-            f"experiment={self.experiment}",
+            f"alg={self.alg}",
+            f"env={self.env}",
             f"formulas={self.formulas}",
             f"run={self.run}",
             *self.extra_overrides,
@@ -37,28 +39,32 @@ class EvaluationCase:
 EVALUATION_CASES = (
     EvaluationCase(
         name="StructLTL/Zones-NM",
-        experiment="struct_ltl/zones_nm",
+        alg="struct_ltl",
+        env="zone_env_nm",
         formulas="zones_nm/finite",
         run="pretrained",
         expected_success_rate=0.946,
     ),
     EvaluationCase(
         name="DeepLTL/Zones-NM",
-        experiment="deep_ltl/zones_nm",
+        alg="deep_ltl",
+        env="zone_env_nm",
         formulas="zones_nm/finite",
         run="pretrained",
         expected_success_rate=0.917,
     ),
     EvaluationCase(
         name="GenZ-LTL/Zones-NM",
-        experiment="genz_ltl/zones_nm",
+        alg="genz_ltl",
+        env="zone_env_nm",
         formulas="zones_nm/finite",
         run="pretrained",
         expected_success_rate=0.812,
     ),
     EvaluationCase(
         name="LTL2Action/Zones-NM",
-        experiment="ltl2action/zones_nm",
+        alg="ltl2action",
+        env="zone_env_nm",
         formulas="zones_nm/finite",
         run="pretrained",
         expected_success_rate=0.621,
