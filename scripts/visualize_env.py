@@ -9,20 +9,13 @@ from jaxolotl.environments.wrappers.auto_reset_wrapper import (
     AutoResetWrapper,
     ResetStrategy,
 )
-from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
-    PrecomputedResetWrapper,
-)
 
 
 @hydra.main(version_base="1.3", config_path="../conf", config_name="visualize_env")
 def main(cfg: DictConfig):
-    env, params = jaxolotl.make(cfg.env.name)
-    if cfg.env.use_precomputed_resets:
-        env = PrecomputedResetWrapper(
-            env,
-            params,
-            jaxolotl.DATA_DIR / cfg.env.name / cfg.env.precomputed_resets_path,
-        )
+    env, params = jaxolotl.make(
+        cfg.env.name, reset_source=cfg.get("reset_source", "test")
+    )
     env = AutoResetWrapper(env, reset_strategy=ResetStrategy.FULL)
 
     renderer: BaseRenderer = env.get_renderer(params)

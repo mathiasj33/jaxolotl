@@ -17,9 +17,6 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 import jaxolotl
-from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
-    PrecomputedResetWrapper,
-)
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
 from jaxolotl.eval.utils import load_model_checkpoints, make_eval_fn
@@ -30,12 +27,9 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="eval_curves")
 def main(cfg: DictConfig):
     # build environment
-    env, env_params = jaxolotl.make(cfg.env.name)
-    if cfg.env.use_precomputed_resets:
-        resets_path = (
-            f"{jaxolotl.DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
-        )
-        env = PrecomputedResetWrapper(env, env_params, resets_path)
+    env, env_params = jaxolotl.make(
+        cfg.env.name, reset_source=cfg.get("reset_source", "test")
+    )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
     env = VectorizeWrapper(env)

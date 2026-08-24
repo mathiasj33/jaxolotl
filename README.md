@@ -72,8 +72,8 @@ environment. Select the algorithm and environment via `alg` and `env` configurat
 
 For efficiency, we precompute the environment resets for both training and evaluation:
 ```bash
-pixi run -e gpu python scripts/precompute_resets.py env=warehouse train=true
-pixi run -e gpu python scripts/precompute_resets.py env=warehouse train=false
+pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=train
+pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=test
 ```
 
 For LTL2Action, we also recommend precomputing the training curriculum:
@@ -87,6 +87,10 @@ To train a policy:
 ```bash
 pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 ```
+
+Training uses the precomputed `train` reset pool, while evaluation uses the `test`
+pool. To use an environment's native reset implementation instead, add
+`+reset_source=native` to either command, but this will incur a noticeable performance cost.
 
 To plot training performance:
 ```bash

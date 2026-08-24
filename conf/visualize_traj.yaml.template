@@ -5,10 +5,6 @@ defaults:
   - hydra: simple
   - _self_
 
-env:
-  use_precomputed_resets: true
-  precomputed_resets_path: sampled_resets_test.eqx
-
 run: main
 
 eval:

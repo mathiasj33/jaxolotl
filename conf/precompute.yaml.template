@@ -9,4 +9,4 @@ rl_alg:
   num_envs: 2048
 # precompute-specific params
 num_resets: 1e4
-train: false
+split: test

@@ -5,7 +5,5 @@ defaults:
   - hydra: simple
   - _self_
 
-env:
-  use_precomputed_resets: false
 policy: "teleop" # "teleop" or "random"
 print_debug: true

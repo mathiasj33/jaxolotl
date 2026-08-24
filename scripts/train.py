@@ -17,7 +17,7 @@ import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
 import jaxolotl
-from jaxolotl import DATA_DIR, eqx_utils
+from jaxolotl import eqx_utils
 from jaxolotl.environments.environment import EnvParams
 from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
@@ -27,9 +27,6 @@ from jaxolotl.environments.wrappers import (
     VectorizeWrapper,
 )
 from jaxolotl.environments.wrappers.auto_reset_wrapper import ResetStrategy
-from jaxolotl.environments.wrappers.precomputed_reset_wrapper import (
-    PrecomputedResetWrapper,
-)
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.eqx_utils.utils import compute_num_params
 from jaxolotl.rl.actor_critic import ActorCritic
@@ -44,10 +41,9 @@ def main(cfg: DictConfig):
         jax.config.update("jax_default_device", jax.devices("cpu")[0])
         logger.info("Using CPU for training")
 
-    env, env_params = jaxolotl.make(cfg.env.name)
-    if cfg.env.use_precomputed_resets:
-        resets_path = f"{DATA_DIR}/{cfg.env.name}/{cfg.env.precomputed_resets_path}"
-        env = PrecomputedResetWrapper(env, env_params, resets_path)
+    env, env_params = jaxolotl.make(
+        cfg.env.name, reset_source=cfg.get("reset_source", "train")
+    )
     env = TimeLimitWrapper(env)
 
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=True)

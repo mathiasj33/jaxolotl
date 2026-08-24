@@ -8,9 +8,6 @@ defaults:
   - _self_
 
 run: pretrained
-env:
-  use_precomputed_resets: true
-  precomputed_resets_path: sampled_resets_test.eqx
 eval:
   finite: ${formula_type.finite}
   num_episodes: 50

@@ -7,10 +7,6 @@ defaults:
   - hydra: simple
   - _self_
 
-env:
-  use_precomputed_resets: true
-  precomputed_resets_path: sampled_resets_test.eqx
-
 run: pretrained
 eval:
   finite: ${formula_type.finite}
