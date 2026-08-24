@@ -2,10 +2,10 @@ from .batching import pad_and_stack
 from .lax import filter_map, filter_scan, filter_while_loop
 from .serialization import (
     load,
-    load_from_treedef,
+    load_from_template,
     load_metadata,
     save,
-    save_with_treedef,
+    save_with_template,
 )
 from .utils import add_batch_dim, compute_size, ensemble_index, pytree_where
 
@@ -14,9 +14,9 @@ __all__ = [
     "filter_map",
     "filter_while_loop",
     "load",
-    "load_from_treedef",
+    "load_from_template",
     "save",
-    "save_with_treedef",
+    "save_with_template",
     "load_metadata",
     "pad_and_stack",
     "add_batch_dim",

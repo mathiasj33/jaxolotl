@@ -42,7 +42,14 @@ def main(cfg: DictConfig):
     save_path = save_dir / "curriculum.eqx"
 
     logger.info(f"Saving precomputed samples to {save_path}")
-    eqx_utils.save_with_treedef(save_path, curriculum.samples)
+    eqx_utils.save_with_template(
+        save_path,
+        curriculum.samples,
+        metadata={
+            "num_stages": int(curriculum.thresholds.shape[0]),
+            "num_samples": curriculum.num_samples,
+        },
+    )
     logger.info("Save complete.")
 
 

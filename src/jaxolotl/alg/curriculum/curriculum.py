@@ -131,7 +131,22 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
                 samples,
             )
         else:
-            self.samples = eqx_utils.load_from_treedef(load_path)
+            metadata = eqx_utils.load_metadata(load_path)
+            expected_metadata = {
+                "num_stages": len(stages),
+                "num_samples": num_samples,
+            }
+            mismatches = [
+                f"{key}: file has {metadata.get(key)!r}, expected {expected!r}"
+                for key, expected in expected_metadata.items()
+                if metadata.get(key) != expected
+            ]
+            if mismatches:
+                raise ValueError(
+                    f"Precomputed curriculum at {load_path} is incompatible with "
+                    f"the current configuration ({'; '.join(mismatches)})."
+                )
+            self.samples = eqx_utils.load_from_template(load_path)
             logger.info(f"Loaded precomputed curriculum samples from {load_path}")
 
     @eqx.filter_jit
