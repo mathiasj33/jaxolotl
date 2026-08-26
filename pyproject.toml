@@ -26,7 +26,10 @@ allow-direct-references = true
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["linux-64"]
+platforms = [
+    "linux-64",
+    { name = "linux-64-cuda", platform = "linux-64", cuda = "12" },
+]
 
 [tool.pixi.pypi-dependencies]
 jaxolotl = { path = ".", editable = true }
@@ -53,15 +56,13 @@ spot = ">=2.14.4,<3"
 tabulate = ">=0.10.0,<0.11"
 
 [tool.pixi.feature.gpu]
-platforms = ["linux-64"]
-
-[tool.pixi.feature.gpu.system-requirements]
-cuda = "12"
+platforms = ["linux-64-cuda"]
 
 [tool.pixi.feature.gpu.pypi-dependencies]
 jax = { version = "*", extras = ["cuda12"] }
 
 [tool.pixi.environments]
+default = { platforms = ["linux-64"] }
 gpu = ["gpu"]
 
 [tool.pytest.ini_options]

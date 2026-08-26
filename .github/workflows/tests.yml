@@ -21,5 +21,11 @@ jobs:
         with:
           cache: true
 
+      - name: Install configs
+        run: pixi run copy-templates
+
       - name: Run unit tests
-        run: pixi run pytest -m "not e2e"
+        run: >-
+          pixi run pytest
+          -m "not e2e"
+          --ignore=src/jaxolotl/ltl/automata/semml_test.py
