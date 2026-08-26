@@ -1,15 +1,29 @@
+<p align="center">
+    <img src="assets/logo.png" width="250px" />
+</p>
+
+<div align="center" style="font-size: 1.5em; font-weight: bold; margin: 0.83em 0;" role="heading" aria-level="2">
+    <p><span style="font-variant: small-caps;">Jaxolotl</span>: A Unified High-Performance Benchmark Suite for<br> LTL-Based Multi-Task RL</p>
+</div>
+
+<div align="center">
+
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.prefix.dev/latest/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+</div>
+<hr>
 
-## Jaxolotl: A Unified High-Performance Benchmark Suite for LTL-Based Multi-Task RL
+Jaxolotl is a unified framework providing high-performance [JAX](https://docs.jax.dev/en/latest/index.html) implementations of a wide range of algorithms and environments for LTL-conditioned multi-task RL. Our implementations provide speed-ups of up to 20-30x compared to standard PyTorch implementations.
 
-This repository contains the official implementation of StructLTL ([arxiv.org/2602.14344](https://arxiv.org/pdf/2602.14344)), as well as the environments
-*ZoneEnv-NM* and *Warehouse*.
+<div align="center">
 
-Also included are baselines [DeepLTL](https://arxiv.org/pdf/2410.04631),
-[LTL2Action](https://arxiv.org/pdf/2102.06858), and [GenZ-LTL](https://arxiv.org/abs/2508.01561) for comparison. We adapted these baselines to fit within our JAX-based implementation of StructLTL and the environments.
+[**Installation 🔧**](#installation-) | [**Algorithms 🤖**]() | [**Environments 🌍**]() | [**Performance 🚀**]() | [**Getting started ⚡**](#getting-started-)
 
-## Installation
+</div>
+
+## Installation 🔧
 
 We recommend using [pixi](https://pixi.sh/latest/) to install the required dependencies
 in a virtual environment. Installing on GPU is highly recommended:
@@ -78,7 +92,27 @@ docker run --rm -it --gpus all \
   jaxolotl:gpu
 ```
 
-## Experiments
+## Algorithms 🤖
+
+**Algorithm** | Finite | Infinite | Non-myopic | Curriculum | Task representation | Paper | Code
+--- | --- | --- | --- | --- | --- | --- | ---
+LTL2Action | ✅ | ❌ | ✅ | ✅ | Formula syntax tree | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/alg/ltl2action)
+DeepLTL | ✅ | ✅ | ✅ | ✅ | Reach-avoid sequence | [Link](https://arxiv.org/abs/2410.04631) | [Link](src/jaxolotl/alg/deep_ltl)
+GenZ-LTL | ✅ | ✅ | ❌ | ❌ | Reach-avoid subgoal / observation reduction | [Link](https://arxiv.org/abs/2508.01561) | [Link](src/jaxolotl/alg/genz_ltl)
+SemLTL | ✅ | ✅ | ✅ | ✅ | Semantically labelled LDBA | [Link](https://arxiv.org/abs/2602.06746) | [Link](src/jaxolotl/alg/sem_ltl)
+StructLTL | ✅ | ✅ | ✅ | ✅ | Boolean reach-avoid sequence | [Link](https://arxiv.org/abs/2602.14344) | [Link](src/jaxolotl/alg/struct_ltl)
+
+## Environments 🌍
+
+**Environment** | Observation space | Action space | Paper | Code
+--- | --- | --- | --- | ---
+LetterWorld | Grid (7 × 7 × 13) | Discrete (4 directions) | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/environments/letter_world)
+ZoneEnv | Proprioception + lidar (69D) | Continuous (2D) | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/environments/zone_env)
+ZoneEnv-NM | Proprioception + lidar (69D) | Continuous (2D) | [Link](https://arxiv.org/abs/2602.14344) | [Link](src/jaxolotl/environments/zone_env)
+Warehouse | Proprioception + lidar + region/inventory features (47D) | Hybrid (2D continuous + 5 discrete) | [Link](https://arxiv.org/abs/2602.14344) | [Link](src/jaxolotl/environments/warehouse_env)
+ConveyorWorld | Position (2D) | Discrete (4 directions) | [Link](https://arxiv.org/abs/2602.06746) | [Link](src/jaxolotl/environments/conveyor_world)
+
+## Getting Started ⚡
 
 We use [Hydra](https://hydra.cc/docs/intro/) to configure experiments. The below
 commands assume you want to train and evaluate StructLTL for the Warehouse
