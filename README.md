@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/logo.png" width="250px" />
+    <img src="assets/logo.png" width="300px" />
 </p>
 
 <div align="center" style="font-size: 1.5em; font-weight: bold; margin: 0.83em 0;" role="heading" aria-level="2">
