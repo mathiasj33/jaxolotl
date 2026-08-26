@@ -2,8 +2,8 @@
     <img src="assets/logo.png" width="300px" />
 </p>
 
-<div align="center" style="font-size: 1.5em; font-weight: bold; margin: 0.83em 0;" role="heading" aria-level="2">
-    <p><span style="font-variant: small-caps;">Jaxolotl</span>: A Unified High-Performance Benchmark Suite for<br> LTL-Based Multi-Task RL</p>
+<div align="center" style="font-size: 1.5em; font-weight: bold">
+    <p><h2> Jaxolotl: A Unified High-Performance Benchmark Suite for<br> LTL-Based Multi-Task RL</h2></p>
 </div>
 
 <div align="center">
@@ -13,7 +13,7 @@
 [![Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.prefix.dev/latest/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 </div>
-<hr>
+
 
 Jaxolotl is a unified framework providing high-performance [JAX](https://docs.jax.dev/en/latest/index.html) implementations of a wide range of algorithms and environments for LTL-conditioned multi-task RL. Our implementations provide speed-ups of up to 20-30x compared to standard PyTorch implementations.
 
