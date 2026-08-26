@@ -3,7 +3,7 @@
 </p>
 
 <div align="center" style="font-size: 1.5em; font-weight: bold">
-    <p><h1> Jaxolotl: A Unified High-Performance Benchmark Suite for<br> LTL-Based Multi-Task RL</h1></p>
+    <p><h1> Jaxolotl: A Unified High-Performance Benchmark Suite for LTL-Based Multi-Task RL</h1></p>
 </div>
 
 <div align="center">
