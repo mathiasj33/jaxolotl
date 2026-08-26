@@ -9,7 +9,7 @@
 <div align="center">
 
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![Tests](https://github.com/mathiasj33/jaxolotl-private/actions/workflows/tests.yml/badge.svg)](https://github.com/mathiasj33/jaxolotl-private/actions/workflows/tests.yml)
+[![Tests](https://github.com/mathiasj33/jaxolotl-private/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/mathiasj33/jaxolotl-private/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.prefix.dev/latest/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
