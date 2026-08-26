@@ -1,0 +1,3 @@
+[submodule "semml"]
+	path = semml
+	url = https://gitlab.com/live-lab/software/semml.git

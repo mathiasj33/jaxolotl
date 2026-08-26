@@ -34,7 +34,7 @@ def main(cfg: DictConfig):
     # build environment
     env_params = cfg.get("env_params", {})
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.get("reset_source", "test"), **env_params
+        cfg.env.name, reset_source=cfg.env.get("reset_source", "test"), **env_params
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)

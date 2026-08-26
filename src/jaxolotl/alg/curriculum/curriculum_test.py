@@ -18,6 +18,16 @@ class Stage(CurriculumStage[None]):
         return None
 
 
+class RecordingBatcher:
+    num_parallel: int | None = None
+
+    @staticmethod
+    def batch(samples, env, num_parallel=1):
+        del env
+        RecordingBatcher.num_parallel = num_parallel
+        return Samples(jnp.arange(len(samples)))
+
+
 def _save_curriculum(path: Path, *, num_stages: int, num_samples: int) -> None:
     samples = Samples(jnp.zeros((num_stages, num_samples), dtype=jnp.int32))
     eqx_utils.save_with_template(
@@ -40,6 +50,18 @@ def test_loads_curriculum_with_matching_metadata(tmp_path):
     )
 
     assert curriculum.samples.values.shape == (2, 3)
+
+
+def test_forwards_num_parallel_to_batcher():
+    Curriculum(
+        stages=[Stage(None)],
+        batcher=RecordingBatcher(),  # type: ignore
+        env=None,  # type: ignore
+        num_samples=2,
+        num_parallel=3,
+    )
+
+    assert RecordingBatcher.num_parallel == 3
 
 
 @pytest.mark.parametrize(

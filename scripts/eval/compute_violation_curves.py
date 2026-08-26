@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def main(cfg: DictConfig):
     # build environment
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.get("reset_source", "test")
+        cfg.env.name, reset_source=cfg.env.get("reset_source", "test")
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)

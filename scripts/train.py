@@ -42,7 +42,7 @@ def main(cfg: DictConfig):
         logger.info("Using CPU for training")
 
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.get("reset_source", "train")
+        cfg.env.name, reset_source=cfg.env.get("reset_source", "train")
     )
     env = TimeLimitWrapper(env)
 
@@ -143,11 +143,11 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
         ]
         avg_returns = jnp.mean(window_returns)
 
-        # positive returns
-        window_pos_returns = metric["positive_return"][metric["done"]][
+        # average successes
+        window_successes = metric["success"][metric["done"]][
             -cfg.curriculum.episode_window :
         ]
-        avg_pos_returns = jnp.mean(window_pos_returns)
+        avg_success = jnp.mean(window_successes)
 
         window_stages = metric["curriculum_stage"][metric["done"]][
             -cfg.curriculum.episode_window :
@@ -158,7 +158,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
         # log progress
         logger.info(
-            f"seed {seed} | step {step} | ret {avg_returns:.2f} | sr {avg_pos_returns:.2f} | stage {avg_stage:.2f} ({min_stage:}, {max_stage:}) | sps {int(sps)} | eta {remaining}"
+            f"seed {seed} | step {step} | ret {avg_returns:.2f} | sr {avg_success:.2f} | stage {avg_stage:.2f} ({min_stage:}, {max_stage:}) | sps {int(sps)} | eta {remaining}"
         )
 
         # save checkpoint
@@ -173,6 +173,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
             wandb.log(
                 {
                     "avg_return": float(avg_returns),
+                    "avg_success": float(avg_success),
                     "avg_curriculum_stage": float(avg_stage),
                     "steps_per_second": int(sps),
                 },
@@ -181,7 +182,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
         # log to csv
         return_values = metric["episode_return"][metric["done"]].tolist()
-        pos_return_values = metric["positive_return"][metric["done"]].tolist()
+        success_values = metric["success"][metric["done"]].tolist()
         lengths = metric["episode_length"][metric["done"]].tolist()
         stages = metric["curriculum_stage"][metric["done"]].tolist()
         timesteps = (
@@ -191,7 +192,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
             {
                 "timestep": timesteps,
                 "return": return_values,
-                "positive_return": pos_return_values,
+                "success": success_values,
                 "length": lengths,
                 "curriculum_stage": stages,
             }

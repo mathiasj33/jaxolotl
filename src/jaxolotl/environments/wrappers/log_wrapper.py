@@ -12,7 +12,7 @@ class LogEnvState(WrapperState):
     step: jax.Array  # int
     total_step: jax.Array  # int
     ret: jax.Array  # float
-    pos_ret: jax.Array  # float
+    successes: jax.Array  # float
 
 
 class LogWrapper[
@@ -48,7 +48,7 @@ class LogWrapper[
             step=jnp.array(0, dtype=jnp.int32),
             total_step=jnp.array(0, dtype=jnp.int32),
             ret=jnp.array(0.0, dtype=jnp.float32),
-            pos_ret=jnp.array(0.0, dtype=jnp.float32),
+            successes=jnp.array(0.0, dtype=jnp.float32),
         )
 
     @eqx.filter_jit
@@ -61,7 +61,7 @@ class LogWrapper[
     ) -> EnvTransition[LogEnvState, TObsFeatures]:
         transition = super().step(key, state, action, params)
         ret = transition.reward + state.ret
-        pos_ret = jax.nn.relu(transition.reward) + state.pos_ret
+        successes = (transition.reward > 0).astype(jnp.float32) + state.successes
         length = state.step + 1
         total_step = state.total_step + 1
         stage = transition.state.curriculum_stage + 1
@@ -70,11 +70,11 @@ class LogWrapper[
             state=transition.state,
             total_step=state.total_step + 1,
             ret=ret * (1.0 - transition.done),
-            pos_ret=pos_ret * (1.0 - transition.done),
+            successes=successes * (1.0 - transition.done),
         )
         info = {
             "episode_return": ret,
-            "positive_return": pos_ret,
+            "success": successes,
             "episode_length": length,
             "total_step": total_step,
             "curriculum_stage": stage,

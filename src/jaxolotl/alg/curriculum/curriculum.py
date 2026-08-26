@@ -42,7 +42,9 @@ class SampleBatcher[TSample, TJaxSample](ABC):
 
     @staticmethod
     @abstractmethod
-    def batch(samples: list[TSample], env: Environment | EnvWrapper) -> TJaxSample:
+    def batch(
+        samples: list[TSample], env: Environment | EnvWrapper, num_parallel: int = 1
+    ) -> TJaxSample:
         """Batch a list of samples into a JAX-compatible format."""
         pass
 
@@ -110,6 +112,7 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
         num_samples: int,
         *,
         load_path: Path | None = None,
+        num_parallel: int = 1,
     ):
         self.num_samples = num_samples
         self.thresholds = jnp.array([s.threshold for s in stages], dtype=jnp.float32)
@@ -125,7 +128,7 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
                     )
                 ]
                 samples_list.extend(samples)
-            samples = batcher.batch(samples_list, env)
+            samples = batcher.batch(samples_list, env, num_parallel=num_parallel)
             self.samples = jax.tree.map(  # shape: (num_stages, num_samples, ...)
                 lambda x: x.reshape(len(stages), -1, *x.shape[1:]),
                 samples,

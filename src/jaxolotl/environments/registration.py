@@ -1,5 +1,6 @@
 from functools import partial
 
+from jaxolotl.environments.conveyor_world.conveyor_world import ConveyorWorld
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.letter_world.letter_world import LetterWorld
 from jaxolotl.environments.reset import (
@@ -19,6 +20,7 @@ _name_to_env = {
     "ZoneEnv-NM": partial(ZoneEnv, non_myopic=True),
     "LetterWorld": LetterWorld,
     "WarehouseEnv": WarehouseEnv,
+    "ConveyorWorld": ConveyorWorld,
 }
 
 

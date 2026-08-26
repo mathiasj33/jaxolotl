@@ -19,5 +19,7 @@ class ReachAvoidSequenceBatcher(
     def batch(
         samples: list[ReachAvoidSequence],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxReachAvoidSequence:
+        del num_parallel
         return JaxReachAvoidSequence.from_reach_avoid_seqs(samples, env)

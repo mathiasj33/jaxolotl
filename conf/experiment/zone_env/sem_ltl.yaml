@@ -1,0 +1,48 @@
+# @package __global__
+
+defaults:
+  - /rl_alg: ppo
+
+curriculum:
+  make_stages:
+      _target_: jaxolotl.alg.sem_ltl.curriculum.zone_env_curriculum.make_stages
+  num_samples: 1e4
+  episode_window: 256
+
+model:
+  _target_: jaxolotl.alg.sem_ltl.model.model.SemLTLModel
+  _recursive_: false
+  env_net:
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
+    hidden_sizes: [128]
+    out_size: 64
+    activation: ${act:tanh}
+  actor:
+    _target_: jaxolotl.alg.sem_ltl.model.actor.multi_eps_continuous_actor.MultiEpsilonContinuousActor
+    hidden_sizes: [64, 64, 64]
+    hidden_activation: ${act:relu}
+    output_activation: ${act:tanh}
+    state_dependent_std: true
+  critic:
+    _target_: jaxolotl.networks.mlp.MLP
+    hidden_sizes: [64, 64]
+    activation: ${act:tanh}
+  embedding_dim: 32
+  semantic:
+    embedding_size: 138
+
+rl_alg:
+  total_timesteps: 20e6
+  num_envs: 16
+  num_steps: 4096
+  num_minibatches: 32
+  update_epochs: 10
+  gamma: 0.998
+  gae_lambda: 0.95
+  clip_eps: 0.2
+  ent_coef: 0.003
+  vf_coef: 0.5
+  lr: 3e-4
+  max_grad_norm: 0.5
+  anneal_lr: false
+  adam_eps: 1e-8

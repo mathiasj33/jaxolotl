@@ -68,9 +68,12 @@ def draw_ldba(
 
 
 def construct_ldba(
-    formula: str, prune: bool = True, assignments: list[Assignment] | None = None
+    formula: str,
+    propositions: set[str],
+    assignments: list[Assignment],
+    prune: bool = True,
 ) -> LDBA:
-    ldba = ltl2ldba(formula)
+    ldba = ltl2ldba(formula, propositions, assignments)
     print("Constructed LDBA.")
     assert ldba.check_valid()
     print("Checked valid.")
@@ -94,7 +97,9 @@ if __name__ == "__main__":
     props = WarehouseEnv.propositions
     print_paths = False
 
-    ldba = construct_ldba(f, prune=True, assignments=assignments)
+    ldba = construct_ldba(
+        f, propositions=set(props), assignments=assignments, prune=True
+    )
 
     for transitions in ldba.state_to_transitions.values():
         num_eps = sum(t.is_epsilon() for t in transitions)

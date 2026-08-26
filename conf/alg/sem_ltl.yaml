@@ -1,0 +1,13 @@
+name: sem_ltl
+
+wrap_env:
+  _target_: jaxolotl.alg.sem_ltl.wrappers.utils.wrap_env
+
+agent:
+  _target_: jaxolotl.eval.agent.Agent.instantiate
+
+preprocess_formulas:
+  _target_: jaxolotl.alg.sem_ltl.batching.preprocess_formulas
+
+batcher:
+  _target_: jaxolotl.alg.sem_ltl.batching.SemanticLDBABatcher

@@ -1,0 +1,5 @@
+defaults:
+  - train
+  - _self_
+
+num_parallel: 1

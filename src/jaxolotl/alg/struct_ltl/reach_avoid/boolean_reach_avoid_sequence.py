@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING
 
 from jaxolotl.ltl.logic.assignment import Assignment
@@ -27,7 +27,9 @@ class BooleanReachAvoidSequence(ReachAvoidSequence):
 
     def __init__(
         self,
-        reach_avoid: list[tuple[BooleanNode | EpsilonType | None, BooleanNode | None]],
+        reach_avoid: Sequence[
+            tuple[BooleanNode | EpsilonType | None, BooleanNode | None]
+        ],
         assignments: Iterable[Assignment],
         repeat_last: int = 0,
     ):
@@ -48,7 +50,9 @@ class BooleanReachAvoidSequence(ReachAvoidSequence):
 
     @staticmethod
     def _compute_sat_assignments(
-        reach_avoid: list[tuple[BooleanNode | EpsilonType | None, BooleanNode | None]],
+        reach_avoid: Sequence[
+            tuple[BooleanNode | EpsilonType | None, BooleanNode | None]
+        ],
         assignments: tuple[Assignment, ...],
     ) -> list[tuple[AssignmentSet | EpsilonType, AssignmentSet]]:
         results = []

@@ -1,3 +1,4 @@
+import json
 import re
 from collections.abc import Iterable
 from typing import Any
@@ -28,10 +29,7 @@ class HOAParser:
             return self.ldba
         self._parse_propositions()
         assert self.propositions is not None
-        self.ldba = LDBA(
-            self.propositions,
-            formula=self.formula,
-        )
+        self.ldba = LDBA(self.propositions, formula=self.formula)
         self._parse_header()
         self._parse_body()
         return self.ldba
@@ -85,11 +83,12 @@ class HOAParser:
 
     def _parse_header_line(self) -> tuple[str, str]:
         line = self._consume(error_msg="Expecting header line.")
-        if ":" not in line:
+        sep = ":" if ":" in line else " "
+        if sep not in line:
             raise ValueError(
                 f"Error parsing HOA at line {self.line_number}. Expected a header line."
             )
-        name, value = line.split(":")
+        name, value = line.split(sep)
         return name.strip(), value.strip()
 
     def _parse_body(self):
@@ -105,8 +104,12 @@ class HOAParser:
             raise ValueError(
                 f"Error parsing HOA at line {self.line_number}. Expected a state line."
             )
-        state = int(state_line.split(" ")[1])
-        self.ldba.add_state(state)
+        parts = state_line.split(" ", 2)
+        state = int(parts[1])
+        info = {}
+        if len(parts) > 2:
+            info = json.loads(parts[2])
+        self.ldba.add_state(state, info=info)
         while self._peek().startswith("[") or self._peek().isdigit():
             self._parse_transition(state)
 

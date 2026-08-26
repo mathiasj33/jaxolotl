@@ -1,5 +1,4 @@
-from typing import NamedTuple
-
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -9,7 +8,7 @@ from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.ldba import LDBA
 
 
-class JaxLDBA(NamedTuple):
+class JaxLDBA(eqx.Module):
     """Jax representation of a Limit Deterministic Büchi Automaton (LDBA)."""
 
     num_states: jax.Array  # int32
@@ -75,6 +74,8 @@ class JaxLDBA(NamedTuple):
         accepting = np.zeros((ldba.num_states, num_assignments), dtype=bool)
         sink_states = np.zeros((ldba.num_states,), dtype=bool)
 
+        assignment_to_idx = {a: i for i, a in enumerate(env.assignments())}
+
         for state in range(ldba.num_states):
             if state in ldba.state_to_scc:
                 scc = ldba.state_to_scc[state]
@@ -90,7 +91,7 @@ class JaxLDBA(NamedTuple):
                     transitions[state, index] = transition.target
                 else:
                     for assignment in transition.valid_assignments:
-                        index = env.assignments().index(assignment)
+                        index = assignment_to_idx[assignment]
                         transitions[state, index] = transition.target
                         if transition.accepting:
                             accepting[state, index] = True

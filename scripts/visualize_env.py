@@ -14,7 +14,7 @@ from jaxolotl.environments.wrappers.auto_reset_wrapper import (
 @hydra.main(version_base="1.3", config_path="../conf", config_name="visualize_env")
 def main(cfg: DictConfig):
     env, params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.get("reset_source", "test")
+        cfg.env.name, reset_source=cfg.env.get("reset_source", "test")
     )
     env = AutoResetWrapper(env, reset_strategy=ResetStrategy.FULL)
 

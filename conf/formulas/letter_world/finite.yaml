@@ -2,4 +2,3 @@
 - "(F d) & (!f U (d & F b))"
 - "(F ((a | c | j) & F b)) & (F (c & F d)) & F k"
 - "!a U (b & (!c U (d & (!e U f))))"
-- "((a | b | c | d) => F (e & (F (f & F g)))) U (h & F i)"

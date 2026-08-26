@@ -27,7 +27,9 @@ class BooleanSequenceBatcher(
     def batch(
         samples: list[BooleanReachAvoidSequence],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxClauseReachAvoidSequence:
+        del num_parallel
         return JaxClauseReachAvoidSequence.from_reach_avoid_seqs(samples, env)
 
 
@@ -44,7 +46,9 @@ class GraphSequenceBatcher(
     def batch(
         samples: list[BooleanReachAvoidSequence],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxGraphReachAvoidSequence:
+        del num_parallel
         return JaxGraphReachAvoidSequence.from_reach_avoid_seqs(samples, env)
 
 
@@ -58,5 +62,7 @@ class TokenizedSequenceBatcher(
     def batch(
         samples: list[BooleanReachAvoidSequence],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxTokenizedReachAvoidSequence:
+        del num_parallel
         return JaxTokenizedReachAvoidSequence.from_reach_avoid_seqs(samples, env)

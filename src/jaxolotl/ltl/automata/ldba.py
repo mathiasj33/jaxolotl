@@ -19,12 +19,13 @@ class LDBA:
         self.complete = False
         self.possible_assignments: list[Assignment] | None = None
         self.state_to_scc = {}
+        self.state_to_info = {}
 
     @property
     def states(self) -> list[int]:
         return list(range(self.num_states))
 
-    def add_state(self, state: int, initial=False):
+    def add_state(self, state: int, initial=False, info: dict | None = None) -> None:
         if state < 0:
             raise ValueError("State must be a positive integer.")
         if initial:
@@ -36,6 +37,8 @@ class LDBA:
             self.state_to_transitions[state] = []
         if state not in self.state_to_incoming_transitions:
             self.state_to_incoming_transitions[state] = []
+        if info is not None:
+            self.state_to_info[state] = info
 
     def get_next_state(
         self, state: int, propositions: set[str], take_epsilon=False
@@ -59,6 +62,15 @@ class LDBA:
                 return transition.target, transition.accepting
         raise ValueError("Invalid transition.")
 
+    def get_ordered_epsilon_transitions(self, state: int) -> list[int]:
+        """Returns the list of target states for epsilon transitions from the given state.
+        Ordered by target state index."""
+        eps_transitions = [
+            t for t in self.state_to_transitions[state] if t.is_epsilon()
+        ]
+        eps_transitions.sort(key=lambda t: t.target)
+        return [t.target for t in eps_transitions]
+
     def contains_state(self, state: int) -> bool:
         return state <= self.num_states
 
@@ -72,6 +84,8 @@ class LDBA:
         accepting_sccs = [scc for scc in self.state_to_scc.values() if scc.accepting]
         if len(accepting_sccs) > 1:
             return False
+        if len(accepting_sccs) == 0:
+            raise ValueError(f"LDBA for formula {self.formula} has no accepting SCCs.")
         scc = accepting_sccs[0]
         return scc.bottom and len(scc.states) == 1
 

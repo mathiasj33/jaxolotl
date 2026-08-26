@@ -15,5 +15,8 @@ class FormulaClosureBatcher(SampleBatcher[str, JaxFormulaClosureGraph]):
     def batch(
         samples: list[str],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxFormulaClosureGraph:
-        return preprocess_formulas(samples, env, verbose=True)
+        return preprocess_formulas(
+            samples, env, verbose=True, num_parallel=num_parallel
+        )

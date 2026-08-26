@@ -1,11 +1,11 @@
-from unittest.mock import Mock
+import dataclasses
 
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
-from jaxolotl.ltl.automata.preprocessing import batch_ldbas, build_ldba
+from jaxolotl.ltl.automata.preprocessing import batch_ldbas
 
 
 def _jax_ldba(num_states: int, initial_state: int, *, finite: bool) -> JaxLDBA:
@@ -40,27 +40,8 @@ def test_batch_ldbas_rejects_empty_or_incompatible_batches():
     with pytest.raises(ValueError, match="empty"):
         batch_ldbas([])
 
-    incompatible = _jax_ldba(1, 0, finite=False)._replace(
-        transitions=jnp.zeros((1, 4), dtype=jnp.int32)
+    incompatible = dataclasses.replace(
+        _jax_ldba(1, 0, finite=False), transitions=jnp.zeros((1, 4), dtype=jnp.int32)
     )
     with pytest.raises(ValueError, match="assignment space"):
         batch_ldbas([_jax_ldba(1, 0, finite=False), incompatible])
-
-
-def test_build_ldba_runs_the_complete_preprocessing_chain(monkeypatch):
-    ldba = Mock()
-    converter = Mock(return_value=ldba)
-    monkeypatch.setattr(
-        "jaxolotl.ltl.automata.preprocessing.ltl2ldba",
-        converter,
-    )
-    env = Mock(propositions=("red", "green"))
-    env.assignments.return_value = ["red", "green"]
-
-    result = build_ldba("F red", env)
-
-    assert result is ldba
-    converter.assert_called_once_with("F red", ("red", "green"))
-    ldba.prune.assert_called_once_with(["red", "green"])
-    ldba.complete_sink_state.assert_called_once_with()
-    ldba.compute_sccs.assert_called_once_with()

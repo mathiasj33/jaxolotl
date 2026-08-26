@@ -1,3 +1,4 @@
+import dataclasses
 from typing import Any, NamedTuple
 
 import equinox as eqx
@@ -54,7 +55,9 @@ class LDBASubgoalWrapper[
         re_state, obs = super().reset(key, state, params, options)
         ldba, subgoals = options.task
         if self.overwrite_finite:
-            ldba = ldba._replace(finite=jnp.ones_like(ldba.finite, dtype=jnp.bool))
+            ldba = dataclasses.replace(
+                ldba, finite=jnp.ones_like(ldba.finite, dtype=jnp.bool)
+            )
         state = LDBAWrapperState(
             state=re_state,
             ldba=ldba,

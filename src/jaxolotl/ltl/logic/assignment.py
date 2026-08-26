@@ -65,3 +65,6 @@ class Assignment:
 
     def __contains__(self, item: str) -> bool:
         return item in self.true_propositions
+
+    def __hash__(self) -> int:
+        return hash(self.true_propositions)

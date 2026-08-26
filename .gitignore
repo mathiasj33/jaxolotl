@@ -19,6 +19,7 @@ train.yaml
 visualize_env.yaml
 visualize_traj.yaml
 combine_models.yaml
+precompute_curriculum.yaml
 
 # Pixi environments
 .pixi

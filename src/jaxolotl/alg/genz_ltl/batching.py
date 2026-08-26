@@ -17,7 +17,9 @@ class SubgoalBatcher(SampleBatcher[ReachAvoidSubgoal, JaxReachAvoidSubgoal]):
     def batch(
         samples: list[ReachAvoidSubgoal],
         env: Environment | EnvWrapper,
+        num_parallel: int = 1,
     ) -> JaxReachAvoidSubgoal:
+        del num_parallel
         assignment_to_idx = {
             assignment: idx for idx, assignment in enumerate(env.assignments())
         }

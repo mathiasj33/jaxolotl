@@ -1,21 +1,40 @@
 """Shared construction and batching helpers for LDBAs."""
 
 import jax.numpy as jnp
+import numpy as np
 
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
 from jaxolotl.ltl.automata.ldba import LDBA
-from jaxolotl.ltl.automata.ltl2ldba import ltl2ldba
+from jaxolotl.ltl.automata.ltl2ldba import LDBABackend, ltl2ldba
 
 
-def build_ldba(formula: str, env: Environment | EnvWrapper) -> LDBA:
+def build_ldba(
+    formula: str, env: Environment | EnvWrapper, backend: LDBABackend
+) -> LDBA:
     """Build, prune, and complete an LDBA from a formula and environment."""
-    ldba = ltl2ldba(formula, env.propositions)
+    ldba = ltl2ldba(formula, env.propositions, env.assignments(), backend)
+    if backend == "semml":
+        process_semantic_embeddings(ldba)
     ldba.prune(env.assignments())
     ldba.complete_sink_state()
     ldba.compute_sccs()
     return ldba
+
+
+def process_semantic_embeddings(ldba: LDBA) -> None:
+    """Concatenates breakpoint and master formula embeddings for each LDBA state."""
+    for state in ldba.states:
+        info = ldba.state_to_info[state]
+        embeddings = info["embeddings"]
+        if info["component"] == "initial":
+            embedding = embeddings["formula_embedding"]
+            embedding += [0.0] * len(embedding)  # empty breakpoint embedding
+        else:
+            embedding = embeddings["master_formula_embedding"]
+            embedding += embeddings["breakpoint_formula_embedding"]
+        info["embedding"] = np.array(embedding, dtype=np.float32)
 
 
 def batch_ldbas(ldbas: list[JaxLDBA]) -> JaxLDBA:

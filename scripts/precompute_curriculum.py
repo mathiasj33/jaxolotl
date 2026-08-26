@@ -16,7 +16,9 @@ from jaxolotl.alg.curriculum.factory import make_curriculum
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base="1.3", config_path="../conf", config_name="train")
+@hydra.main(
+    version_base="1.3", config_path="../conf", config_name="precompute_curriculum"
+)
 def main(cfg: DictConfig):
     logger.info("Instantiating curriculum to generate samples...")
     start_time = time.time()
@@ -31,6 +33,7 @@ def main(cfg: DictConfig):
         batcher=batcher,
         load_path=None,
         skip_curriculum=cfg.curriculum.get("skip_curriculum", False),
+        num_parallel=int(cfg.num_parallel),
     )
 
     end_time = time.time()

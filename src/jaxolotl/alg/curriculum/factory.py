@@ -47,6 +47,7 @@ def make_curriculum(
     batcher: SampleBatcher,
     load_path: Path | None = None,
     skip_curriculum: bool = False,
+    num_parallel: int = 1,
 ) -> Curriculum:
     """Build a curriculum for the given environment."""
     if skip_curriculum:
@@ -57,4 +58,5 @@ def make_curriculum(
         env=env,
         num_samples=num_samples,
         load_path=load_path,
+        num_parallel=num_parallel,
     )

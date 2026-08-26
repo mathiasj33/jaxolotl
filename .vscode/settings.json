@@ -24,4 +24,22 @@
     }
   },
   "python-envs.defaultEnvManager": "ms-python.python:system",
+
+  // --- Submodule Exclusions ---
+  "python.analysis.exclude": ["semml", "dependencies", "**/node_modules", "**/__pycache__", "**/.*"],
+  "python.analysis.ignore": ["semml", "dependencies"],
+
+  "python.testing.pytestArgs": [
+    "--ignore=semml",
+    "--ignore=dependencies"
+  ],
+
+  "search.exclude": {
+    "**/semml": true,
+    "**/dependencies": true
+  },
+  "files.watcherExclude": {
+    "**/semml/**": true,
+    "**/dependencies/**": true
+  }
 }

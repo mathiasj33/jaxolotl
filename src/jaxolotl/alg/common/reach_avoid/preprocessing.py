@@ -6,6 +6,7 @@ from typing import cast
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
+from jaxolotl.ltl.automata.ltl2ldba import LDBABackend
 from jaxolotl.ltl.automata.preprocessing import batch_ldbas, build_ldba
 from jaxolotl.ltl.reach_avoid import path_search
 from jaxolotl.ltl.reach_avoid.sequence import ReachAvoidSequence
@@ -28,9 +29,10 @@ def preprocess_formula[TSequence, TEncoded](
     *,
     transform_sequences: SequenceTransform[TSequence] | None = None,
     num_loops: int = 2,
+    backend: LDBABackend = "rabinizer",
 ) -> tuple[JaxLDBA, TEncoded]:
     """Compile one formula and encode its reach-avoid choices by LDBA state."""
-    ldba = build_ldba(formula, env)
+    ldba = build_ldba(formula, env, backend=backend)
     jax_ldba = JaxLDBA.from_ldba(ldba, env)
     state_to_sequences = path_search.compute_sequences(ldba, num_loops=num_loops)
     if transform_sequences is not None:

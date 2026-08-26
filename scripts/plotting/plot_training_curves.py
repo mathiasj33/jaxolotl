@@ -13,13 +13,9 @@ def load_df(path: str | Path) -> pd.DataFrame:
     df = pd.read_csv(path, engine="pyarrow")
     bin_size = 4096 * 16
     df["bin"] = df["timestep"] // bin_size
-    if "positive_return" not in df.columns:
-        df["positive_return"] = df["return"]
 
     avg_data = (
-        df.groupby(["seed", "bin"])[
-            ["return", "length", "curriculum_stage", "positive_return"]
-        ]
+        df.groupby(["seed", "bin"])[["return", "length", "curriculum_stage", "success"]]
         .mean()
         .reset_index()
     )
@@ -34,8 +30,8 @@ def load_df(path: str | Path) -> pd.DataFrame:
 
 
 log_files = [
-    "runs/ZoneEnv-NM/struct_ltl/verify/logs.csv",
-    "../jaxltl/runs/ZoneEnv-NM/struct_ltl/main/logs.csv",
+    "runs/ConveyorWorld/sem_ltl/pretrained/logs.csv",
+    "runs/ConveyorWorld/deep_ltl/pretrained/logs.csv",
 ]
 
 dfs = [load_df(path) for path in log_files]
@@ -48,11 +44,11 @@ start = time.time()
 sns.lineplot(
     data=df,
     x="timestep",
-    y="positive_return",
+    y="success",
     hue="name",
     ax=axes[0],
     legend=False,
-    errorbar="sd",
+    errorbar=("ci", 95),
 )
 
 axes[0].set_title("Average SR")

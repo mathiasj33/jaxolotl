@@ -1,7 +1,7 @@
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Zero-Shot Instruction Following in RL via Structured LTL Representations
+## Jaxolotl: A Unified High-Performance Benchmark Suite for LTL-Based Multi-Task RL
 
 This repository contains the official implementation of StructLTL ([arxiv.org/2602.14344](https://arxiv.org/pdf/2602.14344)), as well as the environments
 *ZoneEnv-NM* and *Warehouse*.
@@ -42,13 +42,29 @@ To test the installation, run the following:
 ./dependencies/rabinizer4/bin/ltl2ldba -h
 ```
 which should print a help message.
-We tested the implementation with OpenJDK 17.0.18.
+We tested the implementation with OpenJDK 21.0.11.
+
+### SemML
+
+The SemLTL algorithm additionally requires [SemML](https://gitlab.com/live-lab/software/semml/-/tree/semerl?ref_type=heads) for the construction of semantically labelled LDBAs (note that this is not required for other algorithms). We include SemML as a git submodule of this repository. It can be installed as follows:
+```bash
+git submodule init
+git submodule update
+pixi run python semml/build.py
+ln -s "$(pwd)/semml" dependencies/semml
+```
+
+To test the installation, run the following command, which should output an LDBA in HOA format if everything is configured correctly:
+```bash
+pixi run python dependencies/semml/scripts_semml/embedd_ldba.py --formula="F a" --aps="a,b" --eligibleLetters="[[a],[b]]" --outputPath="tmp.hoa" && cat dependencies/semml/tmp.hoa && rm dependencies/semml/tmp.hoa
+```
 
 ### Docker
 We alternatively provide a Dockerfile to build an image with all required dependencies:
 ```bash
-docker build -t structltl:gpu .
+docker build -t jaxolotl:gpu .
 ```
+Note that the container only installs SemLTL dependencies if you have initialised the SemML submodule via `git submodule init && git submodule update`. Otherwise the SemLTL installation will be skipped.
 
 Note that this is a GPU-enabled image and requires a working [Docker](https://www.docker.com/) and [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installation.
 
@@ -59,7 +75,7 @@ docker run --rm -it --gpus all \
   --shm-size=2g \
   --mount type=bind,src="$PWD/data",dst=/workspace/data \
   --mount type=bind,src="$PWD/runs",dst=/workspace/runs \
-  structltl:gpu
+  jaxolotl:gpu
 ```
 
 ## Experiments
@@ -76,10 +92,11 @@ pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=train
 pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=test
 ```
 
-For LTL2Action, we also recommend precomputing the training curriculum:
+For LTL2Action and SemLTL, we also recommend precomputing the training curriculum:
 ```bash
-pixi run -e gpu python scripts/precompute_curriculum.py alg=ltl2action env=warehouse
+pixi run -e gpu python scripts/precompute_curriculum.py alg=ltl2action env=warehouse num_parallel=4
 ```
+where `num_parallel` can be used to speed up processing. This can take a while to complete.
 
 ### Training
 
@@ -87,10 +104,11 @@ To train a policy:
 ```bash
 pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 ```
+This script stores the following training outputs in `runs/${env}/${alg}/${run}`:
 
-Training uses the precomputed `train` reset pool, while evaluation uses the `test`
-pool. To use an environment's native reset implementation instead, add
-`+reset_source=native` to either command, but this will incur a noticeable performance cost.
+- `logs.csv` and `train.log` contain training logs.
+- `models.eqx` contains the final trained models (batched across seeds).
+- `checkpoints` cointains training checkpoints. Checkpointing frequency can be controlled with the `save_freq` parameter.
 
 To plot training performance:
 ```bash
