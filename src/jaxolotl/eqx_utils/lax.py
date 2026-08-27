@@ -7,6 +7,52 @@ import equinox as eqx
 import jax
 
 
+def batch_map[P, T](f: Callable[[P], T], xs, *, batch_size: int | None = None) -> T:
+    """Map ``f`` over leading axes, including outputs with zero-sized dimensions.
+
+    This matches :func:`jax.lax.map`'s ``batch_size`` behaviour, but avoids its
+    internal ``reshape(-1, ...)``. That reshape is ambiguous when a mapped result
+    contains a zero-sized non-batch axis.
+    """
+    if batch_size is None:
+        return jax.lax.map(f, xs)
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive.")
+
+    leaves = jax.tree.leaves(xs)
+    if not leaves:
+        return jax.lax.map(f, xs, batch_size=batch_size)
+    num_items = leaves[0].shape[0]
+    if num_items == 0:
+        return jax.vmap(f)(xs)
+    num_batches, remainder = divmod(num_items, batch_size)
+    batch_items = num_batches * batch_size
+
+    def split_batches(leaf):
+        return leaf[:batch_items].reshape((num_batches, batch_size, *leaf.shape[1:]))
+
+    if num_batches:
+        batched_xs = jax.tree.map(split_batches, xs)
+        _, batched_ys = jax.lax.scan(
+            lambda _, x: (None, jax.vmap(f)(x)), None, batched_xs
+        )
+        # Specify the leading dimension directly. Inferring it with ``-1`` fails
+        # when an output has a zero-sized dimension.
+        ys = jax.tree.map(lambda x: x.reshape((batch_items, *x.shape[2:])), batched_ys)
+    if remainder:
+        remainder_xs = jax.tree.map(lambda leaf: leaf[batch_items:], xs)
+        remainder_ys = jax.vmap(f)(remainder_xs)
+        if num_batches:
+            ys = jax.tree.map(
+                lambda full, tail: jax.lax.concatenate([full, tail], dimension=0),
+                ys,
+                remainder_ys,
+            )
+        else:
+            ys = remainder_ys
+    return ys  # type: ignore[return-value]
+
+
 def filter_scan[Carry, X, Y](
     f: Callable[[Carry, X], tuple[Carry, Y]],
     init: Carry,
@@ -47,7 +93,7 @@ def filter_map(f, xs, *, batch_size: int | None = None):
         x = eqx.combine(params, static)
         return f(x)
 
-    return jax.lax.map(aux, params, batch_size=batch_size)
+    return batch_map(aux, params, batch_size=batch_size)
 
 
 def filter_while_loop[T](

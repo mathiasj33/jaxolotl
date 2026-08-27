@@ -31,7 +31,8 @@
 
   "python.testing.pytestArgs": [
     "--ignore=semml",
-    "--ignore=dependencies"
+    "--ignore=dependencies",
+    "--ignore=runs"
   ],
 
   "search.exclude": {

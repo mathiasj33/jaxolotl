@@ -137,6 +137,12 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
         remaining = int((cfg.rl_alg.total_timesteps - step) / sps)
         remaining = str(datetime.timedelta(seconds=remaining))
 
+        if metric["done"].sum() == 0:
+            logger.info(
+                f"seed {seed} | step {step} | no episodes completed yet | sps {int(sps)} | eta {remaining}"
+            )
+            return
+
         # average returns
         window_returns = metric["episode_return"][metric["done"]][
             -cfg.curriculum.episode_window :

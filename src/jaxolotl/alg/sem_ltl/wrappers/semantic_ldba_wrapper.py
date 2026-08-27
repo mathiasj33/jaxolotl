@@ -20,7 +20,6 @@ class SemanticLDBAWrapperState[TObsFeatures: NamedTuple](WrapperState):
     # Epsilon-related state
     obs: EnvObservation[TObsFeatures]  # last observation
     propositions: jax.Array  # last propositions
-    info: dict  # last info
 
 
 class SemanticLDBAObservation[TObsFeatures: NamedTuple](EnvObservation[TObsFeatures]):
@@ -59,7 +58,7 @@ class SemanticLDBAWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
         overwrite_finite: bool = False,
     ):
@@ -83,7 +82,6 @@ class SemanticLDBAWrapper[
             ldba_state=options.task.initial_state,
             obs=obs,
             propositions=propositions,
-            info={"is_sink": jnp.zeros((), dtype=jnp.bool_)},
         )
         embedding = state.ldba.get_embedding(state.ldba_state)
         eps_embeddings = state.ldba.get_epsilon_embeddings(state.ldba_state)
@@ -112,7 +110,7 @@ class SemanticLDBAWrapper[
         )  # placeholder, will be updated below
         transition: EnvTransition = jax.lax.cond(
             execute_eps,
-            lambda: self._epsilon_step(state),
+            lambda: self._epsilon_step(state, env_transition.info),
             lambda: env_transition,
         )
 
@@ -145,7 +143,6 @@ class SemanticLDBAWrapper[
             ldba_state=next_ldba_state,
             obs=transition.observation,
             propositions=transition.propositions,
-            info=info,
         )
 
         embedding = new_state.ldba.get_embedding(new_state.ldba_state)
@@ -173,7 +170,7 @@ class SemanticLDBAWrapper[
         )
 
     def _epsilon_step(
-        self, state: SemanticLDBAWrapperState
+        self, state: SemanticLDBAWrapperState, info: dict
     ) -> EnvTransition[WrapperState, TObsFeatures]:
         """Transition corresponding to an epsilon action."""
         return EnvTransition(
@@ -184,7 +181,7 @@ class SemanticLDBAWrapper[
             truncated=jnp.zeros((), dtype=jnp.bool),
             terminal_observation=state.obs,
             propositions=state.propositions,
-            info=state.info,
+            info=info,
         )
 
     def _epsilon_enabled(

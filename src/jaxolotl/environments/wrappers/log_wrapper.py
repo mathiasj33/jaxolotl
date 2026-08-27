@@ -26,7 +26,7 @@ class LogWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, TResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]
         ),
     ):
         super().__init__(env)

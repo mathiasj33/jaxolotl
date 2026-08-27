@@ -42,7 +42,7 @@ class ResetOptions(NamedTuple):
 
 
 class LetterWorld(
-    environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOptions]
+    environment.Environment[EnvState, EnvState, EnvParams, ObsFeatures, ResetOptions]
 ):
     default_params = EnvParams(max_steps_in_episode=75, grid_size=7, letter_freq=2)
     propositions = ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l")
@@ -73,7 +73,7 @@ class LetterWorld(
         return spaces.Discrete(n=4)
 
     @override
-    def _reset(
+    def _sample_reset(
         self,
         key: jax.Array,
         state: EnvState | None,

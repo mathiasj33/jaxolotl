@@ -99,7 +99,9 @@ class ResetOptions(NamedTuple):
 
 
 class WarehouseEnv(
-    environment.Environment[EnvState, WarehouseParams, ObsFeatures, ResetOptions]
+    environment.Environment[
+        EnvState, EnvState, WarehouseParams, ObsFeatures, ResetOptions
+    ]
 ):
     default_params = WarehouseParams(
         max_steps_in_episode=1000,
@@ -155,7 +157,7 @@ class WarehouseEnv(
         return spaces.Composite(cont_space, disc_space)
 
     @override
-    def _reset(
+    def _sample_reset(
         self,
         key: jax.Array,
         state: EnvState | None,

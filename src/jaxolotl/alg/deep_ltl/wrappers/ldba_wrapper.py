@@ -29,7 +29,6 @@ class LDBAWrapperState[TObsFeatures: NamedTuple](WrapperState):
     # Epsilon-related state
     obs: EnvObservation[TObsFeatures]  # last observation
     propositions: jax.Array  # last propositions
-    info: dict  # last info
 
 
 class LDBAWrapper[
@@ -44,7 +43,7 @@ class LDBAWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, ResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, ResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, ResetOptions]
         ),
         overwrite_finite: bool = False,
     ):
@@ -74,7 +73,6 @@ class LDBAWrapper[
             ldba_state=ldba.initial_state,
             obs=obs,
             propositions=propositions,
-            info={"is_sink": jnp.zeros((), dtype=jnp.bool_)},
         )
         return state, obs
 
@@ -91,7 +89,7 @@ class LDBAWrapper[
         env_transition.info["is_sink"] = jnp.zeros(
             (), dtype=jnp.bool_
         )  # placeholder, will be updated below
-        eps_transition = self._epsilon_step(state)
+        eps_transition = self._epsilon_step(state, env_transition.info)
         transition: EnvTransition = eqx_utils.pytree_where(
             epsilon_action.astype(jnp.bool), eps_transition, env_transition
         )
@@ -118,7 +116,6 @@ class LDBAWrapper[
             state_to_seqs=state.state_to_seqs,
             ldba_state=next_ldba_state,
             obs=transition.observation,
-            info=info,
             propositions=transition.propositions,
         )
         return EnvTransition(
@@ -133,7 +130,7 @@ class LDBAWrapper[
         )
 
     def _epsilon_step(
-        self, state: LDBAWrapperState
+        self, state: LDBAWrapperState, info: dict
     ) -> EnvTransition[WrapperState, TObsFeatures]:
         """Transition corresponding to an epsilon action."""
         return EnvTransition(
@@ -144,5 +141,5 @@ class LDBAWrapper[
             truncated=jnp.zeros((), dtype=jnp.bool),
             terminal_observation=state.obs,
             propositions=state.propositions,
-            info=state.info,
+            info=info,
         )

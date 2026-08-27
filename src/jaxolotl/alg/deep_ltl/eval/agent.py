@@ -129,7 +129,7 @@ class DeepLTLAgent(Agent[LDBAWrapperState]):
             return best_seq
 
         batch_size = ldba_state.shape[0] if self.vmap_choose_sequences else 1
-        return jax.lax.map(
+        return eqx_utils.batch_map(
             choose_sequence_for_env,
             (ldba_state, batched_seqs, obsv),
             batch_size=batch_size,

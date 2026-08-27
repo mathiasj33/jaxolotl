@@ -1,5 +1,4 @@
-"""Script to precompute environment reset states and save them to disk. Can be used
-with the PrecomputedResetWrapper to speed up training."""
+"""Precompute compact environment reset descriptors for training or evaluation."""
 
 import logging
 import math
@@ -25,7 +24,7 @@ def main(cfg: DictConfig):
 
     num_batch_resets = math.ceil(cfg.num_resets / cfg.rl_alg.num_envs)
     env, params = jaxolotl.make(cfg.env.name)
-    vmap_reset = jax.vmap(env.reset, in_axes=(0, None, None, None))
+    vmap_sample_reset = jax.vmap(env.sample_reset, in_axes=(0, None, None, None))
     seed = {"train": 0, "test": 42}[cfg.split]
     key = jax.random.key(seed)
 
@@ -33,27 +32,30 @@ def main(cfg: DictConfig):
     def body(key, _):
         key, subkey = jax.random.split(key)
         subkeys = jax.random.split(subkey, cfg.rl_alg.num_envs)
-        states, _ = vmap_reset(subkeys, None, params, None)
-        return key, states
+        descriptors = vmap_sample_reset(subkeys, None, params, None)
+        return key, descriptors
 
     start_time = time.time()
-    _, states = jax.lax.scan(body, key, None, length=num_batch_resets)
-    jax.block_until_ready(states)
+    _, descriptors = jax.lax.scan(body, key, None, length=num_batch_resets)
+    jax.block_until_ready(descriptors)
     seconds = time.time() - start_time
     logger.info(f"Performed {cfg.num_resets} resets in {seconds:.2f} seconds")
 
-    # Reshape states to (num_resets, ...)
-    states = jax.tree.map(lambda x: x.reshape(-1, *x.shape[2:]), states)
-    nbytes = sum(x.nbytes for x in jax.tree.leaves(states))
+    # Reshape descriptors to (num_resets, ...)
+    descriptors = jax.tree.map(lambda x: x.reshape(-1, *x.shape[2:]), descriptors)
+    leaves = jax.tree.leaves(descriptors)
+    nbytes = sum(x.nbytes for x in leaves)
     logger.info(f"Total data size: {nbytes / 2**20:.2f} MB")
-    logger.info(f"Shape: {states.position.shape}")
+    logger.info(
+        "Descriptor leaves: %d; batch shape: %s", len(leaves), leaves[0].shape[:1]
+    )
 
     file = precomputed_reset_path(cfg.env.name, cfg.split)
     file.parent.mkdir(parents=True, exist_ok=True)
     logger.info(f"Saving to {file}")
     eqx_utils.save(
         file,
-        states,
+        descriptors,
         metadata={
             "batch_dim": num_batch_resets * cfg.rl_alg.num_envs,
             "env_name": cfg.env.name,

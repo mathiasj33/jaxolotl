@@ -42,7 +42,7 @@ class MockEnv(Environment):
             Assignment(frozenset()),
         ]
 
-    def _reset(self):
+    def _sample_reset(self):
         pass
 
     def _step(self):

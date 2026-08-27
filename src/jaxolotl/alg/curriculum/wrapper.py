@@ -49,7 +49,7 @@ class CurriculumWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
         curriculum: Curriculum[TSample, TJaxSample],
         episode_window: int,

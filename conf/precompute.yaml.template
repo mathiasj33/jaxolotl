@@ -1,7 +1,5 @@
 defaults:
   - env: zone_env_nm
-  - alg: struct_ltl
-  - experiment: ${env}/${alg}
   - hydra: simple
   - _self_
 

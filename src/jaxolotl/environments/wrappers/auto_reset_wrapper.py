@@ -47,7 +47,7 @@ class AutoResetWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, TResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]
         ),
         reset_strategy: ResetStrategy,
         auto_reset_options: TResetOptions | None = None,

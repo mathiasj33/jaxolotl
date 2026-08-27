@@ -2,6 +2,7 @@ from functools import partial
 
 from jaxolotl.environments.conveyor_world.conveyor_world import ConveyorWorld
 from jaxolotl.environments.environment import Environment, EnvParams
+from jaxolotl.environments.franka_zone_env.franka_zone_env import FrankaZoneEnv
 from jaxolotl.environments.letter_world.letter_world import LetterWorld
 from jaxolotl.environments.reset import (
     RESET_SOURCES,
@@ -21,6 +22,11 @@ _name_to_env = {
     "LetterWorld": LetterWorld,
     "WarehouseEnv": WarehouseEnv,
     "ConveyorWorld": ConveyorWorld,
+    "FrankaZoneEnv": FrankaZoneEnv,
+    **{
+        f"FrankaZoneEnv-{num_colors}": partial(FrankaZoneEnv, num_colors=num_colors)
+        for num_colors in range(4, 17)
+    },
 }
 
 

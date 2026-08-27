@@ -24,7 +24,7 @@ class FakeEnv(Environment):
         props = ("purple", "green", "red")
         super().__init__(default_params=_DummyParams(), propositions=props)
 
-    def _reset(self, key, state, params, options=None):
+    def _sample_reset(self, key, state, params, options=None):
         del key, state, params, options
         return eqx.Module()
 

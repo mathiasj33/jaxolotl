@@ -55,6 +55,68 @@ def load_batched_models(
     return models, num_models
 
 
+def load_latest_checkpoint_models(
+    cfg: DictConfig,
+    env: Environment | EnvWrapper,
+    env_params: EnvParams,
+    *,
+    key: jax.Array,
+    max_steps: int | float,
+) -> tuple[ActorCritic, int, int]:
+    """Load every seed from the latest checkpoint at or before ``max_steps``.
+
+    Returns:
+        Batched ActorCritic model, number of seeds, and the selected checkpoint
+        step.
+
+    Raises:
+        FileNotFoundError: If no checkpoint at or before ``max_steps`` exists.
+        ValueError: If checkpoint files at the selected step do not cover the
+            same seed set as the other available checkpoint steps.
+    """
+    model_fn = hydra.utils.instantiate(
+        cfg.model,
+        obs_spec=env.observation_spec(env_params),
+        num_assignments=len(env.assignments()),
+        num_propositions=len(env.propositions),
+        env_params=env_params,
+        _partial_=True,
+    )
+    model: ActorCritic = model_fn(act_space=env.action_space(env_params), key=key)
+    params, static = eqx.partition(model, eqx.is_array)
+
+    checkpoint_folder = Path(
+        f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/checkpoints"
+    )
+    checkpoint_pattern = re.compile(r"model_seed(\d+)_step(\d+)\.eqx")
+    checkpoints: dict[int, dict[int, Path]] = defaultdict(dict)
+    for file in checkpoint_folder.iterdir():
+        match = checkpoint_pattern.fullmatch(file.name)
+        if match is not None:
+            seed, step = map(int, match.groups())
+            checkpoints[step][seed] = file
+
+    eligible_steps = [step for step in checkpoints if step <= max_steps]
+    if not eligible_steps:
+        raise FileNotFoundError(
+            f"No checkpoint at or before step {max_steps} in {checkpoint_folder}."
+        )
+    checkpoint_step = max(eligible_steps)
+    checkpoint_files = checkpoints[checkpoint_step]
+
+    # A partially written checkpoint should not silently drop seeds from eval.
+    seed_sets = [set(files) for files in checkpoints.values()]
+    if not all(seeds == set(checkpoint_files) for seeds in seed_sets):
+        raise ValueError("Not all checkpoints have the same seeds.")
+
+    models_per_seed = [
+        eqx_utils.load(checkpoint_files[seed], params)
+        for seed in sorted(checkpoint_files)
+    ]
+    models = jax.tree.map(lambda *xs: jnp.stack(xs, axis=0), *models_per_seed)
+    return eqx.combine(models, static), len(models_per_seed), checkpoint_step
+
+
 def load_model_checkpoints(
     cfg: DictConfig,
     env: Environment | EnvWrapper,
@@ -150,7 +212,7 @@ def make_eval_fn(
                     agent, cfg.eval.deterministic, env, env_params, formula, key=key
                 )
 
-            res = jax.lax.map(
+            res = eqx_utils.batch_map(
                 eval_formula,
                 (formula_keys, formulas),
                 batch_size=formula_batch_size,

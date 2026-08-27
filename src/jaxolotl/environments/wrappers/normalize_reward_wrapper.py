@@ -30,7 +30,7 @@ class NormalizeRewardWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, TResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]
         ),
         gamma: float = 0.99,
         eps: float = 1e-8,

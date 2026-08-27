@@ -13,6 +13,7 @@ dependencies = [
     "jax>=0.7.2,<0.8",
     "graphviz>=0.21,<0.22",
     "jraph<=0.0.6dev0",
+    "mujoco-mjx>=3.11.0,<4",
     "wandb>=0.23.1,<0.24",
     "pyarrow>=22.0.0,<23",
 ]

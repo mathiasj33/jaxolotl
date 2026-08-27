@@ -21,7 +21,6 @@ class SequenceState[TObsFeatures: NamedTuple](WrapperState):
     # Epsilon-related state
     obs: EnvObservation[TObsFeatures]  # last observation
     propositions: jax.Array  # last propositions
-    info: dict  # last info
 
 
 class SequenceObservation[TObsFeatures: NamedTuple](EnvObservation[TObsFeatures]):
@@ -50,7 +49,7 @@ class SequenceWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
     ):
         super().__init__(env)
@@ -71,7 +70,6 @@ class SequenceWrapper[
             seq=options.task,
             obs=obs,
             propositions=propositions,
-            info={},
         )
         assignment = self._env.map_assignment_to_index(propositions)
         return state, SequenceObservation.from_obs(
@@ -90,7 +88,7 @@ class SequenceWrapper[
         env_transition = super().step(key, state, env_action, params)
         transition = jax.lax.cond(
             epsilon_action.astype(jnp.bool),
-            lambda: self._epsilon_step(state),
+            lambda: self._epsilon_step(state, env_transition.info),
             lambda: env_transition,
         )
         seq = jax.lax.cond(
@@ -116,7 +114,6 @@ class SequenceWrapper[
             seq=seq,
             obs=transition.observation,
             propositions=transition.propositions,
-            info=transition.info,
         )
         return EnvTransition(
             state=new_state,
@@ -138,7 +135,7 @@ class SequenceWrapper[
         )
 
     def _epsilon_step(
-        self, state: SequenceState
+        self, state: SequenceState, info: dict
     ) -> EnvTransition[WrapperState, TObsFeatures]:
         """Transition corresponding to an epsilon action."""
         return EnvTransition(
@@ -149,7 +146,7 @@ class SequenceWrapper[
             truncated=jnp.zeros((), dtype=jnp.bool),
             terminal_observation=state.obs,
             propositions=state.propositions,
-            info=state.info,
+            info=info,
         )
 
     def _is_epsilon_enabled(

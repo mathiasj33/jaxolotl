@@ -36,7 +36,7 @@ class LDBASubgoalWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, ResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, ResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, ResetOptions]
         ),
         overwrite_finite: bool = False,
     ):

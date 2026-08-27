@@ -74,7 +74,9 @@ class ResetOptions(NamedTuple):
     pass
 
 
-class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOptions]):
+class ZoneEnv(
+    environment.Environment[EnvState, EnvState, EnvParams, ObsFeatures, ResetOptions]
+):
     default_params = EnvParams(
         max_steps_in_episode=1000,
         world_size=6.6,
@@ -124,7 +126,7 @@ class ZoneEnv(environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOpt
         )
 
     @override
-    def _reset(
+    def _sample_reset(
         self,
         key_angle: jax.Array,
         state: EnvState | None,

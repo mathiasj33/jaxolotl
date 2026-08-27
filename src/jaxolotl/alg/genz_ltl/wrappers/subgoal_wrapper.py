@@ -48,7 +48,7 @@ class SubgoalWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
     ):
         super().__init__(env)

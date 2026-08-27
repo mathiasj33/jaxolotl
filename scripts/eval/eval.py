@@ -23,6 +23,7 @@ from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
 from jaxolotl.eqx_utils.utils import compute_num_params
 from jaxolotl.eval.utils import (
     load_batched_models,
+    load_latest_checkpoint_models,
     make_eval_fn,
 )
 
@@ -47,7 +48,14 @@ def main(cfg: DictConfig):
     # load models
     key = jax.random.key(0)
     key, model_key = jax.random.split(key)
-    models, num_models = load_batched_models(cfg, env, env_params, key=model_key)
+    checkpoint = cfg.eval.get("checkpoint", None)
+    if checkpoint is None:
+        models, num_models = load_batched_models(cfg, env, env_params, key=model_key)
+    else:
+        models, num_models, checkpoint_step = load_latest_checkpoint_models(
+            cfg, env, env_params, key=model_key, max_steps=checkpoint
+        )
+        logger.info("Loaded checkpoint at step %s.", checkpoint_step)
     agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     logger.info(

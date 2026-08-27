@@ -35,12 +35,12 @@ class EnvWrapper[
 ](eqx.Module):
     """Base class for environment wrappers."""
 
-    _env: "EnvWrapper[TEnvParams, TObsFeatures, TResetOptions] | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]"
+    _env: "EnvWrapper[TEnvParams, TObsFeatures, TResetOptions] | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]"
     uses_state: bool  # whether the wrapper uses custom state that needs to be unwrapped
 
     def __init__(
         self,
-        env: "EnvWrapper[TEnvParams, TObsFeatures, TResetOptions] | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]",
+        env: "EnvWrapper[TEnvParams, TObsFeatures, TResetOptions] | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]",
         uses_state: bool = True,
     ):
         self._env = env

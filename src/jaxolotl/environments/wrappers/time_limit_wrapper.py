@@ -26,7 +26,7 @@ class TimeLimitWrapper[
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, TResetOptions]
-            | Environment[Any, TEnvParams, TObsFeatures, TResetOptions]
+            | Environment[Any, Any, TEnvParams, TObsFeatures, TResetOptions]
         ),
         treat_trunc_as_term: bool = False,
     ):

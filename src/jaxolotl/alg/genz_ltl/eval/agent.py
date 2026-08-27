@@ -174,7 +174,7 @@ class GenZLTLAgent(Agent[LDBAWrapperState]):
             return best_subgoal, best_index
 
         batch_size = ldba_state.shape[0] if self.vmap_choose_subgoals else 1
-        return jax.lax.map(
+        return eqx_utils.batch_map(
             choose_subgoal_for_env,
             (ldba_state, batched_subgoals, subgoal_mask, obsv),
             batch_size=batch_size,

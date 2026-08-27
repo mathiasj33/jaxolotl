@@ -100,6 +100,8 @@ class BaseRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](ABC):
             step = 0
             frame = 0
             paused_time = 0.0
+            state = jax.tree.map(lambda x: x[0], traj)
+            self.render(state, None)
             while True:
                 clock.tick(180)
                 self.get_pressed_keys()  # handle quit events

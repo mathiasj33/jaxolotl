@@ -1,0 +1,59 @@
+# @package __global__
+
+defaults:
+  - /rl_alg: ppo
+  - /model/sequence: alibi_attention
+
+curriculum:
+  make_stages:
+    _target_: jaxolotl.alg.struct_ltl.curriculum.franka_zone_env_curriculum.make_stages
+  num_samples: 1e4
+  episode_window: 512
+
+model:
+  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
+  _recursive_: false
+  env_net:
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
+    hidden_sizes: [128]
+    out_size: 64
+    activation: ${act:tanh}
+  actor:
+    _target_: jaxolotl.rl.actor.continuous_actor.ContinuousActor
+    hidden_sizes: [128, 128]
+    hidden_activation: ${act:relu}
+    output_activation: ${act:tanh}
+    state_dependent_std: true
+    use_epsilon: true
+  critic:
+    _target_: jaxolotl.networks.mlp.MLP
+    hidden_sizes: [128, 128]
+    activation: ${act:tanh}
+  sequence:
+    embedding_dim: 16
+    clause_mlp:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
+    disjunct_mlp:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
+
+rl_alg:
+  total_timesteps: 2e8
+  num_envs: 2048
+  num_steps: 64
+  num_minibatches: 4
+  update_epochs: 5
+  gamma: 0.995
+  gae_lambda: 0.95
+  clip_eps: 0.2
+  ent_coef: 0.003
+  vf_coef: 0.5
+  lr: 5e-4
+  max_grad_norm: 1.0
+  anneal_lr: false
+  adam_eps: 1e-8

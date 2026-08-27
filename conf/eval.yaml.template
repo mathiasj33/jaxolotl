@@ -17,3 +17,4 @@ eval:
   formulas_per_batch: all
   vmap_choose_subgoals: True
   vmap_choose_sequences: True
+  checkpoint: null  # Load latest checkpoint

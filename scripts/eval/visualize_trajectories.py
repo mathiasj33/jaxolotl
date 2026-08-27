@@ -14,7 +14,11 @@ from omegaconf import DictConfig
 import jaxolotl
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
-from jaxolotl.eval.utils import load_batched_models, make_eval_fn
+from jaxolotl.eval.utils import (
+    load_batched_models,
+    load_latest_checkpoint_models,
+    make_eval_fn,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +40,14 @@ def main(cfg: DictConfig):
     # load models
     key = jax.random.key(0)
     key, model_key = jax.random.split(key)
-    models, _ = load_batched_models(cfg, env, env_params, key=model_key)
+    checkpoint = cfg.eval.get("checkpoint", None)
+    if checkpoint is None:
+        models, _ = load_batched_models(cfg, env, env_params, key=model_key)
+    else:
+        models, _, checkpoint_step = load_latest_checkpoint_models(
+            cfg, env, env_params, key=model_key, max_steps=checkpoint
+        )
+        logger.info("Loaded checkpoint at step %s.", checkpoint_step)
 
     # select single model from ensemble (while keeping batch dimension)
     params, static = eqx.partition(models, eqx.is_array)

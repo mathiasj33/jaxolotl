@@ -56,11 +56,19 @@ class EnvTransition[TEnvState: eqx.Module, TObsFeatures: NamedTuple](NamedTuple)
 
 class Environment[
     TEnvState: eqx.Module,
+    TResetDescriptor: eqx.Module,
     TEnvParams,
     TObsFeatures: NamedTuple,
     TResetOptions: NamedTuple,
 ](eqx.Module):
-    """Abstract base class for environments."""
+    """Abstract base class for environments.
+
+    ``TResetDescriptor`` is the compact description sampled and stored for a
+    reset, while ``TEnvState`` is the state consumed by ``step``. They are the
+    same for array-only environments. Simulator-backed environments can keep
+    descriptors small and reconstruct derived simulator state in
+    :meth:`materialize`.
+    """
 
     default_params: TEnvParams
     # Maps indices in obs.propositions to names
@@ -77,7 +85,7 @@ class Environment[
         self.assignments_array = self._compute_assignments_array()
 
     @eqx.filter_jit
-    @eqx.debug.assert_max_traces(max_traces=2)
+    @eqx.debug.assert_max_traces(max_traces=20)
     def reset(
         self,
         key: jax.Array,
@@ -89,22 +97,47 @@ class Environment[
 
         Dependence on state is needed for some wrappers (e.g. CurriculumWrapper).
         """
-        state = self._reset(key, state, params, options)
+        descriptor = self._sample_reset(key, state, params, options)
+        state = self.materialize(descriptor, params)
         return state, self.compute_obs(state, params)
 
-    @abstractmethod
-    def _reset(
+    @eqx.filter_jit
+    @eqx.debug.assert_max_traces(max_traces=20)
+    def sample_reset(
         self,
         key: jax.Array,
-        state: TEnvState | None,
+        descriptor: TResetDescriptor | None,
         params: TEnvParams,
         options: TResetOptions | None = None,
-    ) -> TEnvState:
-        """Environment-specific reset."""
+    ) -> TResetDescriptor:
+        """Sample the compact, serialisable description of an initial state."""
+        return self._sample_reset(key, descriptor, params, options)
+
+    @abstractmethod
+    def _sample_reset(
+        self,
+        key: jax.Array,
+        descriptor: TResetDescriptor | TEnvState | None,
+        params: TEnvParams,
+        options: TResetOptions | None = None,
+    ) -> TResetDescriptor:
+        """Environment-specific compact reset descriptor sampling."""
         pass
 
+    def materialize(
+        self,
+        descriptor: TResetDescriptor,
+        params: TEnvParams,  # noqa: ARG002
+    ) -> TEnvState:
+        """Expand a compact descriptor into a state consumed by ``step``.
+
+        The identity implementation serves environments whose reset state is
+        already its cheapest complete description.
+        """
+        return descriptor  # type: ignore[return-value]
+
     @eqx.filter_jit
-    @eqx.debug.assert_max_traces(max_traces=2)
+    @eqx.debug.assert_max_traces(max_traces=20)
     def step(
         self,
         key: jax.Array,

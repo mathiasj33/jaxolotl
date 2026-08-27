@@ -37,7 +37,7 @@ class ResetOptions(NamedTuple):
 
 
 class ConveyorWorld(
-    environment.Environment[EnvState, EnvParams, ObsFeatures, ResetOptions]
+    environment.Environment[EnvState, EnvState, EnvParams, ObsFeatures, ResetOptions]
 ):
     default_params = EnvParams(max_steps_in_episode=50)
     propositions = ("parcel", "wrench", "hammer")
@@ -68,7 +68,7 @@ class ConveyorWorld(
         return spaces.Discrete(n=4)
 
     @override
-    def _reset(
+    def _sample_reset(
         self,
         key: jax.Array,
         state: EnvState | None,
