@@ -40,12 +40,17 @@ class PPOSafeConfig(NamedTuple):
     lag_coef: float
     lr: float
     max_grad_norm: float
-    anneal_lr: bool
     adam_eps: float
     target_cost: float
     min_lag: float
     max_lag: float
     stagger_initial_episodes: bool = True
+    anneal_lr: bool = False
+    anneal_lr_end_timesteps: int | None = None
+    anneal_lr_end: float = 0.0
+    anneal_ent_coef: bool = False
+    anneal_ent_coef_end_timesteps: int | None = None
+    anneal_ent_coef_end: float = 0.0
 
 
 class PPOSafeTransition(NamedTuple):
@@ -143,6 +148,7 @@ class PPOSafe(RLAlgorithm):
                         env_params,
                         curriculum_state,
                         key=step_key,
+                        update_count=step_count,
                     )
                 )
                 return (
@@ -177,14 +183,38 @@ class PPOSafe(RLAlgorithm):
         return carry[0].model
 
     def linear_schedule(self, count):
-        frac = (
-            1.0
-            - (count // (self.config.num_minibatches * self.config.update_epochs))
-            / self.config.total_timesteps
+        end_timesteps = (
+            self.config.anneal_lr_end_timesteps or self.config.total_timesteps
         )
-        return self.config.lr * frac
+        update_count = count // (
+            self.config.num_minibatches * self.config.update_epochs
+        )
+        elapsed_timesteps = update_count.astype(jnp.float32) * (
+            self.config.num_envs * self.config.num_steps
+        )
+        fraction = 1.0 - jnp.clip(elapsed_timesteps / end_timesteps, 0.0, 1.0)
+        return (
+            self.config.anneal_lr_end
+            + (self.config.lr - self.config.anneal_lr_end) * fraction
+        )
 
-    def _train_step(
+    def ent_coef_schedule(self, update_count: jax.Array) -> jax.Array:
+        """Return the entropy coefficient for a completed-update count."""
+        if not self.config.anneal_ent_coef:
+            return jnp.asarray(self.config.ent_coef, dtype=jnp.float32)
+        end_timesteps = (
+            self.config.anneal_ent_coef_end_timesteps or self.config.total_timesteps
+        )
+        elapsed_timesteps = update_count.astype(jnp.float32) * (
+            self.config.num_envs * self.config.num_steps
+        )
+        fraction = 1.0 - jnp.clip(elapsed_timesteps / end_timesteps, 0.0, 1.0)
+        return (
+            self.config.anneal_ent_coef_end
+            + (self.config.ent_coef - self.config.anneal_ent_coef_end) * fraction
+        )
+
+    def _train_step(  # noqa: PLR0913
         self,
         train_state,
         optim,
@@ -195,6 +225,7 @@ class PPOSafe(RLAlgorithm):
         curriculum_state: GlobalCurriculumState,
         *,
         key,
+        update_count,
     ):
         key, rollout_key = jax.random.split(key)
         trajs, last_obs, env_state = self._rollout(
@@ -241,6 +272,7 @@ class PPOSafe(RLAlgorithm):
                     targets,
                     cost_advantages,
                     cost_targets,
+                    self.ent_coef_schedule(update_count),
                 )
                 train_state = train_state.apply_gradients(optim, grads)
                 return train_state, losses
@@ -303,9 +335,9 @@ class PPOSafe(RLAlgorithm):
                 transition.reward,
             )
             not_terminated = 1.0 - terminated.astype(jnp.float32)
-            not_done = 1.0 - jnp.logical_or(
-                terminated, transition.truncated
-            ).astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(terminated, transition.truncated).astype(
+                jnp.float32
+            )
             delta = reward + self.config.gamma * next_value * not_terminated - value
             gae = delta + self.config.gamma * self.config.gae_lambda * not_done * gae
             return (gae, value), gae
@@ -402,7 +434,7 @@ class PPOSafe(RLAlgorithm):
         )
         return minibatches
 
-    def _loss_fn(self, model, trajs, gae, targets, cost_gae, cost_targets):
+    def _loss_fn(self, model, trajs, gae, targets, cost_gae, cost_targets, ent_coef):
         pi, value = model(trajs.obs)
         cost_value = model.get_cost_value(trajs.obs)
         lag = jnp.clip(
@@ -462,6 +494,6 @@ class PPOSafe(RLAlgorithm):
             + self.config.vf_coef * value_loss
             + self.config.cost_vf_coef * cost_value_loss
             + self.config.lag_coef * lag_loss
-            - self.config.ent_coef * entropy
+            - ent_coef * entropy
         )
         return total_loss, (value_loss, cost_value_loss, lag_loss, policy_loss, entropy)

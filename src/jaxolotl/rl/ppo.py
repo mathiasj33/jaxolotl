@@ -41,9 +41,14 @@ class PPOConfig(NamedTuple):
     vf_coef: float
     lr: float
     max_grad_norm: float
-    anneal_lr: bool
     adam_eps: float
     stagger_initial_episodes: bool = True
+    anneal_lr: bool = False
+    anneal_lr_end_timesteps: int | None = None
+    anneal_lr_end: float = 0.0
+    anneal_ent_coef: bool = False
+    anneal_ent_coef_end_timesteps: int | None = None
+    anneal_ent_coef_end: float = 0.0
 
 
 class PPOTransition(NamedTuple):
@@ -147,6 +152,7 @@ class PPO(RLAlgorithm):
                         env_params,
                         curriculum_state,
                         key=step_key,
+                        update_count=step_count,
                     )
                 )
                 carry = (
@@ -183,14 +189,38 @@ class PPO(RLAlgorithm):
         return train_state.model
 
     def linear_schedule(self, count):
-        frac = (
-            1.0
-            - (count // (self.config.num_minibatches * self.config.update_epochs))
-            / self.config.total_timesteps
+        end_timesteps = (
+            self.config.anneal_lr_end_timesteps or self.config.total_timesteps
         )
-        return self.config.lr * frac
+        update_count = count // (
+            self.config.num_minibatches * self.config.update_epochs
+        )
+        elapsed_timesteps = update_count.astype(jnp.float32) * (
+            self.config.num_envs * self.config.num_steps
+        )
+        fraction = 1.0 - jnp.clip(elapsed_timesteps / end_timesteps, 0.0, 1.0)
+        return (
+            self.config.anneal_lr_end
+            + (self.config.lr - self.config.anneal_lr_end) * fraction
+        )
 
-    def _train_step(
+    def ent_coef_schedule(self, update_count: jax.Array) -> jax.Array:
+        """Return the entropy coefficient for a completed-update count."""
+        if not self.config.anneal_ent_coef:
+            return jnp.asarray(self.config.ent_coef, dtype=jnp.float32)
+        end_timesteps = (
+            self.config.anneal_ent_coef_end_timesteps or self.config.total_timesteps
+        )
+        elapsed_timesteps = update_count.astype(jnp.float32) * (
+            self.config.num_envs * self.config.num_steps
+        )
+        fraction = 1.0 - jnp.clip(elapsed_timesteps / end_timesteps, 0.0, 1.0)
+        return (
+            self.config.anneal_ent_coef_end
+            + (self.config.ent_coef - self.config.anneal_ent_coef_end) * fraction
+        )
+
+    def _train_step(  # noqa: PLR0913
         self,
         train_state: TrainState[ActorCritic],
         optim: optax.GradientTransformation,
@@ -201,6 +231,7 @@ class PPO(RLAlgorithm):
         curriculum_state: GlobalCurriculumState,
         *,
         key: jax.Array,
+        update_count: jax.Array,
     ) -> tuple[
         TrainState[ActorCritic],
         jax.Array,
@@ -251,7 +282,13 @@ class PPO(RLAlgorithm):
             ):
                 trajs, advantages, targets = minibatch
                 grad_fn = eqx.filter_value_and_grad(self._loss_fn, has_aux=True)
-                losses, grads = grad_fn(train_state.model, trajs, advantages, targets)
+                losses, grads = grad_fn(
+                    train_state.model,
+                    trajs,
+                    advantages,
+                    targets,
+                    self.ent_coef_schedule(update_count),
+                )
                 train_state = train_state.apply_gradients(optim, grads)
                 return train_state, losses
 
@@ -338,9 +375,9 @@ class PPO(RLAlgorithm):
                 transition.reward,
             )
             not_terminated = 1.0 - terminated.astype(jnp.float32)
-            not_done = 1.0 - jnp.logical_or(
-                terminated, transition.truncated
-            ).astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(terminated, transition.truncated).astype(
+                jnp.float32
+            )
             delta = reward + self.config.gamma * next_value * not_terminated - value
             gae = delta + self.config.gamma * self.config.gae_lambda * not_done * gae
             return (gae, value), gae
@@ -391,6 +428,7 @@ class PPO(RLAlgorithm):
         trajs: PPOTransition,
         gae: jax.Array,
         targets: jax.Array,
+        ent_coef: jax.Array,
     ) -> tuple[jax.Array, tuple[jax.Array, jax.Array, jax.Array]]:
         """Calculate the PPO loss.
 
@@ -426,9 +464,5 @@ class PPO(RLAlgorithm):
         entropy = pi.entropy().mean()
 
         # total loss
-        total_loss = (
-            loss_actor
-            + self.config.vf_coef * value_loss
-            - self.config.ent_coef * entropy
-        )
+        total_loss = loss_actor + self.config.vf_coef * value_loss - ent_coef * entropy
         return total_loss, (value_loss, loss_actor, entropy)  # type: ignore
