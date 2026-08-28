@@ -160,7 +160,3 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
     def sample(self, stage: jax.Array, key: jax.Array) -> TJaxSample:
         index = jax.random.randint(key, (), 0, self.num_samples)
         return jax.tree.map(lambda x: x[stage, index], self.samples)
-
-    @eqx.filter_jit
-    def threshold(self, stage: jax.Array) -> jax.Array:
-        return self.thresholds[stage]

@@ -8,7 +8,9 @@ curriculum:
   make_stages:
     _target_: jaxolotl.alg.struct_ltl.curriculum.franka_zone_env_curriculum.make_stages
   num_samples: 1e4
-  episode_window: 512
+  window: 512
+  adopt_prob: 0.1
+  min_coverage: 0.9
 
 model:
   _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel

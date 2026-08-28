@@ -37,7 +37,7 @@ def wrap_for_training(
     )
     if task_wrapper is not None:
         env = task_wrapper(env)
-    return CurriculumWrapper(env, curriculum, cfg.curriculum.episode_window)
+    return CurriculumWrapper(env, curriculum)
 
 
 def make_curriculum(

@@ -4,6 +4,7 @@ Adapted from gymnax
 (https://github.com/RobertTLange/gymnax/blob/main/gymnax/wrappers/purerl.py).
 """
 
+import dataclasses
 from typing import Any, NamedTuple
 
 import equinox as eqx
@@ -23,6 +24,17 @@ class WrapperState(eqx.Module):
         if isinstance(self.state, WrapperState):
             return self.state.unwrapped()
         return self.state
+
+    def replace_in_chain[T: WrapperState](
+        self, state_type: type[T], **changes: Any
+    ) -> "WrapperState":
+        """Recursively replaces the state of the first wrapper of the given type in the chain."""
+        if isinstance(self, state_type):
+            return dataclasses.replace(self, **changes)
+        if isinstance(self.state, WrapperState):
+            new_state = self.state.replace_in_chain(state_type, **changes)
+            return dataclasses.replace(self, state=new_state)
+        raise ValueError(f"No wrapper of type {state_type} found in chain.")
 
     def __getattr__(self, name):
         return getattr(self.state, name)

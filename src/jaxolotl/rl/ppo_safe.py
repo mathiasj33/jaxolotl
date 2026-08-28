@@ -12,11 +12,16 @@ from jax.experimental import io_callback
 from jaxtyping import PyTree
 
 from jaxolotl import eqx_utils
+from jaxolotl.alg.curriculum.curriculum_manager import (
+    CurriculumManager,
+    GlobalCurriculumState,
+)
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eqx_utils.training import TrainState
 from jaxolotl.rl.actor_critic import ActorCritic
 from jaxolotl.rl.algorithm import RLAlgorithm
+from jaxolotl.rl.utils import stagger_initial_episodes
 
 
 class PPOSafeConfig(NamedTuple):
@@ -40,6 +45,7 @@ class PPOSafeConfig(NamedTuple):
     target_cost: float
     min_lag: float
     max_lag: float
+    stagger_initial_episodes: bool = True
 
 
 class PPOSafeTransition(NamedTuple):
@@ -60,8 +66,9 @@ class PPOSafeTransition(NamedTuple):
 
 class PPOSafe(RLAlgorithm):
     config: PPOSafeConfig
+    curriculum_manager: CurriculumManager
 
-    def __init__(self, **kwargs):
+    def __init__(self, curriculum_manager: CurriculumManager, **kwargs):
         self.config = PPOSafeConfig(**kwargs)
         if (
             self.config.num_envs * self.config.num_steps
@@ -69,6 +76,7 @@ class PPOSafe(RLAlgorithm):
             raise ValueError(
                 "num_envs * num_steps must be divisible by num_minibatches"
             )
+        self.curriculum_manager = curriculum_manager
 
     @override
     @eqx.filter_jit
@@ -93,10 +101,15 @@ class PPOSafe(RLAlgorithm):
             ),
         )
         train_state = TrainState.create(model, optim)
+        curriculum_state = self.curriculum_manager.init_state()
 
-        key, reset_key = jax.random.split(key)
+        key, reset_key, stagger_key = jax.random.split(key, 3)
         reset_keys = jax.random.split(reset_key, self.config.num_envs)
         env_state, obsv = env.reset(reset_keys, None, env_params, None)
+        if self.config.stagger_initial_episodes:
+            env_state = stagger_initial_episodes(
+                env_state, stagger_key, env_params.max_steps_in_episode
+            )
 
         num_steps_per_update = self.config.num_envs * self.config.num_steps
         num_updates = self.config.total_timesteps // num_steps_per_update
@@ -111,31 +124,55 @@ class PPOSafe(RLAlgorithm):
 
         def callback_iter(carry, _):
             def step(carry, _):
-                train_state, obsv, env_state, key, step_count = carry
-                key, step_key = jax.random.split(key)
-                train_state, obsv, env_state, metric = self._train_step(
+                (
                     train_state,
-                    optim,
                     obsv,
-                    env,
                     env_state,
-                    env_params,
-                    key=step_key,
+                    curriculum_state,
+                    key,
+                    step_count,
+                ) = carry
+                key, step_key = jax.random.split(key)
+                train_state, obsv, env_state, curriculum_state, metric = (
+                    self._train_step(
+                        train_state,
+                        optim,
+                        obsv,
+                        env,
+                        env_state,
+                        env_params,
+                        curriculum_state,
+                        key=step_key,
+                    )
                 )
-                return (train_state, obsv, env_state, key, step_count + 1), metric
+                return (
+                    train_state,
+                    obsv,
+                    env_state,
+                    curriculum_state,
+                    key,
+                    step_count + 1,
+                ), metric
 
             carry, metric = eqx_utils.filter_scan(
                 step, carry, None, updates_per_callback
             )
             if callback:
-                train_state, step_count = carry[0], carry[4]
+                train_state, step_count = carry[0], carry[5]
                 total_step = step_count * self.config.num_envs * self.config.num_steps
                 params, _ = eqx.partition(train_state.model, eqx.is_array)
                 io_callback(callback, None, metric, params, seed, total_step)
             return carry, None
 
         key, update_key = jax.random.split(key)
-        carry = (train_state, obsv, env_state, update_key, jnp.zeros((), jnp.int32))
+        carry = (
+            train_state,
+            obsv,
+            env_state,
+            curriculum_state,
+            update_key,
+            jnp.zeros((), jnp.int32),
+        )
         carry, _ = eqx_utils.filter_scan(callback_iter, carry, None, num_callbacks)
         return carry[0].model
 
@@ -147,7 +184,18 @@ class PPOSafe(RLAlgorithm):
         )
         return self.config.lr * frac
 
-    def _train_step(self, train_state, optim, obsv, env, env_state, env_params, *, key):
+    def _train_step(
+        self,
+        train_state,
+        optim,
+        obsv,
+        env,
+        env_state,
+        env_params,
+        curriculum_state: GlobalCurriculumState,
+        *,
+        key,
+    ):
         key, rollout_key = jax.random.split(key)
         trajs, last_obs, env_state = self._rollout(
             train_state.model,
@@ -156,6 +204,15 @@ class PPOSafe(RLAlgorithm):
             env_state,
             env_params,
             key=rollout_key,
+        )
+
+        key, curriculum_key = jax.random.split(key)
+        curriculum_state, env_state = self.curriculum_manager.update_progress(
+            curriculum_state,
+            env_state,
+            trajs.terminated | trajs.truncated,
+            trajs.info,
+            curriculum_key,
         )
 
         advantages, targets, cost_advantages, cost_targets = self._calculate_gae(
@@ -198,7 +255,7 @@ class PPOSafe(RLAlgorithm):
             update_epoch, (train_state, update_key), None, self.config.update_epochs
         )
         metric = trajs.info
-        return train_state, last_obs, env_state, metric
+        return train_state, last_obs, env_state, curriculum_state, metric
 
     def _rollout(self, model, obsv, env, env_state, env_params, *, key):
         def env_step(carry, _):

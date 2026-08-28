@@ -16,11 +16,16 @@ from jax.experimental import io_callback
 from jaxtyping import PyTree
 
 from jaxolotl import eqx_utils
+from jaxolotl.alg.curriculum.curriculum_manager import (
+    CurriculumManager,
+    GlobalCurriculumState,
+)
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eqx_utils.training import TrainState
 from jaxolotl.rl.actor_critic import ActorCritic
 from jaxolotl.rl.algorithm import RLAlgorithm
+from jaxolotl.rl.utils import stagger_initial_episodes
 
 
 class PPOConfig(NamedTuple):
@@ -38,6 +43,7 @@ class PPOConfig(NamedTuple):
     max_grad_norm: float
     anneal_lr: bool
     adam_eps: float
+    stagger_initial_episodes: bool = True
 
 
 class PPOTransition(NamedTuple):
@@ -58,8 +64,9 @@ class PPO(RLAlgorithm):
     """Proximal Policy Optimization (PPO) algorithm."""
 
     config: PPOConfig
+    curriculum_manager: CurriculumManager
 
-    def __init__(self, **kwargs):
+    def __init__(self, curriculum_manager: CurriculumManager, **kwargs):
         self.config = PPOConfig(**kwargs)
         if (
             self.config.num_envs * self.config.num_steps
@@ -67,6 +74,7 @@ class PPO(RLAlgorithm):
             raise ValueError(
                 "num_envs * num_steps (num_transitions) must be divisible by num_minibatches"
             )
+        self.curriculum_manager = curriculum_manager
 
     @override
     @eqx.filter_jit
@@ -94,11 +102,16 @@ class PPO(RLAlgorithm):
             ),
         )
         train_state = TrainState.create(model, optim)
+        curriculum_state = self.curriculum_manager.init_state()
 
         # Initialize environment
-        key, reset_key = jax.random.split(key)
+        key, reset_key, stagger_key = jax.random.split(key, 3)
         reset_keys = jax.random.split(reset_key, self.config.num_envs)
         env_state, obsv = env.reset(reset_keys, None, env_params, None)
+        if self.config.stagger_initial_episodes:
+            env_state = stagger_initial_episodes(
+                env_state, stagger_key, env_params.max_steps_in_episode
+            )
 
         # Calculate number of updates and callback intervals
         num_steps_per_update = self.config.num_envs * self.config.num_steps
@@ -113,42 +126,58 @@ class PPO(RLAlgorithm):
             num_callbacks = 1
 
         # Training loop
-        def callback_iter(
-            carry: tuple[TrainState[ActorCritic], PyTree, PyTree, jax.Array, jax.Array],
-            _,
-        ):
-            def step(
-                carry: tuple[
-                    TrainState[ActorCritic], PyTree, PyTree, jax.Array, jax.Array
-                ],
-                _,
-            ):
-                train_state, obsv, env_state, key, step_count = carry
-                key, step_key = jax.random.split(key)
-                train_state, obsv, env_state, metric = self._train_step(
+        def callback_iter(carry, _):
+            def step(carry, _):
+                (
                     train_state,
-                    optim,
                     obsv,
-                    env,
                     env_state,
-                    env_params,
-                    key=step_key,
+                    curriculum_state,
+                    key,
+                    step_count,
+                ) = carry
+                key, step_key = jax.random.split(key)
+                train_state, obsv, env_state, curriculum_state, metric = (
+                    self._train_step(
+                        train_state,
+                        optim,
+                        obsv,
+                        env,
+                        env_state,
+                        env_params,
+                        curriculum_state,
+                        key=step_key,
+                    )
                 )
-                carry = (train_state, obsv, env_state, key, step_count + 1)
+                carry = (
+                    train_state,
+                    obsv,
+                    env_state,
+                    curriculum_state,
+                    key,
+                    step_count + 1,
+                )
                 return carry, metric
 
             carry, metric = eqx_utils.filter_scan(
                 step, carry, None, updates_per_callback
             )
             if callback:
-                train_state, step_count = carry[0], carry[4]
+                train_state, step_count = carry[0], carry[5]
                 total_step = step_count * self.config.num_envs * self.config.num_steps
                 params, _ = eqx.partition(train_state.model, eqx.is_array)
                 io_callback(callback, None, metric, params, seed, total_step)
             return carry, None
 
         key, update_key = jax.random.split(key)
-        carry = (train_state, obsv, env_state, update_key, jnp.zeros((), jnp.int32))
+        carry = (
+            train_state,
+            obsv,
+            env_state,
+            curriculum_state,
+            update_key,
+            jnp.zeros((), jnp.int32),
+        )
         carry, _ = eqx_utils.filter_scan(callback_iter, carry, None, num_callbacks)
         train_state = carry[0]
         return train_state.model
@@ -169,15 +198,23 @@ class PPO(RLAlgorithm):
         env: Environment | EnvWrapper,
         env_state: PyTree,
         env_params: PyTree,
+        curriculum_state: GlobalCurriculumState,
         *,
         key: jax.Array,
-    ) -> tuple[TrainState[ActorCritic], jax.Array, PyTree, PyTree]:
+    ) -> tuple[
+        TrainState[ActorCritic],
+        jax.Array,
+        PyTree,
+        GlobalCurriculumState,
+        PyTree,
+    ]:
         """Perform a single PPO train step.
 
         Returns:
             train_state: The updated training state after the step.
             obsv: The last observation after the rollout.
             env_state: The updated environment state after the rollout.
+            curriculum_state: The updated population-wide curriculum state.
             metric: Metrics collected during the rollout.
         """
 
@@ -192,10 +229,19 @@ class PPO(RLAlgorithm):
             key=rollout_key,
         )
 
+        key, curriculum_key = jax.random.split(key)
+        curriculum_state, env_state = self.curriculum_manager.update_progress(
+            curriculum_state,
+            env_state,
+            trajs.terminated | trajs.truncated,
+            trajs.info,
+            curriculum_key,
+        )
+
         advantages, targets = self._calculate_gae(trajs, last_obs, train_state.model)
 
         # Update update_epochs number of times over the collected data
-        def update_epoch(carry: tuple[TrainState[ActorCritic], jax.Array], _):
+        def update_epoch(carry, _):
             train_state, key = carry
             key, shuffle_key = jax.random.split(key)
             minibatches = self._get_minibatches(trajs, advantages, targets, shuffle_key)
@@ -219,7 +265,7 @@ class PPO(RLAlgorithm):
             update_epoch, (train_state, update_key), None, self.config.update_epochs
         )
         metric = trajs.info
-        return train_state, last_obs, env_state, metric
+        return train_state, last_obs, env_state, curriculum_state, metric
 
     def _rollout(
         self,
@@ -238,7 +284,7 @@ class PPO(RLAlgorithm):
             last_obsv: The last observation after the rollout.
             env_state: The updated environment state after the rollout."""
 
-        def env_step(carry: tuple[PyTree, PyTree, jax.Array], _):
+        def env_step(carry, _):
             env_state, last_obs, key = carry
 
             # select action

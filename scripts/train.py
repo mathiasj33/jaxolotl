@@ -18,6 +18,7 @@ from omegaconf import DictConfig, OmegaConf
 
 import jaxolotl
 from jaxolotl import eqx_utils
+from jaxolotl.alg.curriculum.curriculum_manager import CurriculumManager
 from jaxolotl.environments.environment import EnvParams
 from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
@@ -72,7 +73,16 @@ def main(cfg: DictConfig):
         f"Training model with {compute_num_params(models) / cfg.num_seeds / 1e3}k parameters."
     )
 
-    rl_alg: RLAlgorithm = hydra.utils.instantiate(cfg.rl_alg)
+    curriculum_manager = CurriculumManager(
+        thresholds=env.curriculum.thresholds,
+        num_envs=int(cfg.rl_alg.num_envs),
+        window=int(cfg.curriculum.window),
+        adopt_prob=float(cfg.curriculum.get("adopt_prob", 0.1)),
+        min_coverage=float(cfg.curriculum.get("min_coverage", 0.9)),
+    )
+    rl_alg: RLAlgorithm = hydra.utils.instantiate(
+        cfg.rl_alg, curriculum_manager=curriculum_manager, _convert_="object"
+    )
     train = eqx.filter_vmap(
         rl_alg.train, in_axes=(eqx.if_array(0), None, None, 0, None, None, 0)
     )
@@ -145,18 +155,16 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
         # average returns
         window_returns = metric["episode_return"][metric["done"]][
-            -cfg.curriculum.episode_window :
+            -cfg.curriculum.window :
         ]
         avg_returns = jnp.mean(window_returns)
 
         # average successes
-        window_successes = metric["success"][metric["done"]][
-            -cfg.curriculum.episode_window :
-        ]
+        window_successes = metric["success"][metric["done"]][-cfg.curriculum.window :]
         avg_success = jnp.mean(window_successes)
 
         window_stages = metric["curriculum_stage"][metric["done"]][
-            -cfg.curriculum.episode_window :
+            -cfg.curriculum.window :
         ]
         avg_stage = jnp.mean(window_stages)
         min_stage = jnp.min(window_stages)
