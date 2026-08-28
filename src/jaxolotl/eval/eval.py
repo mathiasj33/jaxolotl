@@ -19,7 +19,7 @@ class EvalState(NamedTuple):
     disc_returns: jax.Array  # (num_episodes,) discounted returns
     lengths: jax.Array  # (num_episodes,) lengths of episodes
     completed: jax.Array  # (num_episodes,) whether episode is completed
-    num_violations: jax.Array  # scalar, number of violations across all episodes
+    violations: jax.Array  # (num_episodes,) whether each episode entered a sink
 
 
 class EvalResetOptions(NamedTuple):
@@ -66,6 +66,7 @@ class Evaluator(eqx.Module):
             returns: jax.Array of shape (num_episodes,) with returns
             disc_returns: jax.Array of shape (num_episodes,) with discounted returns
             lengths: jax.Array of shape (num_episodes,) with lengths of episodes
+            violations: boolean array indicating episodes that entered a sink
             trajs: PyTree of shape (num_episodes, max_length, ...) with env states or
                 None if return_trajs is False
         """
@@ -124,9 +125,11 @@ class Evaluator(eqx.Module):
                 eval_state.completed, eval_state.disc_returns, disc_returns
             )
             lengths = eval_state.lengths + jnp.where(eval_state.completed, 0, 1)
-            is_sink: jax.Array = transition.info["is_sink"].astype(jnp.int32)
-            violations = jnp.where(eval_state.completed, 0, is_sink)
-            total_violations = eval_state.num_violations + jnp.sum(violations)
+            is_sink: jax.Array = transition.info["is_sink"].astype(bool)
+            violations = jnp.logical_or(
+                eval_state.violations,
+                jnp.logical_and(~eval_state.completed, is_sink),
+            )
 
             # update completed
             completed = jnp.logical_or(eval_state.completed, transition.done)
@@ -136,7 +139,7 @@ class Evaluator(eqx.Module):
                 disc_returns=disc_returns,
                 lengths=lengths,
                 completed=completed,
-                num_violations=total_violations,
+                violations=violations,
             )
             return (
                 agent,
@@ -173,7 +176,7 @@ class Evaluator(eqx.Module):
             disc_returns=jnp.zeros((self.num_episodes,), dtype=jnp.float32),
             lengths=jnp.zeros((self.num_episodes,), dtype=jnp.int32),
             completed=jnp.zeros((self.num_episodes,), dtype=bool),
-            num_violations=jnp.zeros((), dtype=jnp.int32),
+            violations=jnp.zeros((self.num_episodes,), dtype=bool),
         )
         final = eqx_utils.filter_while_loop(
             rollout_cond,
@@ -185,6 +188,6 @@ class Evaluator(eqx.Module):
             state.returns,
             state.disc_returns,
             state.lengths,
-            state.num_violations,
+            state.violations,
             trajs,
         )

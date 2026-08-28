@@ -112,15 +112,12 @@ def log_and_save_results(
         "length",
     ]
 
-    violations /= cfg.eval.num_episodes
     rows = []
     for i, formula in enumerate(cfg.formulas):
         # Compute per-seed stats
         returns_i = returns[:, i]  # (num_seeds, num_episodes)
         lengths_i = lengths[:, i]  # (num_seeds, num_episodes)
-        violations_i = violations[:, i]  # (num_seeds,)
-
-        means = jnp.mean(returns_i, axis=1)  # (num_seeds,)
+        violations_i = violations[:, i]  # (num_seeds, num_episodes)
 
         success_mask = returns_i > 0  # (num_seeds, num_episodes)
         success_counts = jnp.sum(success_mask, axis=1)  # (num_seeds,)
@@ -129,12 +126,17 @@ def log_and_save_results(
             success_counts > 0, sum_lengths / success_counts, jnp.nan
         )
 
+        return_means = jnp.mean(returns_i, axis=1)  # (num_seeds,)
+        violation_means = jnp.mean(violations_i, axis=1)  # (num_seeds,)
+
         # Stdout logging (aggregate across seeds)
         logger.info("========================================")
         logger.info(f"Formula: {formula}")
-        logger.info(f"SR/AV: {float(jnp.mean(means)):.3f}+-{float(jnp.std(means)):.3f}")
         logger.info(
-            f"Violations: {float(jnp.mean(violations_i)):.3f}+-{float(jnp.std(violations_i)):.3f}"
+            f"SR/AV: {float(jnp.mean(return_means)):.3f}+-{float(jnp.std(return_means)):.3f}"
+        )
+        logger.info(
+            f"Violations: {float(jnp.mean(violation_means)):.3f}+-{float(jnp.std(violation_means)):.3f}"
         )
         logger.info(
             f"Length: {float(jnp.mean(avg_lengths)):.3f}+-{float(jnp.std(avg_lengths)):.3f}"
@@ -147,8 +149,8 @@ def log_and_save_results(
                     "seed": seed,
                     "deterministic": bool(cfg.eval.deterministic),
                     "formula": formula,
-                    "return": float(means[seed]),
-                    "violations": float(violations_i[seed]),
+                    "return": float(return_means[seed]),
+                    "violations": float(violation_means[seed]),
                     "length": float(avg_lengths[seed]),
                 }
             )
@@ -159,12 +161,12 @@ def log_and_save_results(
         writer.writerows(rows)
     logger.info(f"Wrote results to {csv_path}")
 
-    per_seed_means = jnp.mean(returns, axis=(1, 2))  # (num_seeds,)
+    per_seed_returns = jnp.mean(returns, axis=(1, 2))  # (num_seeds,)
+    per_seed_violations = jnp.mean(violations, axis=(1, 2))  # (num_seeds,)
     logger.info("========================================")
     logger.info(
-        f"Overall SR/AV: {float(jnp.mean(per_seed_means)):.3f}+-{float(jnp.std(per_seed_means)):.3f}"
+        f"Overall SR/AV: {float(jnp.mean(per_seed_returns)):.3f}+-{float(jnp.std(per_seed_returns)):.3f}"
     )
-    per_seed_violations = jnp.mean(violations, axis=1)  # (num_seeds,)
     logger.info(
         f"Overall Violations: {float(jnp.mean(per_seed_violations)):.3f}+-{float(jnp.std(per_seed_violations)):.3f}"
     )

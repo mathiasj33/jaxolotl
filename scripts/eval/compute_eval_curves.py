@@ -60,7 +60,7 @@ def main(cfg: DictConfig):
     def eval_timestep(key, agent_params):
         agent = eqx.combine(agent_params, static)
         key, eval_key = jax.random.split(key)
-        returns, disc_returns, lengths, _, _ = eval_fn(
+        returns, disc_returns, lengths, violations, _ = eval_fn(
             agent,
             env,
             env_params,
@@ -68,17 +68,19 @@ def main(cfg: DictConfig):
             eval_key,
         )  # shape: (num_formulas, num_seeds, num_episodes)
         io_callback(update_progress, None)
-        return key, (returns, disc_returns, lengths)
+        return key, (returns, disc_returns, lengths, violations)
 
     start = time.time()
-    _, (returns, disc_returns, lengths) = jax.lax.scan(eval_timestep, key, params)
+    _, (returns, disc_returns, lengths, violations) = jax.lax.scan(
+        eval_timestep, key, params
+    )
     # shape: (num_checkpoints, num_seeds, num_formulas, num_episodes)
     jax.block_until_ready(returns)
     pbar.close()
     logger.info(f"Evaluation completed in {time.time() - start:.2f} seconds.")
 
     # log to stdout and save to CSV
-    save_results(cfg, returns, disc_returns, lengths, checkpoint_steps)
+    save_results(cfg, returns, disc_returns, lengths, violations, checkpoint_steps)
 
 
 def save_results(
@@ -86,6 +88,7 @@ def save_results(
     returns: jax.Array,
     disc_returns: jax.Array,
     lengths: jax.Array,
+    violations: jax.Array,
     checkpoint_steps: list[int],
 ):
     """Saves averaged results to a CSV file."""

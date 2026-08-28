@@ -39,6 +39,8 @@ jaxolotl = { path = ".", editable = true }
 copy-templates = "python -c \"import shutil; from pathlib import Path; [shutil.copy(f, f.with_suffix('')) for f in Path('conf').glob('*.template')]\""
 install-pretrained-models = "python scripts/install_pretrained_models.py"
 threejs = "bash -c '(sleep 1 && xdg-open http://localhost:8000) & python -m http.server 8000 --directory threejs_output'"
+test = "pytest --ignore=runs -n 4 --dist loadfile -m 'not e2e'"
+test-e2e = "pytest --ignore=runs --e2e -m e2e"
 
 [tool.pixi.dependencies]
 ruff = ">=0.16.3,<0.17"
@@ -50,6 +52,7 @@ hydra-core = ">=1.3.2,<2"
 pandas = ">=2.3.3,<3"
 seaborn = ">=0.13.2,<0.14"
 pytest = ">=8.4.2,<9"
+pytest-xdist = ">=3.8.0,<4"
 joblib = ">=1.5.2,<2"
 tqdm = ">=4.67.1,<5"
 sympy = ">=1.14.0,<2"
