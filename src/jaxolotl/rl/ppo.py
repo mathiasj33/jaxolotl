@@ -332,14 +332,17 @@ class PPO(RLAlgorithm):
                 model.get_value(transition.terminal_obs),
                 next_value,
             )
-            term, value, reward = (
+            terminated, value, reward = (
                 transition.terminated,
                 transition.value,
                 transition.reward,
             )
-            not_term = 1.0 - term.astype(jnp.float32)
-            delta = reward + self.config.gamma * next_value * not_term - value
-            gae = delta + self.config.gamma * self.config.gae_lambda * not_term * gae
+            not_terminated = 1.0 - terminated.astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(
+                terminated, transition.truncated
+            ).astype(jnp.float32)
+            delta = reward + self.config.gamma * next_value * not_terminated - value
+            gae = delta + self.config.gamma * self.config.gae_lambda * not_done * gae
             return (gae, value), gae
 
         last_val = jax.lax.select(

@@ -297,14 +297,17 @@ class PPOSafe(RLAlgorithm):
                 model.get_value(transition.terminal_obs),
                 next_value,
             )
-            term, value, reward = (
+            terminated, value, reward = (
                 transition.terminated,
                 transition.value,
                 transition.reward,
             )
-            not_term = 1.0 - term.astype(jnp.float32)
-            delta = reward + self.config.gamma * next_value * not_term - value
-            gae = delta + self.config.gamma * self.config.gae_lambda * not_term * gae
+            not_terminated = 1.0 - terminated.astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(
+                terminated, transition.truncated
+            ).astype(jnp.float32)
+            delta = reward + self.config.gamma * next_value * not_terminated - value
+            gae = delta + self.config.gamma * self.config.gae_lambda * not_done * gae
             return (gae, value), gae
 
         def get_cost_advantages(gae_and_next_value, transition):
@@ -314,18 +317,20 @@ class PPOSafe(RLAlgorithm):
                 model.get_cost_value(transition.terminal_obs),
                 next_cost_value,
             )
-            term = transition.terminated
-            not_term = 1.0 - term.astype(jnp.float32)
+            not_terminated = 1.0 - transition.terminated.astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(
+                transition.terminated, transition.truncated
+            ).astype(jnp.float32)
             cost_delta = (
                 (1.0 - self.config.cost_gamma) * transition.cost
                 + self.config.cost_gamma
                 * jnp.maximum(transition.cost, next_cost_value)
-                * not_term
+                * not_terminated
                 - transition.cost_value
             )
             gae = (
                 cost_delta
-                + self.config.cost_gamma * self.config.gae_lambda * not_term * gae
+                + self.config.cost_gamma * self.config.gae_lambda * not_done * gae
             )
             return (gae, transition.cost_value), gae
 
@@ -357,10 +362,12 @@ class PPOSafe(RLAlgorithm):
 
         # Max-style cost return backup used by GenZ-LTL reference implementation.
         def get_cost_return(next_cost_return, transition):
-            not_term = 1.0 - transition.terminated.astype(jnp.float32)
+            not_done = 1.0 - jnp.logical_or(
+                transition.terminated, transition.truncated
+            ).astype(jnp.float32)
             cost_return = jnp.maximum(
                 transition.cost,
-                next_cost_return * not_term,
+                next_cost_return * not_done,
             )
             return cost_return, cost_return
 

@@ -17,8 +17,12 @@ class TimeLimitWrapper[
     TObsFeatures: NamedTuple,
     TResetOptions: NamedTuple,
 ](EnvWrapper[TEnvParams, TObsFeatures, TResetOptions]):
-    """Keeps track of the number of steps and truncates episodes that exceed the
-    environment's time limit."""
+    """Truncate episodes at the environment time limit.
+
+    By default, reaching the limit is not a termination: value-based algorithms may
+    bootstrap from the terminal observation. ``treat_trunc_as_term`` retains the
+    legacy Gym-style behaviour for callers that explicitly require it.
+    """
 
     treat_trunc_as_term: bool
 
@@ -59,7 +63,8 @@ class TimeLimitWrapper[
             timestep=state.timestep + 1,
             state=transition.state,
         )
-        truncated: jax.Array = next_state.timestep >= params.max_steps_in_episode  # type: ignore
+        time_limit_reached = next_state.timestep >= params.max_steps_in_episode  # type: ignore
+        truncated = jnp.logical_or(transition.truncated, time_limit_reached)
         terminated = transition.terminated
         if self.treat_trunc_as_term:
             terminated = jnp.logical_or(terminated, truncated)
