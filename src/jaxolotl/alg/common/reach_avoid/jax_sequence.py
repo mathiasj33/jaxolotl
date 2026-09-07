@@ -18,8 +18,8 @@ class JaxReachAvoidSequence(eqx.Module):
 
     # Each row consists of assignment indices with -1 padding. Epsilon transitions are
     # represented by an index of len(env.assignments) in the reach set.
-    reach: jax.Array  # shape: (max_length, num_assignments)
-    avoid: jax.Array  # shape: (max_length, num_assignments)
+    reach: jax.Array  # shape: (max_length, max_assignments)
+    avoid: jax.Array  # shape: (max_length, max_assignments)
 
     # Defaults go after this line
     _: KW_ONLY
@@ -90,8 +90,8 @@ class JaxReachAvoidSequence(eqx.Module):
 
         Returns:
             JaxReachAvoidSequence: with shape
-                reach: (num_seqs, max_length, num_assignments)
-                avoid: (num_seqs, max_length, num_assignments)
+                reach: (num_seqs, max_length, max_assignments)
+                avoid: (num_seqs, max_length, max_assignments)
         """
         encoded = batch_assignments(seqs, env.assignments())
         return cls(
@@ -122,8 +122,8 @@ class JaxReachAvoidSequence(eqx.Module):
 
         Returns:
             JaxReachAvoidSequence: with shape
-                reach: (num_states, max_num_seqs, max_length, num_assignments)
-                avoid: (num_states, max_num_seqs, max_length, num_assignments)
+                reach: (num_states, max_num_seqs, max_length, max_assignments)
+                avoid: (num_states, max_num_seqs, max_length, max_assignments)
         """
 
         return batch_state_sequences(

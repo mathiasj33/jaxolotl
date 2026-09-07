@@ -69,7 +69,6 @@ class BooleanReachAvoidSequence(ReachAvoidSequence):
             results.append((reach_set, avoid_set))
         return results
 
-    # TODO: write test for this!!!
     def expand_clauses(self) -> list["BooleanReachAvoidSequence"]:
         """Expands the reach-avoid sequence into multiple sequences based on clause combinations."""
         formulas = list(self.reach_avoid_formulas)

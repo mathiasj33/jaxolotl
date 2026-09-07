@@ -21,7 +21,7 @@ def test_batch_assignments_preserves_epsilon_and_repeat_last():
     encoded = batch_assignments([sequence], [red, green])
 
     npt.assert_array_equal(encoded.reach[0, :, 0], [2, 1])
-    npt.assert_array_equal(encoded.avoid[0, 0], [0, -1])
+    npt.assert_array_equal(encoded.avoid[0, 0], [0])
     npt.assert_array_equal(encoded.repeat_last, [7])
 
 

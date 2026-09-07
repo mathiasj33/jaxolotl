@@ -19,8 +19,8 @@ from jaxolotl.ltl.reach_avoid.sequence import EpsilonType, ReachAvoidSequence
 class AssignmentArrays:
     """Padded NumPy representation shared by reach-avoid encoders."""
 
-    reach: np.ndarray  # shape: (num_sequences, max_length, num_assignments)
-    avoid: np.ndarray  # shape: (num_sequences, max_length, num_assignments)
+    reach: np.ndarray  # shape: (num_sequences, max_length, max_assignments)
+    avoid: np.ndarray  # shape: (num_sequences, max_length, max_assignments)
     repeat_last: np.ndarray  # shape: (num_sequences,)
 
 
@@ -46,8 +46,13 @@ def batch_assignments(
     assignment_to_index = {
         assignment: index for index, assignment in enumerate(assignments)
     }
+    max_assignments = _resolve_max_assignments(sequences)
+    if max_assignments == 0:
+        raise ValueError(
+            "Sequences must contain at least one assignment in reach or avoid sets."
+        )
     epsilon_index = len(assignments)
-    reach = -np.ones((len(sequences), max_length, len(assignments)), dtype=np.int32)
+    reach = -np.ones((len(sequences), max_length, max_assignments), dtype=np.int32)
     avoid = -np.ones_like(reach)
     repeat_last = np.ones((len(sequences),), dtype=np.int32)
 
@@ -63,6 +68,17 @@ def batch_assignments(
             avoid[sequence_index, step_index, : len(indices)] = indices
 
     return AssignmentArrays(reach=reach, avoid=avoid, repeat_last=repeat_last)
+
+
+def _resolve_max_assignments(sequences: Sequence[ReachAvoidSequence]) -> int:
+    """Resolves the maximum number of assignments in any reach or avoid set in the given sequences."""
+    max_assignments = 0
+    for sequence in sequences:
+        for step_reach, step_avoid in sequence.reach_avoid:
+            if not isinstance(step_reach, EpsilonType):
+                max_assignments = max(max_assignments, len(step_reach))
+            max_assignments = max(max_assignments, len(step_avoid))
+    return max_assignments
 
 
 def batch_state_sequences[TSequence, TEncoded](

@@ -121,6 +121,9 @@ class Clause:
         else:
             return f"({neg_str})"
 
+    def __len__(self) -> int:
+        return len(self.pos) + len(self.neg)
+
 
 @functools.cache
 def formula_to_clauses(formula: BooleanNode | None) -> list[Clause]:

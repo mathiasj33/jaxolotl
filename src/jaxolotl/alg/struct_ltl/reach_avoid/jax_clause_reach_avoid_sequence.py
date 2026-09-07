@@ -25,10 +25,10 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
     """Jax representation of a reach-avoid sequence with assignments and clauses."""
 
     # reach: only single clause, whereas avoid can be multiple clauses
-    reach_clauses: jax.Array  # shape: (max_length, num_propositions)
-    reach_negatives: jax.Array  # shape: (max_length, num_propositions), bool
-    avoid_clauses: jax.Array  # shape: (max_length, max_clauses, num_propositions)
-    avoid_negatives: jax.Array  # shape: (max_length, max_clauses, num_propositions)
+    reach_clauses: jax.Array  # shape: (max_length, max_literals)
+    reach_negatives: jax.Array  # shape: (max_length, max_literals), bool
+    avoid_clauses: jax.Array  # shape: (max_length, max_clauses, max_literals)
+    avoid_negatives: jax.Array  # shape: (max_length, max_clauses, max_literals)
     num_avoid_clauses: jax.Array  # shape: (max_length,)
     # number of avoid clauses at each step, needed for proper padding
 
@@ -113,6 +113,11 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         max_clauses = max_clauses or max(
             len(avoid) for seq in seqs for _, avoid in seq.clauses
         )
+        max_literals = cls._resolve_max_literals(seqs)
+        if max_literals == 0:
+            raise ValueError(
+                "Sequences must contain at least one literal in reach or avoid clauses."
+            )
 
         # --- Assignments ---
         assignment_arrays = batch_assignments(
@@ -120,14 +125,11 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
         )
 
         # --- Clauses ---
-        propositions = env.propositions
-        prop_map = {name: i for i, name in enumerate(propositions)}
-        reach_clauses = -np.ones(
-            (len(seqs), max_length, len(propositions)), dtype=np.int32
-        )
+        prop_map = {name: i for i, name in enumerate(env.propositions)}
+        reach_clauses = -np.ones((len(seqs), max_length, max_literals), dtype=np.int32)
         reach_negatives = np.zeros_like(reach_clauses, dtype=bool)
         avoid_clauses = -np.ones(
-            (len(seqs), max_length, max_clauses, len(propositions)),
+            (len(seqs), max_length, max_clauses, max_literals),
             dtype=np.int32,
         )
         avoid_negatives = np.zeros_like(avoid_clauses, dtype=bool)
@@ -138,7 +140,7 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
             for i, (reach, avoid) in enumerate(seq.clauses):
                 # Reach clauses
                 if isinstance(reach, EpsilonType):
-                    reach_clauses[seq_idx, i, 0] = len(env.assignments())
+                    reach_clauses[seq_idx, i, 0] = len(env.propositions)
                 else:
                     if len(reach) != 1:
                         raise ValueError(
@@ -168,6 +170,19 @@ class JaxClauseReachAvoidSequence(JaxReachAvoidSequence):
             repeat_last=jnp.array(assignment_arrays.repeat_last),
             last_index=jnp.zeros_like(assignment_arrays.repeat_last),
         )
+
+    @classmethod
+    def _resolve_max_literals(cls, seqs: list[BooleanReachAvoidSequence]) -> int:
+        """Resolves the maximum number of literals per clause in the given sequences."""
+        max_literals = 0
+        for seq in seqs:
+            for reach, avoid in seq.clauses:
+                if not isinstance(reach, EpsilonType):
+                    for clause in reach:
+                        max_literals = max(max_literals, len(clause))
+                for clause in avoid:
+                    max_literals = max(max_literals, len(clause))
+        return max_literals
 
     @classmethod
     def padding_values(cls) -> "JaxClauseReachAvoidSequence":
