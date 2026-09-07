@@ -13,7 +13,6 @@ from jaxolotl.environments.renderer.renderer import ContinuousTimeRenderer
 from jaxolotl.environments.warehouse_env.warehouse_env import (
     EnvState,
     ObsFeatures,
-    ResetOptions,
     WarehouseParams,
 )
 
@@ -24,7 +23,7 @@ _DROP_VASE_INDEX = 3
 _DROP_CRATE_INDEX = 4
 
 
-class Renderer(ContinuousTimeRenderer[ObsFeatures, ResetOptions]):
+class Renderer(ContinuousTimeRenderer[ObsFeatures]):
     def __init__(
         self,
         params: WarehouseParams,

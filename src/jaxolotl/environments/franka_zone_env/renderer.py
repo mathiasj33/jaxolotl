@@ -15,7 +15,6 @@ from jaxolotl.environments.franka_zone_env.franka_zone_env import (
     EnvState,
     FrankaZoneEnv,
     ObsFeatures,
-    ResetOptions,
     build_model,
 )
 from jaxolotl.environments.renderer.renderer import ContinuousTimeRenderer
@@ -42,7 +41,7 @@ def _add_zone_geom(
     scene.ngeom += 1
 
 
-class Renderer(ContinuousTimeRenderer[ObsFeatures, ResetOptions]):
+class Renderer(ContinuousTimeRenderer[ObsFeatures]):
     def __init__(
         self,
         env: FrankaZoneEnv,

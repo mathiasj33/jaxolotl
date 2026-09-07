@@ -5,11 +5,11 @@ import jax.numpy as jnp
 import numpy as np
 import pygame
 
-from jaxolotl.environments.conveyor_world.conveyor_world import EnvState
+from jaxolotl.environments.conveyor_world.conveyor_world import EnvState, ObsFeatures
 from jaxolotl.environments.renderer.renderer import DiscreteTimeRenderer
 
 
-class ConveyorWorldRenderer(DiscreteTimeRenderer):
+class ConveyorWorldRenderer(DiscreteTimeRenderer[ObsFeatures]):
     """Renderer for the ConveyorWorld environment."""
 
     def __init__(

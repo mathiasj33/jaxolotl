@@ -5,11 +5,11 @@ import jax.numpy as jnp
 import numpy as np
 import pygame
 
-from jaxolotl.environments.letter_world.letter_world import EnvState
+from jaxolotl.environments.letter_world.letter_world import EnvState, ObsFeatures
 from jaxolotl.environments.renderer.renderer import DiscreteTimeRenderer
 
 
-class LetterWorldRenderer(DiscreteTimeRenderer):
+class LetterWorldRenderer(DiscreteTimeRenderer[ObsFeatures]):
     """Renderer for the LetterWorld environment."""
 
     def __init__(

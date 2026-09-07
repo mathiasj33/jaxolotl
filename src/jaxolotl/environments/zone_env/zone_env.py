@@ -408,7 +408,7 @@ class ZoneEnv(
     @override
     def get_renderer(
         self, env_params: EnvParams, **kwargs
-    ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
+    ) -> "BaseRenderer[ObsFeatures]":
         """Returns a renderer for the environment."""
         from .renderer import Renderer  # noqa: PLC0415
 

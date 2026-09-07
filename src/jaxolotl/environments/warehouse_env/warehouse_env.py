@@ -615,7 +615,7 @@ class WarehouseEnv(
     @override
     def get_renderer(
         self, env_params: WarehouseParams, **kwargs
-    ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
+    ) -> "BaseRenderer[ObsFeatures]":
         from jaxolotl.environments.warehouse_env.renderer import (  # noqa: PLC0415
             Renderer,
         )

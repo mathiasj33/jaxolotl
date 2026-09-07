@@ -10,7 +10,7 @@ from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper, WrapperState
 
 
-class BaseRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](ABC):
+class BaseRenderer[TObsFeatures: NamedTuple](ABC):
     """Base class for renderers."""
 
     def __init__(
@@ -153,9 +153,7 @@ class BaseRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](ABC):
         return "".join(lines)
 
 
-class ContinuousTimeRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](
-    BaseRenderer[TObsFeatures, TResetOptions]
-):
+class ContinuousTimeRenderer[TObsFeatures: NamedTuple](BaseRenderer[TObsFeatures]):
     """Base class for renderers with continuous time."""
 
     def render(self, state: WrapperState, obs: TObsFeatures | None):
@@ -268,9 +266,7 @@ class ContinuousTimeRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple
                 )
 
 
-class DiscreteTimeRenderer[TObsFeatures: NamedTuple, TResetOptions: NamedTuple](
-    BaseRenderer[TObsFeatures, TResetOptions]
-):
+class DiscreteTimeRenderer[TObsFeatures: NamedTuple](BaseRenderer[TObsFeatures]):
     """Base class for renderers with discrete time. By default, waits for user input
     before each step."""
 

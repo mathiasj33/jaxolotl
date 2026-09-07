@@ -212,7 +212,7 @@ class LetterWorld(
     @override
     def get_renderer(
         self, env_params: EnvParams, **kwargs
-    ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
+    ) -> "BaseRenderer[ObsFeatures]":
         """Returns a renderer for the environment."""
         from .renderer import LetterWorldRenderer  # noqa: PLC0415
 

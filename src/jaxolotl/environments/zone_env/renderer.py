@@ -14,11 +14,10 @@ from jaxolotl.environments.zone_env.zone_env import (
     EnvParams,
     EnvState,
     ObsFeatures,
-    ResetOptions,
 )
 
 
-class Renderer(ContinuousTimeRenderer[ObsFeatures, ResetOptions]):
+class Renderer(ContinuousTimeRenderer[ObsFeatures]):
     def __init__(
         self,
         params: EnvParams,

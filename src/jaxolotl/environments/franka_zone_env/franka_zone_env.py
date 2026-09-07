@@ -416,9 +416,7 @@ class FrankaZoneEnv(
         return Assignment.zero_or_one_propositions(set(self.propositions))
 
     @override
-    def get_renderer(
-        self, params: EnvParams, **kwargs
-    ) -> "BaseRenderer[ObsFeatures, ResetOptions]":
+    def get_renderer(self, params: EnvParams, **kwargs) -> "BaseRenderer[ObsFeatures]":
         from jaxolotl.environments.franka_zone_env.renderer import (  # noqa: PLC0415
             Renderer,
         )
