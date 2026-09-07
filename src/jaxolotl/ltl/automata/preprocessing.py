@@ -18,6 +18,7 @@ def build_ldba(
     if backend == "semml":
         process_semantic_embeddings(ldba)
     ldba.prune(env.assignments())
+    ldba.eliminate_forced_epsilons()
     ldba.complete_sink_state()
     ldba.compute_sccs()
     return ldba

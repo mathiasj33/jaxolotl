@@ -107,63 +107,6 @@ class LDBA:
         self.state_to_incoming_transitions[target].append(transition)
         return transition
 
-    def check_valid(self) -> bool:  # noqa: PLR0911, PLR0912
-        """Checks that the LDBA satisfies the following conditions:
-        - It has a deterministic first component
-        - It has a deterministic second component
-        - All transitions from the first to the second component are epsilon transitions
-        - There are no other epsilon transitions
-        - All transitions from the second component stay in the second component
-        - All accepting transitions are in the second component
-        - The first component may be empty
-        - The LDBA is fully connected
-        """
-        if self.initial_state is None:
-            return False
-        first_visited = set()
-        first_queue = [self.initial_state]
-        second_states = set()
-        found_accepting = False
-        while first_queue:
-            state = first_queue.pop(0)
-            first_visited.add(state)
-            if not self.check_deterministic_transitions(state):
-                return False
-            for transition in self.state_to_transitions[state]:
-                if transition.is_epsilon():
-                    if transition.target in first_visited:
-                        return False  # epsilon transition in the first component
-                    second_states.add(transition.target)
-                else:
-                    if transition.target in second_states:
-                        return False  # transition from first to second component is not epsilon
-                    if transition.target not in first_visited:
-                        first_queue.append(transition.target)
-                if transition.accepting:
-                    found_accepting = True
-        if found_accepting and len(second_states) > 0:
-            return False  # accepting transition in the first component
-        second_queue = list(second_states)
-        second_visited = set()
-        while second_queue:
-            state = second_queue.pop(0)
-            second_visited.add(state)
-            if not self.check_deterministic_transitions(state):
-                return False
-            for transition in self.state_to_transitions[state]:
-                if transition.is_epsilon():
-                    return False  # epsilon transition in the second component
-                if transition.target in first_visited:
-                    return False  # transition back from second to first component
-                if transition.target not in second_visited:
-                    second_queue.append(transition.target)
-                if transition.accepting:
-                    found_accepting = True
-        visited = first_visited | second_visited
-        if len(visited) < self.num_states:
-            return False  # not fully connected
-        return found_accepting
-
     def check_deterministic_transitions(self, state: int) -> bool:
         """Checks that the transitions from a state are deterministic."""
         num_assignment_transitions = Counter(
@@ -242,6 +185,99 @@ class LDBA:
                 for t in self.state_to_incoming_transitions[state]
                 if t not in to_remove
             ]
+
+    def eliminate_forced_epsilons(self):
+        """Removes states whose only outgoing edge is an epsilon transition by retargeting
+        their incoming transitions to the epsilon's target.
+        """
+        if self.complete:
+            raise ValueError(
+                "eliminate_forced_epsilons must be called before complete_sink_state."
+            )
+        self.state_to_scc = {}
+        removed: set[int] = set()
+        while True:
+            forced = next(
+                (
+                    s
+                    for s in range(self.num_states)
+                    if s not in removed
+                    and len(self.state_to_transitions[s]) == 1
+                    and self.state_to_transitions[s][0].is_epsilon()
+                ),
+                None,
+            )
+            if forced is None:
+                break
+            eps = self.state_to_transitions[forced][0]
+            if eps.target == forced:
+                raise ValueError(
+                    "Cannot eliminate a state whose only edge is an epsilon self-loop."
+                )
+            self.state_to_transitions[forced] = []
+            self.state_to_incoming_transitions[eps.target].remove(eps)
+            self.num_transitions -= 1
+            for t in self.state_to_incoming_transitions[forced]:
+                accepting = t.accepting or eps.accepting
+                merge_into = next(
+                    (
+                        e
+                        for e in self.state_to_transitions[t.source]
+                        if e is not t
+                        and e.target == eps.target
+                        and e.is_epsilon() == t.is_epsilon()
+                        and e.accepting == accepting
+                    ),
+                    None,
+                )
+                if merge_into is None:
+                    t.target = eps.target
+                    t.accepting = accepting
+                    self.state_to_incoming_transitions[eps.target].append(t)
+                else:
+                    if not t.is_epsilon():
+                        merge_into.label = f"({merge_into.label}) | ({t.label})"
+                        merge_into._valid_assignments = (
+                            merge_into.valid_assignments | t.valid_assignments
+                        )
+                    self.state_to_transitions[t.source].remove(t)
+                    self.num_transitions -= 1
+            self.state_to_incoming_transitions[forced] = []
+            if self.initial_state == forced:
+                self.initial_state = eps.target
+            removed.add(forced)
+        if removed:
+            self._compact_states(removed)
+
+    def _compact_states(self, removed: set[int]):
+        """Renumbers the remaining states densely, dropping `removed`. The removed states
+        must have no transitions left."""
+        remap: dict[int, int] = {}
+        for s in range(self.num_states):
+            if s not in removed:
+                remap[s] = len(remap)
+        transitions = {
+            id(t): t for s in remap for t in self.state_to_transitions[s]
+        }.values()
+        for t in transitions:
+            t.source = remap[t.source]
+            t.target = remap[t.target]
+        self.state_to_transitions = {
+            remap[s]: ts for s, ts in self.state_to_transitions.items() if s in remap
+        }
+        self.state_to_incoming_transitions = {
+            remap[s]: ts
+            for s, ts in self.state_to_incoming_transitions.items()
+            if s in remap
+        }
+        self.state_to_info = {
+            remap[s]: info for s, info in self.state_to_info.items() if s in remap
+        }
+        self.num_states = len(remap)
+        assert self.initial_state is not None
+        self.initial_state = remap[self.initial_state]
+        if self.sink_state is not None:
+            self.sink_state = remap[self.sink_state]
 
     def compute_sccs(self) -> None:
         """Computes the strongly connected components of the LDBA using Tarjan's algorithm."""

@@ -75,14 +75,13 @@ def construct_ldba(
 ) -> LDBA:
     ldba = ltl2ldba(formula, propositions, assignments)
     print("Constructed LDBA.")
-    assert ldba.check_valid()
-    print("Checked valid.")
     if prune:
         assignments = assignments or Assignment.zero_or_one_propositions(
             set(ldba.propositions)
         )
         ldba.prune(assignments)
         print("Pruned impossible transitions.")
+    ldba.eliminate_forced_epsilons()
     ldba.complete_sink_state()
     print("Added sink state.")
     ldba.compute_sccs()
