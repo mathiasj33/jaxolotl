@@ -92,12 +92,17 @@ class StructLTLModel(ActorCritic):
     def _compute_sequence_embedding(
         self, seq: JaxClauseReachAvoidSequence
     ) -> jax.Array:
+
+        all_indices = jnp.arange(self.embedding.num_embeddings)
+        all_embeddings = jax.vmap(self.embedding)(all_indices)
+        all_neg_embeddings = jax.vmap(self.neg_linear)(all_embeddings)
+
         def embed_clause(indices: jax.Array, neg_mask: jax.Array) -> jax.Array:
             # indices shape: (num_propositions,)
             mask = indices != -1
-            embeddings = jax.vmap(self.embedding)(indices * mask)
+            embeddings = all_embeddings[indices * mask]
             # embeddings shape: (num_propositions, embedding_dim)
-            neg_embeddings = jax.vmap(self.neg_linear)(embeddings)
+            neg_embeddings = all_neg_embeddings[indices * mask]
             embeddings = jnp.where(neg_mask[:, None], neg_embeddings, embeddings)
             embeddings = embeddings * mask[:, None]  # zero out padding embeddings
             return self.clause_mlp(embeddings)  # shape: (out_size,)
