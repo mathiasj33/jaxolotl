@@ -41,9 +41,10 @@ def main(cfg: DictConfig):
     # load models
     key = jax.random.key(0)
     key, model_key = jax.random.split(key)
-    models, num_seeds, checkpoint_steps = load_model_checkpoints(
+    models, seeds, checkpoint_steps = load_model_checkpoints(
         cfg, env, env_params, key=model_key
     )
+    num_seeds = len(seeds)
     agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     # set up evaluator
@@ -80,7 +81,9 @@ def main(cfg: DictConfig):
     logger.info(f"Evaluation completed in {time.time() - start:.2f} seconds.")
 
     # log to stdout and save to CSV
-    save_results(cfg, returns, disc_returns, lengths, violations, checkpoint_steps)
+    save_results(
+        cfg, returns, disc_returns, lengths, violations, checkpoint_steps, seeds
+    )
 
 
 def save_results(
@@ -90,6 +93,7 @@ def save_results(
     lengths: jax.Array,
     violations: jax.Array,
     checkpoint_steps: list[int],
+    seeds: list[int],
 ):
     """Saves averaged results to a CSV file."""
 
@@ -97,9 +101,6 @@ def save_results(
         f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval_results_checkpoints.csv"
     )
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-
-    num_seeds = int(returns.shape[1])
-    seeds = list(range(num_seeds))
 
     fieldnames = [
         "seed",
@@ -131,15 +132,15 @@ def save_results(
         mean_lengths = compute_masked_seed_means(lengths)
 
         # CSV rows (per-seed)
-        for seed in seeds:
+        for seed_index, seed in enumerate(seeds):
             rows.append(
                 {
                     "seed": seed,
                     "deterministic": bool(cfg.eval.deterministic),
                     "timestep": step,
-                    "metric": float(mean_returns[seed]),
-                    "return": float(mean_disc_returns[seed]),
-                    "length": float(mean_lengths[seed]),
+                    "metric": float(mean_returns[seed_index]),
+                    "return": float(mean_disc_returns[seed_index]),
+                    "length": float(mean_lengths[seed_index]),
                 }
             )
 

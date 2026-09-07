@@ -32,12 +32,28 @@ from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.eqx_utils.utils import compute_num_params
 from jaxolotl.rl.actor_critic import ActorCritic
 from jaxolotl.rl.algorithm import RLAlgorithm
+from jaxolotl.utils.artifact_utils import (
+    config_hash,
+    model_path,
+    verify_run_dir,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base="1.3", config_path="../conf", config_name="train")
 def main(cfg: DictConfig):
+    run_dir = Path.cwd()  # Automatically created by Hydra
+    start_seed = int(cfg.start_seed)
+    num_seeds = int(cfg.num_seeds)
+    seeds = list(range(start_seed, start_seed + num_seeds))
+    run_config_hash = config_hash(cfg)
+    verify_run_dir(
+        run_dir,
+        seeds,
+        expected_config_hash=run_config_hash,
+    )
+
     if not cfg.use_gpu:
         jax.config.update("jax_default_device", jax.devices("cpu")[0])
         logger.info("Using CPU for training")
@@ -52,8 +68,8 @@ def main(cfg: DictConfig):
     env = LogWrapper(env)
     env = VectorizeWrapper(env)
 
-    seeds = jnp.arange(cfg.start_seed, cfg.num_seeds)
-    keys = jax.vmap(jax.random.key)(seeds)
+    seeds_array = jnp.asarray(seeds)
+    keys = jax.vmap(jax.random.key)(seeds_array)
     split = jax.vmap(jax.random.split)(keys)
     keys, model_keys = split[:, 0], split[:, 1]
 
@@ -70,7 +86,7 @@ def main(cfg: DictConfig):
         model_keys,
     )
     logger.info(
-        f"Training model with {compute_num_params(models) / cfg.num_seeds / 1e3}k parameters."
+        f"Training model with {compute_num_params(models) / num_seeds / 1e3}k parameters."
     )
 
     curriculum_manager = CurriculumManager(
@@ -97,11 +113,11 @@ def main(cfg: DictConfig):
             wandb.init(
                 reinit="create_new",
                 project=cfg.wandb.project,
-                config=OmegaConf.to_container(cfg, resolve=True) | {"seed": seeds[i]},  # type: ignore
-                name=f"{cfg.run}_{i}",
+                config=OmegaConf.to_container(cfg, resolve=True) | {"seed": seed},  # type: ignore
+                name=f"{cfg.run}_{seed}",
                 settings=settings,
             )
-            for i in range(cfg.num_seeds)
+            for seed in seeds
         ]
     else:
         wandb_runs = None
@@ -110,24 +126,45 @@ def main(cfg: DictConfig):
     start_time = time.time()
     cb = make_callback(cfg, wandb_runs)
     compiled = train.lower(
-        models, env, env_params, keys, cb, cfg.save_freq, seeds
+        models, env, env_params, keys, cb, cfg.save_freq, seeds_array
     ).compile()
     logger.info(f"Compilation completed in {time.time() - start_time:.2f} seconds")
 
     logger.info("Starting training")
     cb = make_callback(cfg, wandb_runs)
     models = jax.block_until_ready(
-        compiled(models, env, env_params, keys, cb, cfg.save_freq, seeds)
+        compiled(models, env, env_params, keys, cb, cfg.save_freq, seeds_array)
     )
     end_time = time.time()
     logger.info(f"Training completed in {end_time - start_time:.2f} seconds")
 
-    eqx_utils.save("models.eqx", models, metadata={"num_models": cfg.num_seeds})
-    logger.info("Models saved to models.eqx")
+    saved_paths = save_final_models(models, run_dir, seeds, run_config_hash)
+    logger.info("Saved final models to %s", saved_paths[0].parent)
 
     if wandb_runs is not None:
         for run in wandb_runs:
             run.finish()
+
+
+def save_final_models(
+    models: ActorCritic,
+    run_dir: Path,
+    seeds: list[int],
+    run_config_hash: str,
+) -> list[Path]:
+    """Save a batched model as one parameter file per seed."""
+    final_params, _ = eqx.partition(models, eqx.is_array)
+    saved_paths = []
+    for index, seed in enumerate(seeds):
+        path = model_path(run_dir, seed)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        eqx_utils.save(
+            path,
+            jax.tree.map(lambda leaf, i=index: leaf[i], final_params),
+            metadata={"seed": seed, "config_hash": run_config_hash},
+        )
+        saved_paths.append(path)
+    return saved_paths
 
 
 def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
@@ -144,7 +181,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
         # estimate remaining training time
         seconds = time.time() - start_time
         sps = step / seconds
-        remaining = int((cfg.rl_alg.total_timesteps - step) / sps)
+        remaining = max(0, int((cfg.rl_alg.total_timesteps - step) / sps))
         remaining = str(datetime.timedelta(seconds=remaining))
 
         if metric["done"].sum() == 0:
@@ -183,7 +220,7 @@ def make_callback(cfg: DictConfig, wandb_runs: list | None = None):
 
         # log to wandb
         if wandb_runs is not None:
-            wandb = wandb_runs[int(seed)]
+            wandb = wandb_runs[int(seed) - int(cfg.start_seed)]
             wandb.log(
                 {
                     "avg_return": float(avg_returns),

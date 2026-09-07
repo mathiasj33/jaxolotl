@@ -7,7 +7,7 @@ defaults:
 
 run: tmp
 num_seeds: 10
-start_seed: 0
+start_seed: 0 # First seed in this batch; seeds are start_seed..start_seed+num_seeds-1
 use_gpu: true # use gpu if available
 save_freq: 2e6
 

@@ -1,8 +1,0 @@
-defaults:
-  - env: warehouse
-  - alg: ltl2action
-  - experiment: ${env}/${alg}
-  - hydra: simple
-  - _self_
-
-runs: [main, main_2] # runs to combine

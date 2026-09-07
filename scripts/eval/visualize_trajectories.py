@@ -42,9 +42,9 @@ def main(cfg: DictConfig):
     key, model_key = jax.random.split(key)
     checkpoint = cfg.eval.get("checkpoint", None)
     if checkpoint is None:
-        models, _ = load_batched_models(cfg, env, env_params, key=model_key)
+        models, seeds = load_batched_models(cfg, env, env_params, key=model_key)
     else:
-        models, _, checkpoint_step = load_latest_checkpoint_models(
+        models, seeds, checkpoint_step = load_latest_checkpoint_models(
             cfg, env, env_params, key=model_key, max_steps=checkpoint
         )
         logger.info("Loaded checkpoint at step %s.", checkpoint_step)
@@ -54,6 +54,7 @@ def main(cfg: DictConfig):
     params = jax.tree.map(lambda x: x[cfg.eval.model_index], params)
     params = jax.tree.map(lambda x: x[None, ...], params)  # add batch dim
     model = eqx.combine(params, static)
+    logger.info("Selected seed %s.", seeds[cfg.eval.model_index])
 
     agent = hydra.utils.instantiate(cfg.alg.agent, model)
 

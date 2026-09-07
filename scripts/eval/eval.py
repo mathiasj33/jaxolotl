@@ -50,16 +50,17 @@ def main(cfg: DictConfig):
     key, model_key = jax.random.split(key)
     checkpoint = cfg.eval.get("checkpoint", None)
     if checkpoint is None:
-        models, num_models = load_batched_models(cfg, env, env_params, key=model_key)
+        models, seeds = load_batched_models(cfg, env, env_params, key=model_key)
     else:
-        models, num_models, checkpoint_step = load_latest_checkpoint_models(
+        models, seeds, checkpoint_step = load_latest_checkpoint_models(
             cfg, env, env_params, key=model_key, max_steps=checkpoint
         )
         logger.info("Loaded checkpoint at step %s.", checkpoint_step)
+    num_models = len(seeds)
     agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     logger.info(
-        f"Loaded {num_models} seeds. Each model has {compute_num_params(models) / num_models / 1e3}k parameters."
+        f"Loaded seeds {seeds}. Each model has {compute_num_params(models) / num_models / 1e3}k parameters."
     )
 
     # set up evaluator
@@ -84,7 +85,7 @@ def main(cfg: DictConfig):
     # log to stdout and save to CSV
     formula_group = HydraConfig.get().runtime.choices.get("formulas", "default")
     formula_suffix = formula_group.split("/")[-1]
-    log_and_save_results(cfg, returns, lengths, violations, formula_suffix)
+    log_and_save_results(cfg, returns, lengths, violations, formula_suffix, seeds)
 
 
 def log_and_save_results(
@@ -93,15 +94,13 @@ def log_and_save_results(
     lengths: jax.Array,
     violations: jax.Array,
     formula_suffix: str,
+    seeds: list[int],
 ):
     """Logs aggregated results per formula and saves per-seed results to a CSV file."""
     csv_path = (
         f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/results_{formula_suffix}.csv"
     )
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-
-    num_seeds = int(returns.shape[0])
-    seeds = list(range(num_seeds))
 
     fieldnames = [
         "seed",
@@ -143,15 +142,15 @@ def log_and_save_results(
         )
 
         # CSV rows (per-seed)
-        for seed in seeds:
+        for seed_index, seed in enumerate(seeds):
             rows.append(
                 {
                     "seed": seed,
                     "deterministic": bool(cfg.eval.deterministic),
                     "formula": formula,
-                    "return": float(return_means[seed]),
-                    "violations": float(violation_means[seed]),
-                    "length": float(avg_lengths[seed]),
+                    "return": float(return_means[seed_index]),
+                    "violations": float(violation_means[seed_index]),
+                    "length": float(avg_lengths[seed_index]),
                 }
             )
 

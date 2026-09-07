@@ -14,4 +14,4 @@ job_logging:
     file:
       class: logging.FileHandler
       formatter: simple
-      mode: w
+      mode: a

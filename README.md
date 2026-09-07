@@ -142,8 +142,8 @@ pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 This script stores the following training outputs in `runs/${env}/${alg}/${run}`:
 
 - `logs.csv` and `train.log` contain training logs.
-- `models.eqx` contains the final trained models (batched across seeds).
-- `checkpoints` cointains training checkpoints. Checkpointing frequency can be controlled with the `save_freq` parameter.
+- `model/model_seed<N>.eqx` contains one final model per seed.
+- `checkpoints` contains training checkpoints. Checkpointing frequency can be controlled with the `save_freq` parameter.
 
 To plot training performance:
 ```bash
@@ -152,7 +152,10 @@ pixi run -e gpu python scripts/plotting/plot_training_curves.py
 **NOTE**: you will need to edit which runs to plot inside `scripts/plotting/plot_training_curves.py`
 
 > [!NOTE]
-> If you run into OOM errors, reduce the `num_seeds` that are trained in parallel. You can combine trained models from different runs with [combine_models.py](scripts/combine_models.py).
+> If you run into OOM errors, split an experiment into seed batches using the same
+> run name. For example, `num_seeds=5 start_seed=0` followed by
+> `num_seeds=5 start_seed=5` writes seeds 0–9 into the same run directory. Completed
+> seeds cannot be overwritten, and evaluation loads every final model automatically.
 
 ### Evaluation
 

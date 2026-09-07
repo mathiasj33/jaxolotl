@@ -16,6 +16,11 @@ from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eval.eval import Evaluator
 from jaxolotl.rl.actor_critic import ActorCritic
+from jaxolotl.utils.artifact_utils import (
+    MODEL_DIRECTORY,
+    discover_seed_models,
+    verify_model_metadata,
+)
 
 
 def load_batched_models(
@@ -25,16 +30,13 @@ def load_batched_models(
     *,
     key: jax.Array,
     path: Path | None = None,
-) -> tuple[ActorCritic, int]:
+) -> tuple[ActorCritic, list[int]]:
     """Load a batched model (over seeds) from disk.
 
     Returns:
-        batched model, batch size
+        batched model, seeds
     """
-
-    model_path = path or f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/models.eqx"
-    metadata = eqx_utils.load_metadata(model_path)
-    num_models = metadata["num_models"]
+    run_dir = path or Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}")
     model_fn = hydra.utils.instantiate(
         cfg.model,
         obs_spec=env.observation_spec(env_params),
@@ -45,14 +47,24 @@ def load_batched_models(
         _partial_=True,
     )
     model: ActorCritic = model_fn(act_space=env.action_space(env_params))
-    models = eqx_utils.add_batch_dim(model, num_models)
-    models = eqx_utils.load(model_path, models)
-    num_seeds = cfg.eval.get("num_seeds", None)
-    if num_seeds is not None:
-        params, static = eqx.partition(models, eqx.is_array)
-        models = eqx.combine(jax.tree.map(lambda x: x[:num_seeds], params), static)
-        num_models = num_seeds
-    return models, num_models
+    seed_to_file = discover_seed_models(run_dir)
+    if not seed_to_file:
+        raise FileNotFoundError(
+            f"No final models found in {run_dir / MODEL_DIRECTORY}."
+        )
+    verify_model_metadata(seed_to_file)
+    seeds = sorted(seed_to_file)
+    requested = cfg.eval.get("num_seeds", None)
+    if requested is not None:
+        if requested > len(seeds):
+            raise ValueError(
+                f"Requested {requested} seeds, but only {len(seeds)} are available."
+            )
+        seeds = seeds[: int(requested)]
+    params, static = eqx.partition(model, eqx.is_array)
+    per_seed = [eqx_utils.load(seed_to_file[seed], params) for seed in seeds]
+    batched = jax.tree.map(lambda *xs: jnp.stack(xs, axis=0), *per_seed)
+    return eqx.combine(batched, static), seeds
 
 
 def load_latest_checkpoint_models(
@@ -62,11 +74,11 @@ def load_latest_checkpoint_models(
     *,
     key: jax.Array,
     max_steps: int | float,
-) -> tuple[ActorCritic, int, int]:
+) -> tuple[ActorCritic, list[int], int]:
     """Load every seed from the latest checkpoint at or before ``max_steps``.
 
     Returns:
-        Batched ActorCritic model, number of seeds, and the selected checkpoint
+        Batched ActorCritic model, seed labels, and the selected checkpoint
         step.
 
     Raises:
@@ -109,12 +121,10 @@ def load_latest_checkpoint_models(
     if not all(seeds == set(checkpoint_files) for seeds in seed_sets):
         raise ValueError("Not all checkpoints have the same seeds.")
 
-    models_per_seed = [
-        eqx_utils.load(checkpoint_files[seed], params)
-        for seed in sorted(checkpoint_files)
-    ]
+    seeds = sorted(checkpoint_files)
+    models_per_seed = [eqx_utils.load(checkpoint_files[seed], params) for seed in seeds]
     models = jax.tree.map(lambda *xs: jnp.stack(xs, axis=0), *models_per_seed)
-    return eqx.combine(models, static), len(models_per_seed), checkpoint_step
+    return eqx.combine(models, static), seeds, checkpoint_step
 
 
 def load_model_checkpoints(
@@ -123,12 +133,12 @@ def load_model_checkpoints(
     env_params: EnvParams,
     *,
     key: jax.Array,
-) -> tuple[ActorCritic, int, list[int]]:
+) -> tuple[ActorCritic, list[int], list[int]]:
     """Load model checkpoints from disk.
 
     Returns:
         Batched ActorCritic model with shape (num_checkpoints, num_seeds, ...),
-        number of seeds,
+        seed labels,
         list of checkpoint steps.
     """
 
@@ -149,21 +159,26 @@ def load_model_checkpoints(
     checkpoint_folder = Path(
         f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/checkpoints"
     )
+    checkpoint_pattern = re.compile(r"model_seed(\d+)_step(\d+)\.eqx")
     for file in checkpoint_folder.iterdir():
-        seed = re.search(r"seed(\d+)", file.name).group(1)  # type: ignore
-        step = re.search(r"step(\d+)", file.name).group(1)  # type: ignore
+        match = checkpoint_pattern.fullmatch(file.name)
+        if match is None:
+            continue
+        seed, step = match.groups()
         checkpoint_params = eqx_utils.load(file, params)
         step_to_models[int(step)][int(seed)] = checkpoint_params
 
+    if not step_to_models:
+        raise FileNotFoundError(f"No checkpoints found in {checkpoint_folder}.")
     seeds_per_step = [set(seeds.keys()) for seeds in step_to_models.values()]
     if not all(seeds == seeds_per_step[0] for seeds in seeds_per_step):
         raise ValueError("Not all checkpoints have the same seeds.")
 
     # load initial models
-    num_seeds = len(seeds_per_step[0])
-    for seed in range(num_seeds):
-        key, subkey = jax.random.split(key)
-        init_params, _ = eqx.partition(make_model(subkey), eqx.is_array)
+    seeds = sorted(seeds_per_step[0])
+    for seed in seeds:
+        model_key = jax.random.split(jax.random.key(seed))[1]
+        init_params, _ = eqx.partition(make_model(model_key), eqx.is_array)
         step_to_models[0][seed] = init_params
 
     sorted_steps = sorted(step_to_models)
@@ -177,7 +192,7 @@ def load_model_checkpoints(
             jax.tree.map(lambda *xs: jnp.stack(xs, axis=0), *models_per_seed)
         )
     models = jax.tree.map(lambda *xs: jnp.stack(xs, axis=0), *models_list)
-    return eqx.combine(models, static), num_seeds, sorted_steps
+    return eqx.combine(models, static), seeds, sorted_steps
 
 
 def make_eval_fn(
