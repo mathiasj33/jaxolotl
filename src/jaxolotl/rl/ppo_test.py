@@ -64,6 +64,7 @@ def _ppo_safe(**overrides) -> PPOSafe:
         "anneal_lr": False,
         "adam_eps": 1e-5,
         "target_cost": 0.0,
+        "target_kl": 0.015,
         "min_lag": 0.0,
         "max_lag": 1.0,
     } | overrides
@@ -112,7 +113,7 @@ def test_ppo_safe_cost_backups_do_not_cross_truncation() -> None:
         log_prob=zeros,
         obs=zeros,
         terminal_obs=_column([0.0, 0.5, 0.0], jnp.float32),
-        info={},
+        info={"subgoal_success": _column([False, False, False], bool)},
     )
 
     _, _, cost_advantages, cost_returns = _ppo_safe()._calculate_gae(
@@ -122,6 +123,90 @@ def test_ppo_safe_cost_backups_do_not_cross_truncation() -> None:
     boundary_delta = (1.0 - GAMMA) * 0.25 + GAMMA * 0.5
     npt.assert_allclose(cost_advantages[1], boundary_delta)
     npt.assert_allclose(cost_returns[1], 0.25)
+
+
+def test_ppo_safe_backups_do_not_cross_subgoal_success() -> None:
+    zeros = jnp.zeros((3, 1), dtype=jnp.float32)
+    trajectories = PPOSafeTransition(
+        terminated=_column([False, False, False], bool),
+        truncated=_column([False, False, False], bool),
+        action=zeros,
+        value=zeros,
+        cost_value=zeros,
+        reward=_column([1.0, 2.0, 1_000.0], jnp.float32),
+        cost=_column([-1.0, -1.0, 1.0], jnp.float32),
+        log_prob=zeros,
+        obs=zeros,
+        terminal_obs=zeros,
+        info={"subgoal_success": _column([False, True, False], bool)},
+    )
+
+    advantages, _, cost_advantages, cost_returns = _ppo_safe()._calculate_gae(
+        trajectories, jnp.zeros((1,)), _ValueIsObservation()
+    )
+
+    npt.assert_allclose(advantages[1], 2.0)
+    npt.assert_allclose(advantages[0], 1.0 + GAMMA * GAE_LAMBDA * 2.0)
+    npt.assert_allclose(cost_advantages[1], -(1.0 - GAMMA))
+    # The official zero-initialized max-return boundary produces zero here.
+    npt.assert_allclose(cost_returns[1], 0.0)
+
+
+class _FixedDistribution:
+    def __init__(self, log_prob):
+        self._log_prob = log_prob
+
+    def log_prob(self, action):
+        del action
+        return self._log_prob
+
+    def entropy(self):
+        return jnp.zeros_like(self._log_prob)
+
+
+class _LossModel:
+    def __init__(self, new_log_prob):
+        self.new_log_prob = new_log_prob
+
+    def __call__(self, obs):
+        return _FixedDistribution(self.new_log_prob), jnp.zeros_like(obs)
+
+    def get_cost_value(self, obs):
+        return jnp.zeros_like(obs)
+
+    def get_lagrangian(self, obs):
+        return jnp.ones_like(obs)
+
+
+def test_ppo_safe_loss_reports_reference_approximate_kl() -> None:
+    old_log_prob = jnp.asarray([-0.4, -0.2], dtype=jnp.float32)
+    new_log_prob = jnp.asarray([-0.3, -0.15], dtype=jnp.float32)
+    zeros = jnp.zeros((2,), dtype=jnp.float32)
+    trajectories = PPOSafeTransition(
+        terminated=jnp.zeros((2,), dtype=jnp.bool_),
+        truncated=jnp.zeros((2,), dtype=jnp.bool_),
+        action=zeros,
+        value=zeros,
+        cost_value=zeros,
+        reward=zeros,
+        cost=-jnp.ones((2,), dtype=jnp.float32),
+        log_prob=old_log_prob,
+        obs=zeros,
+        terminal_obs=zeros,
+        info={"subgoal_success": jnp.zeros((2,), dtype=jnp.bool_)},
+    )
+
+    _, metrics = _ppo_safe()._loss_fn(
+        _LossModel(new_log_prob),  # type: ignore
+        trajectories,
+        zeros,
+        zeros,
+        zeros,
+        zeros,
+        jnp.asarray(0.0),
+    )
+
+    npt.assert_allclose(metrics[-1], -jnp.mean(new_log_prob - old_log_prob))
 
 
 @pytest.mark.parametrize("make_algorithm", [_ppo, _ppo_safe])

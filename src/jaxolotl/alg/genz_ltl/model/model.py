@@ -53,14 +53,18 @@ class GenZLTLModel(ActorCritic):
             config.cost_critic,
             in_size=self.env_net.output_size,
             out_size=1,
-            final_layer_activation=False,
+            final_layer_activation=config.cost_critic.get(
+                "final_layer_activation", False
+            ),
             key=cost_key,
         )
         self.lagrangian = hydra.utils.instantiate(
             config.lagrangian,
             in_size=self.env_net.output_size,
             out_size=1,
-            final_layer_activation=False,
+            final_layer_activation=config.lagrangian.get(
+                "final_layer_activation", False
+            ),
             key=lag_key,
         )
 

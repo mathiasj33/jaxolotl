@@ -37,7 +37,7 @@ class ActorCritic(eqx.Module):
             config.critic,
             in_size=in_size,
             out_size=1,
-            final_layer_activation=False,
+            final_layer_activation=config.critic.get("final_layer_activation", False),
             key=critic_key,
         )
 

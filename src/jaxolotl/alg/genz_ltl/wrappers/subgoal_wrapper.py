@@ -82,7 +82,9 @@ class SubgoalWrapper[
         avoided = jnp.logical_not(jnp.any(state.goal.avoid == assignment))
         reached = jnp.logical_and(state.goal.reach == assignment, avoided)
         reward = jax.lax.cond(reached, lambda: 1.0, lambda: 0.0)
-        cost = jax.lax.cond(avoided, lambda: 0.0, lambda: 1.0)
+        # We assume here that termination is a cost (e.g. hitting a wall in ZoneEnv).
+        safe = avoided & ~transition.terminated
+        cost = jax.lax.cond(safe, lambda: -1.0, lambda: 1.0)
         terminated = transition.terminated | (cost > 0)
         new_goal = self._sample_new_goal(assignment, state, subkey)
         goal = jax.lax.cond(reached, lambda: new_goal, lambda: state.goal)
@@ -96,14 +98,18 @@ class SubgoalWrapper[
             truncated=transition.truncated,
             terminal_observation=reduced_obs,
             propositions=transition.propositions,
-            info=transition.info | {"cost": cost},
+            info=transition.info
+            | {
+                "cost": cost,
+                "subgoal_success": reached.astype(jnp.bool_),
+            },
         )
 
     def _sample_new_goal(
         self, assignment: jax.Array, state: SubgoalState, key: jax.Array
     ) -> JaxReachAvoidSubgoal:
         # Sample a new reach that is not the current assignment.
-        key, reach_key, avoid_key = jax.random.split(key, 3)
+        reach_key, avoid_key = jax.random.split(key)
         num_assignments = len(self._env.assignments()) - 1  # exclude empty assignment
 
         valid_reach_mask = jnp.ones(num_assignments, dtype=bool)
@@ -125,28 +131,16 @@ class SubgoalWrapper[
         probs = probs / jnp.sum(probs)
         reach_idx = jax.random.choice(reach_key, num_assignments, p=probs)
 
-        # Sample a new avoid that does not contain the current assignment nor the reach.
-        key_size, key_perm = jax.random.split(avoid_key)
-        low = jnp.minimum(assignment, reach_idx)  # indices to exclude
-        high = jnp.maximum(assignment, reach_idx)
-
-        # Sample a random subset size m in [0, n-2].
-        m = jax.random.randint(key_size, shape=(), minval=0, maxval=num_assignments - 1)
-        indices = jnp.arange(num_assignments - 2)
-        shuffled = jax.random.permutation(key_perm, indices)
-
-        # Shift the indices to account for the excluded reach and assignment.
-        shifted = jnp.where(shuffled >= low, shuffled + 1, shuffled)
-        shifted = jnp.where(shifted >= high, shifted + 1, shifted)
-
-        # Mask out the other indices.
-        mask = jnp.arange(num_assignments - 2) < m
-        shifted = jnp.where(mask, shifted, -1)
-        shifted = jnp.sort(shifted, descending=True)
+        # Include each eligible avoid assignment independently with probability 0.5.
+        indices = jnp.arange(num_assignments)
+        eligible_avoid = (indices != assignment) & (indices != reach_idx)
+        included = jax.random.bernoulli(avoid_key, 0.5, shape=(num_assignments,))
+        avoid = jnp.where(eligible_avoid & included, indices, -1)
+        avoid = jnp.sort(avoid, descending=True)
         # Pad to (num_assignments,) with -1.
-        shifted = jnp.pad(
-            shifted,
-            (0, len(self._env.assignments()) - len(shifted)),
+        avoid = jnp.pad(
+            avoid,
+            (0, len(self._env.assignments()) - len(avoid)),
             constant_values=-1,
         )
 
@@ -158,13 +152,13 @@ class SubgoalWrapper[
             .astype(jnp.int32)
         )
         avoid_one_hot = (
-            (jnp.arange(len(self._env.assignments())) == shifted[:, None])
+            (jnp.arange(len(self._env.assignments())) == avoid[:, None])
             .any(axis=0)
             .astype(jnp.int32)
         )
         return JaxReachAvoidSubgoal(
             reach=reach_idx,
-            avoid=shifted,
+            avoid=avoid,
             reach_one_hot=reach_one_hot,
             avoid_one_hot=avoid_one_hot,
         )

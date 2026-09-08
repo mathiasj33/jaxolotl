@@ -1,1 +1,2 @@
 _target_: jaxolotl.rl.ppo_safe.PPOSafe
+target_kl: 0.015

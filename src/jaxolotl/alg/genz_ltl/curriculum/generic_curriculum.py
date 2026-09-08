@@ -1,3 +1,10 @@
+"""Generic curriculum for GenZ-LTL.
+
+GenZ-LTL samples random reach-avoid subgoals throughout training and does not require
+multiple curriculum stages. We implement this approach as a single RandomCurriculumStage
+that samples random reach-avoid subgoals.
+"""
+
 import random
 
 from jaxolotl.alg.curriculum import (
@@ -17,11 +24,12 @@ class SubgoalSampler(Sampler[ReachAvoidSubgoal]):
     def __init__(self, assignments: list[Assignment]):
         self.assignments = assignments
 
-    def sample(self) -> ReachAvoidSubgoal:
-        reach = random.choice(self.assignments)
-        available = [a for a in self.assignments if a != reach]
-        num_avoid = random.randint(0, len(available))
-        avoid = random.sample(available, num_avoid)
+    def sample(self, rng: random.Random) -> ReachAvoidSubgoal:
+        assignments = [assignment for assignment in self.assignments if assignment]
+        reach = rng.choice(assignments)
+        available = [assignment for assignment in assignments if assignment != reach]
+        # Uniformly sample an avoid subset
+        avoid = [assignment for assignment in available if rng.random() < 0.5]
         return ReachAvoidSubgoal(reach=reach, avoid=avoid)
 
 

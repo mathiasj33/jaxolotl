@@ -42,6 +42,7 @@ class PPOSafeConfig(NamedTuple):
     max_grad_norm: float
     adam_eps: float
     target_cost: float
+    target_kl: float
     min_lag: float
     max_lag: float
     stagger_initial_episodes: bool = True
@@ -251,40 +252,64 @@ class PPOSafe(RLAlgorithm):
         )
 
         def update_epoch(carry, _):
-            train_state, key = carry
+            train_state, key, early_stop = carry
             key, shuffle_key = jax.random.split(key)
-            minibatches = self._get_minibatches(
-                trajs,
-                advantages,
-                targets,
-                cost_advantages,
-                cost_targets,
-                shuffle_key,
-            )
+            state_params, state_static = eqx.partition(train_state, eqx.is_array)
 
-            def update_minibatch(train_state, minibatch):
-                trajs, advantages, targets, cost_advantages, cost_targets = minibatch
-                grad_fn = eqx.filter_value_and_grad(self._loss_fn, has_aux=True)
-                losses, grads = grad_fn(
-                    train_state.model,
+            def run_epoch(state_params):
+                train_state = eqx.combine(state_params, state_static)
+                minibatches = self._get_minibatches(
                     trajs,
                     advantages,
                     targets,
                     cost_advantages,
                     cost_targets,
-                    self.ent_coef_schedule(update_count),
+                    shuffle_key,
                 )
-                train_state = train_state.apply_gradients(optim, grads)
-                return train_state, losses
 
-            train_state, losses = eqx_utils.filter_scan(
-                update_minibatch, train_state, minibatches
+                def update_minibatch(train_state, minibatch):
+                    (
+                        batch_trajs,
+                        batch_advantages,
+                        batch_targets,
+                        batch_cost_advantages,
+                        batch_cost_targets,
+                    ) = minibatch
+                    grad_fn = eqx.filter_value_and_grad(self._loss_fn, has_aux=True)
+                    losses, grads = grad_fn(
+                        train_state.model,
+                        batch_trajs,
+                        batch_advantages,
+                        batch_targets,
+                        batch_cost_advantages,
+                        batch_cost_targets,
+                        self.ent_coef_schedule(update_count),
+                    )
+                    train_state = train_state.apply_gradients(optim, grads)
+                    return train_state, losses
+
+                train_state, losses = eqx_utils.filter_scan(
+                    update_minibatch, train_state, minibatches
+                )
+                new_state_params, _ = eqx.partition(train_state, eqx.is_array)
+                epoch_approx_kl = jnp.mean(losses[1][-1])
+                return new_state_params, epoch_approx_kl > self.config.target_kl
+
+            def skip_epoch(state_params):
+                return state_params, jnp.asarray(True)
+
+            state_params, early_stop = jax.lax.cond(
+                early_stop, skip_epoch, run_epoch, state_params
             )
-            return (train_state, key), losses
+            train_state = eqx.combine(state_params, state_static)
+            return (train_state, key, early_stop), None
 
         key, update_key = jax.random.split(key)
-        (train_state, _), _ = eqx_utils.filter_scan(
-            update_epoch, (train_state, update_key), None, self.config.update_epochs
+        (train_state, _, _), _ = eqx_utils.filter_scan(
+            update_epoch,
+            (train_state, update_key, jnp.asarray(False)),
+            None,
+            self.config.update_epochs,
         )
         metric = trajs.info
         return train_state, last_obs, env_state, curriculum_state, metric
@@ -329,17 +354,22 @@ class PPOSafe(RLAlgorithm):
                 model.get_value(transition.terminal_obs),
                 next_value,
             )
-            terminated, value, reward = (
-                transition.terminated,
+            learning_terminal, value, reward = (
+                transition.terminated | transition.info["subgoal_success"],
                 transition.value,
                 transition.reward,
             )
-            not_terminated = 1.0 - terminated.astype(jnp.float32)
-            not_done = 1.0 - jnp.logical_or(terminated, transition.truncated).astype(
-                jnp.float32
+            not_learning_terminal = 1.0 - learning_terminal.astype(jnp.float32)
+            not_learning_done = 1.0 - jnp.logical_or(
+                learning_terminal, transition.truncated
+            ).astype(jnp.float32)
+            delta = (
+                reward + self.config.gamma * next_value * not_learning_terminal - value
             )
-            delta = reward + self.config.gamma * next_value * not_terminated - value
-            gae = delta + self.config.gamma * self.config.gae_lambda * not_done * gae
+            gae = (
+                delta
+                + self.config.gamma * self.config.gae_lambda * not_learning_done * gae
+            )
             return (gae, value), gae
 
         def get_cost_advantages(gae_and_next_value, transition):
@@ -349,20 +379,26 @@ class PPOSafe(RLAlgorithm):
                 model.get_cost_value(transition.terminal_obs),
                 next_cost_value,
             )
-            not_terminated = 1.0 - transition.terminated.astype(jnp.float32)
-            not_done = 1.0 - jnp.logical_or(
-                transition.terminated, transition.truncated
+            learning_terminal = (
+                transition.terminated | transition.info["subgoal_success"]
+            )
+            not_learning_terminal = 1.0 - learning_terminal.astype(jnp.float32)
+            not_learning_done = 1.0 - jnp.logical_or(
+                learning_terminal, transition.truncated
             ).astype(jnp.float32)
             cost_delta = (
                 (1.0 - self.config.cost_gamma) * transition.cost
                 + self.config.cost_gamma
                 * jnp.maximum(transition.cost, next_cost_value)
-                * not_terminated
+                * not_learning_terminal
                 - transition.cost_value
             )
             gae = (
                 cost_delta
-                + self.config.cost_gamma * self.config.gae_lambda * not_done * gae
+                + self.config.cost_gamma
+                * self.config.gae_lambda
+                * not_learning_done
+                * gae
             )
             return (gae, transition.cost_value), gae
 
@@ -394,12 +430,15 @@ class PPOSafe(RLAlgorithm):
 
         # Max-style cost return backup used by GenZ-LTL reference implementation.
         def get_cost_return(next_cost_return, transition):
-            not_done = 1.0 - jnp.logical_or(
-                transition.terminated, transition.truncated
+            learning_terminal = (
+                transition.terminated | transition.info["subgoal_success"]
+            )
+            not_learning_done = 1.0 - jnp.logical_or(
+                learning_terminal, transition.truncated
             ).astype(jnp.float32)
             cost_return = jnp.maximum(
                 transition.cost,
-                next_cost_return * not_done,
+                next_cost_return * not_learning_done,
             )
             return cost_return, cost_return
 
@@ -441,6 +480,7 @@ class PPOSafe(RLAlgorithm):
             model.get_lagrangian(trajs.obs), self.config.min_lag, self.config.max_lag
         )
         log_prob = pi.log_prob(trajs.action)
+        approx_kl = -jnp.mean(log_prob - trajs.log_prob)
 
         value_pred_clipped = trajs.value + (value - trajs.value).clip(
             -self.config.clip_eps, self.config.clip_eps
@@ -496,4 +536,11 @@ class PPOSafe(RLAlgorithm):
             + self.config.lag_coef * lag_loss
             - ent_coef * entropy
         )
-        return total_loss, (value_loss, cost_value_loss, lag_loss, policy_loss, entropy)
+        return total_loss, (
+            value_loss,
+            cost_value_loss,
+            lag_loss,
+            policy_loss,
+            entropy,
+            approx_kl,
+        )

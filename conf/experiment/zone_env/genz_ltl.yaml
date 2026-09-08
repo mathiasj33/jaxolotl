@@ -32,14 +32,17 @@ model:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:softplus}
+    final_layer_activation: true
   cost_critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
+    final_layer_activation: false
   lagrangian:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:softplus}
+    final_layer_activation: true
 
 rl_alg:
   total_timesteps: 20e6
