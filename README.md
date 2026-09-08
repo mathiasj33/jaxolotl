@@ -123,8 +123,7 @@ environment. Select the algorithm and environment via `alg` and `env` configurat
 
 For efficiency, we precompute the environment resets for both training and evaluation:
 ```bash
-pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=train
-pixi run -e gpu python scripts/precompute_resets.py env=warehouse split=test
+pixi run -e gpu python scripts/precompute_resets.py env=warehouse
 ```
 
 For LTL2Action and SemLTL, we also recommend precomputing the training curriculum:

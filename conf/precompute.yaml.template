@@ -3,8 +3,5 @@ defaults:
   - hydra: simple
   - _self_
 
-rl_alg:
-  num_envs: 2048
-# precompute-specific params
 num_resets: 1e4
-split: test
+num_envs: 2048

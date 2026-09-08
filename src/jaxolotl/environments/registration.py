@@ -60,8 +60,7 @@ def make(
             raise FileNotFoundError(
                 f"No precomputed {reset_source!r} resets found for {name!r} at "
                 f"{path}. Generate them with `pixi run -e gpu python "
-                f"scripts/precompute_resets.py env=<config> split={reset_source}`, "
-                "or use reset_source='native'."
+                f"scripts/precompute_resets.py env=<config>."
             )
         env = PrecomputedResetWrapper(env, params, path)
 
