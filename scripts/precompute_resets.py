@@ -36,7 +36,7 @@ def main(cfg: DictConfig):
     jax.block_until_ready(descriptors)
     seconds = time.time() - start_time
     logger.info(
-        f"Performed {num_batch_resets // 2} resets for train and test splits in {seconds:.2f} seconds"
+        f"Performed {cfg.num_envs * num_batch_resets // 2} resets for train and test splits in {seconds:.2f} seconds"
     )
 
     # Reshape descriptors to (2, num_resets, ...)
