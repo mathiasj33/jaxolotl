@@ -89,7 +89,9 @@ def test_ppo_truncation_bootstraps_without_crossing_episode_boundary() -> None:
     )
 
     advantages, _ = _ppo()._calculate_gae(
-        trajectories, jnp.zeros((1,)), _ValueIsObservation()
+        trajectories,
+        jnp.zeros((1,)),
+        _ValueIsObservation(),  # type: ignore
     )
 
     boundary_advantage = 2.0 + GAMMA * 7.0

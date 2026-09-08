@@ -161,7 +161,7 @@ class FrankaZoneEnv(
     _data_prototype: mjx.Data
 
     default_params = EnvParams(
-        max_steps_in_episode=1000,
+        max_steps_in_episode=200,
         num_colors=4,
         zone_radius=0.07,
         zone_keepout=0.14,
