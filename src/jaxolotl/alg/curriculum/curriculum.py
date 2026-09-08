@@ -10,6 +10,7 @@ later (see scripts/precompute_curriculum.py).
 """
 
 import logging
+import random
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import override
@@ -17,7 +18,6 @@ from typing import override
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import numpy as np
 from jaxtyping import PyTree
 from tqdm.auto import tqdm
 
@@ -32,7 +32,7 @@ class Sampler[TSample](ABC):
     """Abstract base class for samplers."""
 
     @abstractmethod
-    def sample(self) -> TSample:
+    def sample(self, rng: random.Random) -> TSample:
         """Return a random sample."""
         pass
 
@@ -58,7 +58,7 @@ class CurriculumStage[TSample](ABC):
         self.threshold = threshold
 
     @abstractmethod
-    def sample(self) -> TSample:
+    def sample(self, rng: random.Random) -> TSample:
         pass
 
 
@@ -70,8 +70,8 @@ class RandomCurriculumStage[TSample](CurriculumStage[TSample]):
         self.sampler = sampler
 
     @override
-    def sample(self) -> TSample:
-        return self.sampler.sample()
+    def sample(self, rng: random.Random) -> TSample:
+        return self.sampler.sample(rng)
 
 
 class MultiRandomStage[TSample](CurriculumStage[TSample]):
@@ -85,15 +85,14 @@ class MultiRandomStage[TSample](CurriculumStage[TSample]):
     ):
         super().__init__(threshold)
         self.stages = stages
-        self.probs = np.array(probs, dtype=np.float32) / np.sum(
-            np.array(probs, dtype=np.float32)
-        )
+        total = sum(probs)
+        self.probs = [prob / total for prob in probs]
 
     @override
-    def sample(self) -> TSample:
-        stage_idx = np.random.choice(len(self.stages), p=self.probs)
+    def sample(self, rng: random.Random) -> TSample:
+        stage_idx = rng.choices(range(len(self.stages)), weights=self.probs, k=1)[0]
         stage = self.stages[stage_idx]
-        return stage.sample()
+        return stage.sample(rng)
 
 
 class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
@@ -118,10 +117,11 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
         self.thresholds = jnp.array([s.threshold for s in stages], dtype=jnp.float32)
 
         if load_path is None or not load_path.exists():
+            rng = random.Random(42)
             samples_list = []
             for i, stage in enumerate(stages):
                 samples = [
-                    stage.sample()
+                    stage.sample(rng)
                     for _ in tqdm(
                         range(num_samples),
                         desc=f"Precomputing curriculum samples for stage {i + 1} / {len(stages)}",

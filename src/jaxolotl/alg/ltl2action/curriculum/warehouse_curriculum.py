@@ -1,3 +1,5 @@
+import random
+
 from jaxolotl.alg.curriculum import (
     RandomCurriculumStage,
 )
@@ -60,6 +62,7 @@ if __name__ == "__main__":
         assignments=assignments,
         avoid_prob=0.5,
     )
-    formulas = [sampler.sample() for _ in range(10)]
+    rng = random.Random(42)
+    formulas = [sampler.sample(rng) for _ in range(10)]
     for f in formulas:
         print(f)

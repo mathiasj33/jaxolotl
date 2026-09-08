@@ -22,8 +22,8 @@ def make_stages(env: Environment | EnvWrapper) -> list[CurriculumStage]:
 class ConveyorFormulaSampler(Sampler[str]):
     """Samples formulas specific to the conveyor world."""
 
-    def sample(self) -> str:
-        if random.random() < 0.5:
+    def sample(self, rng: random.Random) -> str:
+        if rng.random() < 0.5:
             return "F(parcel & (F wrench))"
         else:
             return "F(parcel & (F hammer))"

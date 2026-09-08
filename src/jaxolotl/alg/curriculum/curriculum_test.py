@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import equinox as eqx
@@ -6,7 +7,13 @@ import jax.numpy as jnp
 import pytest
 
 from jaxolotl import eqx_utils
-from jaxolotl.alg.curriculum.curriculum import Curriculum, CurriculumStage
+from jaxolotl.alg.curriculum.curriculum import (
+    Curriculum,
+    CurriculumStage,
+    MultiRandomStage,
+    RandomCurriculumStage,
+    Sampler,
+)
 
 
 class Samples(eqx.Module):
@@ -14,8 +21,8 @@ class Samples(eqx.Module):
 
 
 class Stage(CurriculumStage[None]):
-    def sample(self) -> None:
-        return None
+    def sample(self, rng: random.Random) -> None:
+        del rng
 
 
 class RecordingBatcher:
@@ -26,6 +33,27 @@ class RecordingBatcher:
         del env
         RecordingBatcher.num_parallel = num_parallel
         return Samples(jnp.arange(len(samples)))
+
+
+class RandomSampler(Sampler[int]):
+    def sample(self, rng: random.Random) -> int:
+        return rng.randrange(1_000_000)
+
+
+class ConstantSampler(Sampler[int]):
+    def __init__(self, value: int):
+        self.value = value
+
+    def sample(self, rng: random.Random) -> int:
+        del rng
+        return self.value
+
+
+class ValueBatcher:
+    @staticmethod
+    def batch(samples, env, num_parallel=1):
+        del env, num_parallel
+        return Samples(jnp.asarray(samples))
 
 
 def _save_curriculum(path: Path, *, num_stages: int, num_samples: int) -> None:
@@ -62,6 +90,24 @@ def test_forwards_num_parallel_to_batcher():
     )
 
     assert RecordingBatcher.num_parallel == 3
+
+
+def test_nested_stage_selection_is_deterministic():
+    stage = MultiRandomStage(
+        stages=[
+            RandomCurriculumStage(ConstantSampler(0), threshold=None),
+            RandomCurriculumStage(ConstantSampler(1), threshold=None),
+        ],
+        probs=[0.25, 0.75],
+        threshold=None,
+    )
+    first_rng = random.Random(42)
+    second_rng = random.Random(42)
+
+    first = [stage.sample(first_rng) for _ in range(20)]
+    second = [stage.sample(second_rng) for _ in range(20)]
+
+    assert first == second
 
 
 @pytest.mark.parametrize(

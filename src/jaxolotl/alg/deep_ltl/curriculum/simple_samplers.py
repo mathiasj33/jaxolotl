@@ -45,8 +45,8 @@ class SimpleReachAvoidSampler(Sampler[ReachAvoidSequence]):
                     )
 
     @override
-    def sample(self) -> ReachAvoidSequence:
-        depth = random.randint(*self.depth)
+    def sample(self, rng: random.Random) -> ReachAvoidSequence:
+        depth = rng.randint(*self.depth)
         last_reach: set[Assignment] = set()
         seq: list[tuple[AssignmentSet, AssignmentSet]] = []
 
@@ -59,8 +59,8 @@ class SimpleReachAvoidSampler(Sampler[ReachAvoidSequence]):
             ]
             reach_lower = min(self.reach[0], len(available_reach))
             reach_upper = min(self.reach[1], len(available_reach))
-            num_reach = random.randint(reach_lower, reach_upper)
-            reach = set(random.sample(available_reach, num_reach))
+            num_reach = rng.randint(reach_lower, reach_upper)
+            reach = set(rng.sample(available_reach, num_reach))
 
             # sample avoid
             available_avoid = [
@@ -70,8 +70,8 @@ class SimpleReachAvoidSampler(Sampler[ReachAvoidSequence]):
             ]
             avoid_lower = min(self.avoid[0], len(available_avoid))
             avoid_upper = min(self.avoid[1], len(available_avoid))
-            num_avoid = random.randint(avoid_lower, avoid_upper)
-            avoid = set(random.sample(available_avoid, num_avoid))
+            num_avoid = rng.randint(avoid_lower, avoid_upper)
+            avoid = set(rng.sample(available_avoid, num_avoid))
 
             last_reach = reach
             seq.append((frozenset(reach), frozenset(avoid)))
@@ -94,10 +94,10 @@ class SimpleReachStaySampler(Sampler[ReachAvoidSequence]):
         self.num_stay = num_stay  # the number of timesteps to stay after reaching
         self.assignments = assignments
 
-    def sample(self) -> ReachAvoidSequence:
+    def sample(self, rng: random.Random) -> ReachAvoidSequence:
         # sample reach
         available_reach = [a for a in self.assignments if a.true_propositions]
-        reach = random.choice(available_reach)
+        reach = rng.choice(available_reach)
 
         # sample avoid
         available_avoid = [
@@ -105,8 +105,8 @@ class SimpleReachStaySampler(Sampler[ReachAvoidSequence]):
         ]
         avoid_lower = min(self.avoid[0], len(available_avoid))
         avoid_upper = min(self.avoid[1], len(available_avoid))
-        num_avoid = random.randint(avoid_lower, avoid_upper)
-        avoid = set(random.sample(available_avoid, num_avoid))
+        num_avoid = rng.randint(avoid_lower, avoid_upper)
+        avoid = set(rng.sample(available_avoid, num_avoid))
 
         # avoid everything except reach
         avoid_all_else = set(self.assignments) - {reach}

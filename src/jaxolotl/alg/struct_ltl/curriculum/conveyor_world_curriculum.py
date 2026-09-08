@@ -18,11 +18,11 @@ def make_stages(_: ConveyorWorld) -> list[CurriculumStage]:
 class ConveyorSequenceSampler(Sampler[BooleanReachAvoidSequence]):
     """Samples formulas specific to the conveyor world."""
 
-    def sample(self) -> BooleanReachAvoidSequence:
+    def sample(self, rng: random.Random) -> BooleanReachAvoidSequence:
         parcel = VarNode("parcel")
         wrench = VarNode("wrench")
         hammer = VarNode("hammer")
-        if random.random() < 0.5:
+        if rng.random() < 0.5:
             seq = [(parcel, None), (wrench, None)]
         else:
             seq = [(parcel, None), (hammer, None)]

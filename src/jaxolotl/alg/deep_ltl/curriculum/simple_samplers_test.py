@@ -1,3 +1,5 @@
+import random
+
 from jaxolotl.alg.deep_ltl.curriculum.simple_samplers import (
     SimpleReachAvoidSampler,
     SimpleReachStaySampler,
@@ -7,6 +9,7 @@ from jaxolotl.ltl.reach_avoid.sequence import EPSILON, EpsilonType
 
 
 def test_simple_reach_avoid_sampler():
+    rng = random.Random(42)
     sampler = SimpleReachAvoidSampler(
         depth=(3, 8),
         reach=(1, 3),
@@ -14,7 +17,7 @@ def test_simple_reach_avoid_sampler():
         assignments=Assignment.zero_or_one_propositions({"a", "b", "c", "d"}),
     )
     for j in range(1000):
-        seq = sampler.sample()
+        seq = sampler.sample(rng)
 
         if j < 5:
             print(f"\nSampled Reach-Avoid Sequence ({j}):\n{seq}")
@@ -48,6 +51,7 @@ def test_simple_reach_avoid_sampler():
 
 
 def test_reach_stay_sampler():
+    rng = random.Random(42)
     assignments = Assignment.zero_or_one_propositions({"a", "b", "c", "d"})
     sampler = SimpleReachStaySampler(
         num_stay=30,
@@ -55,7 +59,7 @@ def test_reach_stay_sampler():
         assignments=assignments,
     )
     for j in range(1000):
-        seq = sampler.sample()
+        seq = sampler.sample(rng)
 
         if j < 5:
             print(f"\nSampled Reach-Stay Sequence ({j}):\n{seq}")

@@ -47,8 +47,8 @@ class BooleanReachAvoidSampler(Sampler[BooleanReachAvoidSequence]):
         self.assignments = tuple(assignments)
 
     @override
-    def sample(self) -> BooleanReachAvoidSequence:
-        depth = random.randint(self.depth[0], self.depth[1])
+    def sample(self, rng: random.Random) -> BooleanReachAvoidSequence:
+        depth = rng.randint(self.depth[0], self.depth[1])
 
         last_reach_sat = None
         reach_avoid = []
@@ -64,7 +64,7 @@ class BooleanReachAvoidSampler(Sampler[BooleanReachAvoidSequence]):
             available_reach = (
                 available_reach if available_reach else self.reach_formulas
             )
-            reach = random.choice(available_reach)
+            reach = rng.choice(available_reach)
             reach_sat = compute_sat(reach, self.assignments)
 
             # 2. Sample Avoid Formula
@@ -77,10 +77,10 @@ class BooleanReachAvoidSampler(Sampler[BooleanReachAvoidSequence]):
                     or not last_reach_sat.issubset(compute_sat(f, self.assignments))
                 )
             ]
-            if not available_avoid or random.random() > self.avoid_prob:
+            if not available_avoid or rng.random() > self.avoid_prob:
                 avoid = FalseNode()
             else:
-                avoid = random.choice(available_avoid)
+                avoid = rng.choice(available_avoid)
 
             last_reach_sat = reach_sat
             reach_avoid.append((reach, avoid))
@@ -108,9 +108,9 @@ class BooleanReachStaySampler(Sampler[BooleanReachAvoidSequence]):
             raise ValueError("At least one avoid formula must be provided.")
 
     @override
-    def sample(self) -> BooleanReachAvoidSequence:
+    def sample(self, rng: random.Random) -> BooleanReachAvoidSequence:
         # 1. Sample Reach Formula
-        reach = random.choice(self.reach_formulas)
+        reach = rng.choice(self.reach_formulas)
         reach_sat = compute_sat(reach, self.assignments)
 
         # 2. Sample Avoid Formula
@@ -119,10 +119,10 @@ class BooleanReachStaySampler(Sampler[BooleanReachAvoidSequence]):
             for f in self.avoid_formulas
             if not reach_sat.issubset(compute_sat(f, self.assignments))
         ]
-        if not available_avoid or random.random() > self.avoid_prob:
+        if not available_avoid or rng.random() > self.avoid_prob:
             avoid = FalseNode()
         else:
-            avoid = random.choice(available_avoid)
+            avoid = rng.choice(available_avoid)
 
         avoid_except_reach = push_down_nots(NotNode(reach))
         seq = [
@@ -164,7 +164,8 @@ if __name__ == "__main__":
         avoid_prob=0.5,
         assignments=assignments,
     )
-    samples = [sampler.sample() for _ in range(100)]
+    rng = random.Random(42)
+    samples = [sampler.sample(rng) for _ in range(100)]
     num_unique = len(set(samples))
     print(f"Num unique: {num_unique}")
     for seq in samples[:10]:

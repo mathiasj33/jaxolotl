@@ -29,21 +29,21 @@ class SimpleReachAvoidFormulaSampler(Sampler[str]):
         self.avoid = avoid
         self.propositions = propositions
 
-    def sample(self) -> str:
-        depth = random.randint(self.depth[0], self.depth[1])
+    def sample(self, rng: random.Random) -> str:
+        depth = rng.randint(self.depth[0], self.depth[1])
         props = []
         last_props = set()
         for _ in range(depth):
-            nr = random.randint(self.reach[0], self.reach[1])
-            na = random.randint(self.avoid[0], self.avoid[1])
+            nr = rng.randint(self.reach[0], self.reach[1])
+            na = rng.randint(self.avoid[0], self.avoid[1])
             available_props = [p for p in self.propositions if p not in last_props]
-            reach_props = random.sample(available_props, min(nr, len(available_props)))
+            reach_props = rng.sample(available_props, min(nr, len(available_props)))
             available_props = [
                 p
                 for p in available_props
                 if p not in reach_props and p not in last_props
             ]
-            avoid_props = random.sample(available_props, min(na, len(available_props)))
+            avoid_props = rng.sample(available_props, min(na, len(available_props)))
             props.append((reach_props, avoid_props))
             last_props = set(reach_props)
         formula = "true"
@@ -102,8 +102,8 @@ class BooleanReachAvoidFormulaSampler(Sampler[str]):
         self.assignments = tuple(assignments)
 
     @override
-    def sample(self) -> str:
-        depth = random.randint(self.depth[0], self.depth[1])
+    def sample(self, rng: random.Random) -> str:
+        depth = rng.randint(self.depth[0], self.depth[1])
 
         last_reach_sat = None
         reach_avoid = []
@@ -119,7 +119,7 @@ class BooleanReachAvoidFormulaSampler(Sampler[str]):
             available_reach = (
                 available_reach if available_reach else self.reach_formulas
             )
-            reach = random.choice(available_reach)
+            reach = rng.choice(available_reach)
             reach_sat = compute_sat(reach, self.assignments)
 
             # 2. Sample Avoid Formula
@@ -132,10 +132,10 @@ class BooleanReachAvoidFormulaSampler(Sampler[str]):
                     or not last_reach_sat.issubset(compute_sat(f, self.assignments))
                 )
             ]
-            if not available_avoid or random.random() > self.avoid_prob:
+            if not available_avoid or rng.random() > self.avoid_prob:
                 avoid = FalseNode()
             else:
-                avoid = random.choice(available_avoid)
+                avoid = rng.choice(available_avoid)
 
             last_reach_sat = reach_sat
             reach_avoid.append((reach, avoid))

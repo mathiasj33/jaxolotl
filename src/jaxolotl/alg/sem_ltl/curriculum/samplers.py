@@ -20,12 +20,12 @@ class SimpleGFSampler(Sampler[str]):
         self.avoid = avoid
         self.propositions = propositions
 
-    def sample(self) -> str:
-        reach = random.randint(self.reach[0], self.reach[1])
-        avoid = random.randint(self.avoid[0], self.avoid[1])
-        reach_props = random.sample(self.propositions, reach)
+    def sample(self, rng: random.Random) -> str:
+        reach = rng.randint(self.reach[0], self.reach[1])
+        avoid = rng.randint(self.avoid[0], self.avoid[1])
+        reach_props = rng.sample(self.propositions, reach)
         available_props = [p for p in self.propositions if p not in reach_props]
-        avoid_props = random.sample(available_props, min(avoid, len(available_props)))
+        avoid_props = rng.sample(available_props, min(avoid, len(available_props)))
         formula = " & ".join(f"GF {p}" for p in reach_props)
         if avoid_props:
             formula += " & G(!(" + " | ".join(avoid_props) + "))"
@@ -63,11 +63,11 @@ class SimpleFGSampler(Sampler[str]):
         self.avoid = avoid
         self.propositions = propositions
 
-    def sample(self) -> str:
-        reach_prop = random.choice(self.propositions)
-        avoid = random.randint(self.avoid[0], self.avoid[1])
+    def sample(self, rng: random.Random) -> str:
+        reach_prop = rng.choice(self.propositions)
+        avoid = rng.randint(self.avoid[0], self.avoid[1])
         available_props = [p for p in self.propositions if p != reach_prop]
-        avoid_props = random.sample(available_props, min(avoid, len(available_props)))
+        avoid_props = rng.sample(available_props, min(avoid, len(available_props)))
         formula = f"FG {reach_prop}"
         if avoid_props:
             formula += " & G(!(" + " | ".join(avoid_props) + "))"
