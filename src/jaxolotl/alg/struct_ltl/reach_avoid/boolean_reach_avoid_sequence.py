@@ -117,7 +117,7 @@ class BooleanReachAvoidSequence(ReachAvoidSequence):
         env: "Environment | EnvWrapper",
     ) -> "BooleanReachAvoidSequence":
         """Creates a BooleanReachAvoidSequence from a ReachAvoidSequence. Synthesises
-        formulas from assignment sets with Quine-McCluskey's algorithm."""
+        minimum-DNF formulas from their satisfying assignment sets."""
         reach_avoid = []
         assignments = frozenset(env.assignments())
         props = env.propositions

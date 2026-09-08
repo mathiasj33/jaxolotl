@@ -1,5 +1,8 @@
+import itertools
+
 import pytest
 
+from jaxolotl.ltl.logic import utils
 from jaxolotl.ltl.logic.assignment import Assignment
 from jaxolotl.ltl.logic.boolean_parser import (
     AndNode,
@@ -162,6 +165,111 @@ def test_synthesize_formula_complex_logic():
     # We verify by checking the satisfying set.
     sat_assignments = compute_sat(formula, tuple(possible_assignments))
     assert target_assignments == sat_assignments
+
+
+def _assignment_universe(props: tuple[str, ...]) -> list[Assignment]:
+    return [
+        Assignment(
+            frozenset(
+                prop for prop, enabled in zip(props, bits, strict=True) if enabled
+            )
+        )
+        for bits in itertools.product((False, True), repeat=len(props))
+    ]
+
+
+def test_prime_implicant_exhaustively_matches_sopform():
+    for num_props in range(1, 4):
+        props = tuple(chr(ord("a") + index) for index in range(num_props))
+        universe = _assignment_universe(props)
+
+        # Each assignment is independently a don't-care, OFF point, or ON point.
+        for states in itertools.product(range(3), repeat=len(universe)):
+            possible = frozenset(
+                assignment
+                for assignment, state in zip(universe, states, strict=True)
+                if state != 0
+            )
+            target = frozenset(
+                assignment
+                for assignment, state in zip(universe, states, strict=True)
+                if state == 2
+            )
+
+            prime_formula = utils._synthesize_prime_implicant(target, possible, props)
+            sop_formula = utils._synthesize_sopform(target, possible, props)
+
+            assert {
+                assignment for assignment in possible if prime_formula.eval(assignment)
+            } == set(target)
+            assert len(formula_to_clauses(prime_formula)) == len(
+                formula_to_clauses(sop_formula)
+            )
+
+
+def test_prime_implicant_minimizes_literals_and_breaks_ties_deterministically():
+    props = ("a", "b", "c", "d")
+    states = (0, 1, 1, 0, 2, 0, 1, 0, 0, 1, 0, 2, 0, 1, 1, 1)
+    universe = _assignment_universe(props)
+    possible = frozenset(
+        assignment
+        for assignment, state in zip(universe, states, strict=True)
+        if state != 0
+    )
+    target = frozenset(
+        assignment
+        for assignment, state in zip(universe, states, strict=True)
+        if state == 2
+    )
+
+    formula = utils._synthesize_prime_implicant(target, possible, props)
+
+    assert formula_to_clauses(formula) == [
+        Clause(pos=frozenset(), neg=frozenset({"c", "d"})),
+        Clause(pos=frozenset({"c", "d"}), neg=frozenset({"b"})),
+    ]
+    assert sum(map(len, formula_to_clauses(formula))) == 5
+
+
+def test_prime_implicant_handles_constant_functions():
+    props = ("a", "b")
+    possible = frozenset(_assignment_universe(props))
+
+    false_formula = utils._synthesize_prime_implicant(frozenset(), possible, props)
+    true_formula = utils._synthesize_prime_implicant(possible, possible, props)
+
+    assert isinstance(false_formula, FalseNode)
+    assert not any(false_formula.eval(assignment) for assignment in possible)
+    assert all(true_formula.eval(assignment) for assignment in possible)
+
+
+@pytest.mark.parametrize(
+    ("target", "possible", "props", "message"),
+    [
+        (frozenset(), frozenset(), (), "No propositions"),
+        (frozenset(), frozenset(), ("a", "a"), "must be unique"),
+        (
+            frozenset({Assignment("a")}),
+            frozenset({Assignment()}),
+            ("a",),
+            "must be a subset",
+        ),
+        (
+            frozenset(),
+            frozenset({Assignment("unknown")}),
+            ("a",),
+            "absent from props",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "synthesizer", [utils._synthesize_prime_implicant, utils._synthesize_sopform]
+)
+def test_synthesis_rejects_malformed_inputs(
+    target, possible, props, message, synthesizer
+):
+    with pytest.raises(ValueError, match=message):
+        synthesizer(target, possible, props)
 
 
 def test_formula_to_clauses_false():

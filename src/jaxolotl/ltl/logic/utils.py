@@ -1,5 +1,6 @@
 import functools
 import itertools
+import os
 from dataclasses import dataclass
 
 from sympy import SOPform, Symbol
@@ -14,6 +15,18 @@ from jaxolotl.ltl.logic.boolean_parser import (
     NotNode,
     VarNode,
 )
+
+_SYNTHESIS_BACKEND = (
+    os.environ.get("JAXOLOTL_SYNTHESIS_BACKEND", "prime_implicant").strip().lower()
+)
+if _SYNTHESIS_BACKEND not in ("prime_implicant", "sopform"):
+    raise ValueError(
+        "JAXOLOTL_SYNTHESIS_BACKEND must be 'prime_implicant' or 'sopform', "
+        f"got {_SYNTHESIS_BACKEND!r}"
+    )
+
+BitPattern = tuple[int, ...]
+Cube = tuple[int | None, ...]
 
 
 @functools.cache
@@ -31,54 +44,246 @@ def synthesize_formula(
     props: tuple[str, ...],
 ) -> BooleanNode:
     """
-    Generates a minimal Boolean formula that is true for 'target_assignments'
+    Generates a minimum DNF that is true for 'target_assignments'
     and false for the rest of 'possible_assignments'.
-
-    Uses the Quine-McCluskey algorithm via SymPy's SOPform function.
 
     Any assignment NOT in 'possible_assignments' is treated as a 'don't care',
     allowing the solver to simplify the logic further.
+
+    ``JAXOLOTL_SYNTHESIS_BACKEND`` selects the backend at import time:
+
+    - ``prime_implicant`` (default) enumerates prime implicants from the ON/OFF
+      sets and solves an exact cover without materializing the full truth table.
+    - ``sopform`` uses SymPy's Quine-McCluskey implementation over the full truth
+      table.
+
+    The prime-implicant backend minimizes clause count, then literal count, with a
+    deterministic tie-break. Its worst case is still exponential in the number of
+    prime implicants, but sparse structured assignment universes avoid the up-front
+    ``2^len(props)`` cost of ``sopform``.
     """
+    if _SYNTHESIS_BACKEND == "sopform":
+        return _synthesize_sopform(target_assignments, possible_assignments, props)
+    return _synthesize_prime_implicant(target_assignments, possible_assignments, props)
+
+
+def _validate_synthesis_inputs(
+    target_assignments: frozenset[Assignment],
+    possible_assignments: frozenset[Assignment],
+    props: tuple[str, ...],
+) -> tuple[tuple[str, ...], set[Assignment], set[Assignment]]:
+    if not props:
+        raise ValueError("No propositions provided for formula synthesis.")
+    if len(set(props)) != len(props):
+        raise ValueError("Formula-synthesis propositions must be unique.")
 
     targets = set(target_assignments)
     possible = set(possible_assignments)
+    if not targets <= possible:
+        raise ValueError("Target assignments must be a subset of possible assignments.")
 
-    # 1. Identify all variables (propositions) involved in the universe
-    all_props: set[str] = set(props)
+    all_props = set(props)
+    unknown_props = {
+        proposition
+        for assignment in possible
+        for proposition in assignment
+        if proposition not in all_props
+    }
+    if unknown_props:
+        raise ValueError(
+            "Assignments contain propositions absent from props: "
+            f"{sorted(unknown_props)!r}"
+        )
 
-    assert all_props, "No propositions provided for formula synthesis."
+    return tuple(sorted(all_props)), targets, possible
 
-    # Sort variables to ensure deterministic ordering for SymPy
-    sorted_vars = sorted(all_props)
+
+def _synthesize_sopform(
+    target_assignments: frozenset[Assignment],
+    possible_assignments: frozenset[Assignment],
+    props: tuple[str, ...],
+) -> BooleanNode:
+    """Synthesize DNF via SymPy's full-truth-table Quine-McCluskey solver."""
+    sorted_vars, targets, possible = _validate_synthesis_inputs(
+        target_assignments, possible_assignments, props
+    )
+
     sympy_vars = [Symbol(v) for v in sorted_vars]
 
-    # 2. Helper to convert an Assignment to a binary tuple based on sorted_vars
-    def to_bit_pattern(assignment: "Assignment") -> tuple[int, ...]:
+    def to_bit_pattern(assignment: "Assignment") -> BitPattern:
         return tuple(1 if v in assignment else 0 for v in sorted_vars)
 
-    # 3. Categorize truth table inputs
-    # We map every possible combination of variables to ON (minterms) or DC (don't cares).
     target_patterns = {to_bit_pattern(a) for a in targets}
     universe_patterns = {to_bit_pattern(a) for a in possible}
 
     minterms = []
     dontcares = []
 
-    # Iterate through all theoretically possible binary combinations (2^N)
-    # Note: This is feasible for N < ~15. For larger N, a different approach (Espresso) is needed.
     for pattern in itertools.product([0, 1], repeat=len(sorted_vars)):
         if pattern in target_patterns:
             minterms.append(pattern)
         elif pattern not in universe_patterns:
-            # If it's not in the universe of valid assignments, we don't care.
             dontcares.append(pattern)
 
-    # 4. Use SymPy to generate the minimized Sum of Products (SOP)
-    # SOPform uses Quine-McCluskey algorithm
     expr = SOPform(sympy_vars, minterms, dontcares=dontcares)
+    return sympy_to_graph(expr, list(sorted_vars))
 
-    # 5. Convert SymPy expression to graph
-    return sympy_to_graph(expr, sorted_vars)
+
+def _minimal_hitting_sets(
+    family: tuple[frozenset[int], ...],
+) -> tuple[frozenset[int], ...]:
+    found: set[frozenset[int]] = set()
+
+    def search(partial: frozenset[int], remaining: tuple[frozenset[int], ...]) -> None:
+        if any(result <= partial for result in found):
+            return
+        if not remaining:
+            found.add(partial)
+            return
+
+        smallest = min(remaining, key=lambda item: (len(item), tuple(item)))
+        for element in sorted(smallest):
+            search(
+                partial | {element},
+                tuple(item for item in remaining if element not in item),
+            )
+
+    search(frozenset(), family)
+    minimal = (item for item in found if not any(other < item for other in found))
+    return tuple(sorted(minimal, key=lambda item: (len(item), tuple(item))))
+
+
+def _cube_key(cube: Cube) -> tuple[int, ...]:
+    return tuple(-1 if value is None else value for value in cube)
+
+
+def _cube_covers(cube: Cube, minterm: BitPattern) -> bool:
+    return all(
+        value is None or value == minterm[index] for index, value in enumerate(cube)
+    )
+
+
+def _minimum_cover(
+    on: set[BitPattern], prime_implicants: set[Cube]
+) -> tuple[Cube, ...]:
+    ordered_implicants = tuple(sorted(prime_implicants, key=_cube_key))
+    coverage = {
+        implicant: frozenset(
+            minterm for minterm in on if _cube_covers(implicant, minterm)
+        )
+        for implicant in ordered_implicants
+    }
+    best_selection: tuple[Cube, ...] | None = None
+    best_cost: tuple[int, int, tuple[tuple[int, ...], ...]] | None = None
+
+    def search(remaining: frozenset[BitPattern], chosen: tuple[Cube, ...]) -> None:
+        nonlocal best_cost, best_selection
+
+        if not remaining:
+            selection = tuple(sorted(chosen, key=_cube_key))
+            cost = (
+                len(selection),
+                sum(sum(value is not None for value in cube) for cube in selection),
+                tuple(_cube_key(cube) for cube in selection),
+            )
+            if best_cost is None or cost < best_cost:
+                best_cost = cost
+                best_selection = selection
+            return
+
+        if best_cost is not None and len(chosen) >= best_cost[0]:
+            return
+
+        minterm = min(
+            remaining,
+            key=lambda item: (
+                sum(item in coverage[implicant] for implicant in ordered_implicants),
+                item,
+            ),
+        )
+        candidates = sorted(
+            (
+                implicant
+                for implicant in ordered_implicants
+                if minterm in coverage[implicant]
+            ),
+            key=lambda implicant: (
+                -len(coverage[implicant] & remaining),
+                sum(value is not None for value in implicant),
+                _cube_key(implicant),
+            ),
+        )
+        for implicant in candidates:
+            search(remaining - coverage[implicant], (*chosen, implicant))
+
+    search(frozenset(on), ())
+    if best_selection is None:
+        raise RuntimeError("Failed to cover all target assignments.")
+    return best_selection
+
+
+def _synthesize_prime_implicant(
+    target_assignments: frozenset[Assignment],
+    possible_assignments: frozenset[Assignment],
+    props: tuple[str, ...],
+) -> BooleanNode:
+    """Synthesize an exact minimum DNF from explicit ON/OFF assignments.
+
+    A prime implicant through an ON minterm is a minimal hitting set of the
+    literal families that distinguish it from every OFF point. After enumerating
+    those implicants, an exact unate-cover search minimizes clauses, then literals.
+    """
+    sorted_vars, targets, possible = _validate_synthesis_inputs(
+        target_assignments, possible_assignments, props
+    )
+    num_vars = len(sorted_vars)
+
+    def bits(assignment: "Assignment") -> BitPattern:
+        return tuple(1 if v in assignment else 0 for v in sorted_vars)
+
+    on = {bits(assignment) for assignment in targets}
+    off = {bits(assignment) for assignment in possible if assignment not in targets}
+
+    if not on:
+        return FalseNode()
+    if not off:
+        first_var = VarNode(sorted_vars[0])
+        return MultiOrNode([first_var, NotNode(first_var)])
+
+    prime_implicants: set[Cube] = set()
+    sorted_off = tuple(sorted(off))
+    for minterm in sorted(on):
+        family = tuple(
+            frozenset(
+                index for index in range(num_vars) if minterm[index] != off_point[index]
+            )
+            for off_point in sorted_off
+        )
+        for hitting_set in _minimal_hitting_sets(family):
+            prime_implicants.add(
+                tuple(
+                    minterm[index] if index in hitting_set else None
+                    for index in range(num_vars)
+                )
+            )
+
+    best_selection = _minimum_cover(on, prime_implicants)
+
+    def cube_to_node(cube: Cube) -> BooleanNode:
+        literals: list[BooleanNode] = []
+        for index, value in enumerate(cube):
+            if value is None:
+                continue
+            variable = VarNode(sorted_vars[index])
+            literals.append(variable if value == 1 else NotNode(variable))
+        if len(literals) == 1:
+            return literals[0]
+        return MultiAndNode(literals)
+
+    nodes = [cube_to_node(cube) for cube in best_selection]
+    if len(nodes) == 1:
+        return nodes[0]
+    return MultiOrNode(nodes)
 
 
 def sympy_to_graph(expr, sorted_vars_names: list[str]) -> BooleanNode:

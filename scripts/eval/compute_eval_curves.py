@@ -91,7 +91,7 @@ def save_results(
     returns: jax.Array,
     disc_returns: jax.Array,
     lengths: jax.Array,
-    violations: jax.Array,
+    _: jax.Array,
     checkpoint_steps: list[int],
     seeds: list[int],
 ):
