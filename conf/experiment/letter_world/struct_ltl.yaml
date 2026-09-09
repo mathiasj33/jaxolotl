@@ -2,17 +2,18 @@
 
 defaults:
   - /rl_alg: ppo
+  - /model/sequence: alibi_attention
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.sem_ltl.curriculum.letter_world_curriculum.make_stages
-  num_samples: 1e4
-  window: 256
+    _target_: jaxolotl.alg.deep_ltl.curriculum.letter_world_curriculum.make_stages TODO
+  num_samples: 1e5
+  window: 512
   adopt_prob: 0.1
   min_coverage: 0.9
 
 model:
-  _target_: jaxolotl.alg.sem_ltl.model.model.SemLTLModel
+  _target_: jaxolotl.alg.deep_ltl.model.model.DeepLTLModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FieldConvEncoder
@@ -21,16 +22,21 @@ model:
     kernel_size: [2, 2]
     activation: ${act:relu}
   actor:
-    _target_: jaxolotl.alg.sem_ltl.model.actor.multi_eps_discrete_actor.MultiEpsilonDiscreteActor
+    _target_: jaxolotl.rl.actor.discrete_actor.DiscreteActor
     hidden_sizes: [64, 64, 64]
     activation: ${act:relu}
+    use_epsilon: true
   critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
-  embedding_dim: 64
-  semantic:
-    embedding_size: 762
+  sequence:
+    embedding_dim: 32
+    deep_sets:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: [32, 32]
+      out_size: 32
+      activation: ${act:relu}
 
 rl_alg:
   total_timesteps: 20e6

@@ -3,6 +3,3 @@
 defaults:
   - /experiment/zone_env/ltl2action
   - _self_
-
-rl_alg:
-  vf_coef: 1.0

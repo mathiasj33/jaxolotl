@@ -3,6 +3,3 @@
 defaults:
   - /experiment/zone_env/deep_ltl
   - _self_
-
-rl_alg:
-  vf_coef: 1.0  # TODO: test if 1.0 or 0.5 everywhere.

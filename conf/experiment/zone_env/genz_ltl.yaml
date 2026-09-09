@@ -65,3 +65,5 @@ rl_alg:
   target_cost: -0.05
   min_lag: 1e-2
   max_lag: 5.0
+
+save_freq: 5e5

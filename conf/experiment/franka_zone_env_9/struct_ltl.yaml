@@ -1,5 +1,5 @@
 # @package __global__
 
 defaults:
-  - /experiment/zone_env/sem_ltl
+  - /experiment/franka_zone_env/struct_ltl
   - _self_

@@ -22,7 +22,6 @@ _name_to_env = {
     "LetterWorld": LetterWorld,
     "WarehouseEnv": WarehouseEnv,
     "ConveyorWorld": ConveyorWorld,
-    "FrankaZoneEnv": FrankaZoneEnv,
     **{
         f"FrankaZoneEnv-{num_colors}": partial(FrankaZoneEnv, num_colors=num_colors)
         for num_colors in range(4, 17)
