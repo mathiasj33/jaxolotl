@@ -58,8 +58,13 @@ def main(cfg: DictConfig):
         jax.config.update("jax_default_device", jax.devices("cpu")[0])
         logger.info("Using CPU for training")
 
+    # GCRL-LTL requires a discrete action space.
+    discretize = cfg.alg.name == "gcrl_ltl"
+
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.env.get("reset_source", "train")
+        cfg.env.name,
+        reset_source=cfg.env.get("reset_source", "train"),
+        discretize=discretize,
     )
     env = TimeLimitWrapper(env)
 
@@ -76,10 +81,13 @@ def main(cfg: DictConfig):
     make_models = eqx.filter_vmap(
         build_model, in_axes=(None, None, None, None, None, None, 0)
     )
+    action_space = env.action_space(env_params)
+    if discretize:
+        action_space = env.discretized_action_space(env_params)
     models = make_models(
         cfg.model,
         env.observation_spec(env_params),
-        env.action_space(env_params),
+        action_space,
         len(env.assignments()),
         len(env.propositions),
         env_params,

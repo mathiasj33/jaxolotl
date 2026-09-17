@@ -48,6 +48,8 @@ class EnvParams(environment.EnvParams):
     max_angular_velocity: float
     # Non-myopic version (ZoneEnv-NM)
     non_myopic: bool = False
+    # Discretize action space for GCRL-LTL
+    discretize: bool = False
 
 
 class EnvState(eqx.Module):
@@ -91,6 +93,7 @@ class ZoneEnv(
         max_speed=3.0,
         max_force=2.0,
         max_angular_velocity=3.0,
+        discretize=False,
     )
     propositions = ("red", "green", "purple", "yellow")
 
@@ -124,6 +127,10 @@ class ZoneEnv(
             shape=(2,),
             dtype=jnp.float32,
         )
+
+    @override
+    def _discretized_action_space(self, params: EnvParams) -> spaces.Discrete:
+        return spaces.Discrete(n=4)  # forward, backward, left, right
 
     @override
     def _sample_reset(
@@ -237,6 +244,17 @@ class ZoneEnv(
         )
         return pos
 
+    def _map_discrete_action(self, action: jax.Array) -> jax.Array:
+        mapping = jnp.array(
+            [
+                [1.0, 0.0],  # forward
+                [-1.0, 0.0],  # backward
+                [1.0, 1.0],  # left
+                [1.0, -1.0],  # right
+            ]
+        )
+        return mapping[action]
+
     @override
     def _step(
         self,
@@ -245,6 +263,8 @@ class ZoneEnv(
         action: jax.Array,
         params: EnvParams,
     ) -> tuple[EnvState, jax.Array, jax.Array, dict[Any, Any]]:
+        if params.discretize:
+            action = self._map_discrete_action(action)
         force = jnp.clip(
             action[0] * params.max_force, -params.max_force, params.max_force
         )

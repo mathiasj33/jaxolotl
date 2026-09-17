@@ -12,7 +12,7 @@ import jax
 import jax.numpy as jnp
 
 from jaxolotl.environments.observation_spec import ObservationSpec
-from jaxolotl.environments.spaces import Space
+from jaxolotl.environments.spaces import Discrete, Space
 from jaxolotl.ltl.logic.assignment import Assignment
 
 if TYPE_CHECKING:
@@ -173,6 +173,46 @@ class Environment[
         Returns: next_state, reward, terminated, info"""
         pass
 
+    @eqx.filter_jit
+    @eqx.debug.assert_max_traces(max_traces=20)
+    def step_discrete(
+        self,
+        key: jax.Array,
+        state: TEnvState,
+        action: int | jax.Array,
+        params: TEnvParams,
+    ) -> EnvTransition[TEnvState, TObsFeatures]:
+        """An optional discretized step function for environments with continuous action spaces."""
+        next_state, reward, terminated, info = self._step_discrete(
+            key, state, action, params
+        )
+        obs = self.compute_obs(next_state, params)
+        propositions = self.compute_propositions(next_state, params)
+        transition = EnvTransition(
+            state=next_state,
+            observation=obs,
+            reward=reward,
+            terminated=terminated,
+            truncated=jnp.array(False, dtype=jnp.bool),
+            terminal_observation=obs,
+            propositions=propositions,
+            info=info,
+        )
+        return jax.lax.stop_gradient(transition)
+
+    def _step_discrete(
+        self,
+        key: jax.Array,
+        state: TEnvState,
+        action: int | jax.Array,
+        params: TEnvParams,
+    ) -> tuple[TEnvState, jax.Array, jax.Array, dict[Any, Any]]:
+        """Environment-specific discretized step transition.
+        Returns: next_state, reward, terminated, info"""
+        raise NotImplementedError(
+            f"step_discrete not implemented for {self.name} environment."
+        )
+
     def compute_obs(
         self, state: TEnvState, params: TEnvParams
     ) -> EnvObservation[TObsFeatures]:
@@ -211,6 +251,20 @@ class Environment[
     @abstractmethod
     def _action_space(self, params: TEnvParams) -> Space:
         pass
+
+    def discretized_action_space(self, params: TEnvParams | None = None) -> Discrete:
+        """Discretized action space of the environment."""
+        if params is None:
+            params = self.default_params
+        return self._discretized_action_space(params)
+
+    def _discretized_action_space(self, params: TEnvParams) -> Discrete:
+        default_space = self._action_space(params)
+        if isinstance(default_space, Discrete):
+            return default_space
+        raise NotImplementedError(
+            f"discretized_action_space not implemented for {self.name} environment."
+        )
 
     def map_assignment_to_index(self, assignment: jax.Array) -> jax.Array:
         """Maps a proposition assignment to an index in the assignments array.

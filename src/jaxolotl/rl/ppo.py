@@ -49,6 +49,8 @@ class PPOConfig(NamedTuple):
     anneal_ent_coef: bool = False
     anneal_ent_coef_end_timesteps: int | None = None
     anneal_ent_coef_end: float = 0.0
+    use_q_loss: bool = False
+    qf_coef: float = 0.5
 
 
 class PPOTransition(NamedTuple):
@@ -446,6 +448,16 @@ class PPO(RLAlgorithm):
         value_losses = jnp.square(value - targets)
         value_losses_clipped = jnp.square(value_pred_clipped - targets)
         value_loss = 0.5 * jnp.maximum(value_losses, value_losses_clipped).mean()
+
+        # q loss
+        if self.config.use_q_loss:
+            assert hasattr(model, "get_q_values"), (
+                "Model must have get_q_values method for Q loss"
+            )
+            q_pred = model.get_q_values(trajs.obs, trajs.action)  # type: ignore
+            # the vf targets = gae + trajs.value is a valid Q-function target
+            q_loss = 0.5 * jnp.square(q_pred - targets).mean()
+            value_loss += self.config.qf_coef * q_loss
 
         # actor loss
         ratio = jnp.exp(log_prob - trajs.log_prob)
