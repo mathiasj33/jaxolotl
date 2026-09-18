@@ -19,6 +19,8 @@ from omegaconf import DictConfig, OmegaConf
 import jaxolotl
 from jaxolotl import eqx_utils
 from jaxolotl.alg.curriculum.curriculum_manager import CurriculumManager
+from jaxolotl.alg.gcrl_ltl.model.gcvf import build_gcvf_models
+from jaxolotl.alg.gcrl_ltl.training.train_gcvf import GCVFTrainer, GCVFTrainingConfig
 from jaxolotl.environments.environment import EnvParams
 from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
@@ -153,18 +155,39 @@ def main(cfg: DictConfig):
         for run in wandb_runs:
             run.finish()
 
+    if cfg.alg.name == "gcrl_ltl":
+        # GCRL-LTL first trains a proposition-conditioned actor/value/Q model, and then
+        # trains a goal-conditioned value function (GCVF) for planning over the automaton.
+        gcvf_models = build_gcvf_models(
+            env.observation_spec(env_params),
+            len(env.propositions),
+            cfg.model.env_net,
+            cfg.model.critic,
+            cfg.model.embedding_dim,
+            model_keys,
+        )
+        trainer = GCVFTrainer(GCVFTrainingConfig(**cfg.gcvf_training))
+        gcvf_models = trainer.train(
+            models, gcvf_models, len(seeds), env, env_params, jax.random.key(0)
+        )
+        gcvf_saved_paths = save_final_models(
+            gcvf_models, run_dir, seeds, run_config_hash, is_gcvf=True
+        )
+        logger.info("Saved GCVF models to %s", gcvf_saved_paths[0].parent)
+
 
 def save_final_models(
-    models: ActorCritic,
+    models: eqx.Module,
     run_dir: Path,
     seeds: list[int],
     run_config_hash: str,
+    is_gcvf: bool = False,
 ) -> list[Path]:
     """Save a batched model as one parameter file per seed."""
     final_params, _ = eqx.partition(models, eqx.is_array)
     saved_paths = []
     for index, seed in enumerate(seeds):
-        path = model_path(run_dir, seed)
+        path = model_path(run_dir, seed, is_gcvf)
         path.parent.mkdir(parents=True, exist_ok=True)
         eqx_utils.save(
             path,

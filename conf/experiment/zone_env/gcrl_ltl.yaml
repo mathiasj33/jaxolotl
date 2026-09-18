@@ -53,3 +53,11 @@ rl_alg:
   qf_coef: 1.0
 
 save_freq: 5e5
+
+gcvf_training:
+  num_samples: 200000
+  batch_size: 512
+  lr: 4e-4
+  epochs: 100
+  num_envs: 16
+  steps_per_env: 2048

@@ -11,6 +11,7 @@ from omegaconf import DictConfig, OmegaConf
 from jaxolotl import eqx_utils
 
 MODEL_DIRECTORY = "models"
+GCVF_DIRECTORY = "gcvf"
 MODEL_FILE_TEMPLATE = "model_seed{seed}.eqx"
 MODEL_FILE_RE = re.compile(r"^model_seed(\d+)\.eqx$")
 
@@ -22,9 +23,13 @@ def model_filename(seed: int) -> str:
     return MODEL_FILE_TEMPLATE.format(seed=seed)
 
 
-def model_path(run_dir: Path | str, seed: int) -> Path:
+def model_path(run_dir: Path | str, seed: int, is_gcvf: bool = False) -> Path:
     """Return the final-model path for ``seed`` within a run directory."""
-    return Path(run_dir) / MODEL_DIRECTORY / model_filename(seed)
+    return (
+        Path(run_dir)
+        / (GCVF_DIRECTORY if is_gcvf else MODEL_DIRECTORY)
+        / model_filename(seed)
+    )
 
 
 def discover_seed_models(run_dir: Path | str) -> dict[int, Path]:
