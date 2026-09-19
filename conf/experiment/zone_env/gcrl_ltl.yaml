@@ -28,10 +28,6 @@ model:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64, 64]
     activation: ${act:tanh}
-  q_network:
-    _target_: jaxolotl.networks.mlp.MLP
-    hidden_sizes: [64, 64]
-    activation: ${act:relu}
   embedding_dim: 16
 
 rl_alg:
@@ -49,8 +45,6 @@ rl_alg:
   max_grad_norm: 0.5
   anneal_lr: false
   adam_eps: 1e-8
-  use_q_loss: true
-  qf_coef: 1.0
 
 save_freq: 5e5
 
