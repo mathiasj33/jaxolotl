@@ -1,5 +1,6 @@
 from functools import partial
 
+from jaxolotl.environments import spaces
 from jaxolotl.environments.conveyor_world.conveyor_world import ConveyorWorld
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.franka_zone_env.franka_zone_env import FrankaZoneEnv
@@ -30,7 +31,11 @@ _name_to_env = {
 
 
 def make(
-    name: str, *, reset_source: ResetSource = "native", **kwargs
+    name: str,
+    *,
+    reset_source: ResetSource = "native",
+    discretize: bool = False,
+    **kwargs,
 ) -> tuple[Environment | EnvWrapper, EnvParams]:
     """Create an environment by name.
 
@@ -38,6 +43,8 @@ def make(
         name: Registered environment name.
         reset_source: Use native resets or sample from the precomputed training or
             test reset pool.
+        discretize: Whether to discretize the environment. This is required for some
+            algorithms (e.g. GCRL-LTL), but not supported by all environments.
         **kwargs: Arguments forwarded to the environment constructor.
 
     Returns:
@@ -52,6 +59,13 @@ def make(
         raise ValueError(f"Unknown environment name: {name}")
     env = env_class(**kwargs)
     params = env.default_params
+
+    if not isinstance(env.action_space(params), spaces.Discrete):
+        if hasattr(params, "discretize"):
+            env = env_class(discretize=discretize, **kwargs)
+            params = env.default_params
+        elif discretize:
+            raise ValueError(f"Environment {name!r} does not support discretization.")
 
     if reset_source != "native":
         path = precomputed_reset_path(name, reset_source)

@@ -125,10 +125,6 @@ class WarehouseEnv(
     propositions = ("region_a", "region_b", "door", "vase", "crate")
 
     def __init__(self, **kwargs):
-        if "discretize" in kwargs:
-            raise ValueError(
-                "A discrete version of WarehouseEnv is not implemented. Hint: GCRL-LTL is not applicable to WarehouseEnv due to its limited handling of avoidance conditions. We hence do not provide a discrete version of WarehouseEnv."
-            )
         params = dataclasses.asdict(self.default_params) | kwargs
         super().__init__(
             default_params=WarehouseParams(**params),
