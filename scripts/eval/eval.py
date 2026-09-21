@@ -22,7 +22,8 @@ from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
 from jaxolotl.eqx_utils.utils import compute_num_params
 from jaxolotl.eval.utils import (
-    load_batched_models,
+    load_batched_actor_critic,
+    load_batched_gcvf,
     load_latest_checkpoint_models,
     make_eval_fn,
 )
@@ -33,9 +34,13 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="eval")
 def main(cfg: DictConfig):
     # build environment
+    discretize = cfg.alg.name == "gcrl_ltl"
     env_params = cfg.get("env_params", {})
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.env.get("reset_source", "test"), **env_params
+        cfg.env.name,
+        reset_source=cfg.env.get("reset_source", "test"),
+        discretize=discretize,
+        **env_params,
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
@@ -50,14 +55,25 @@ def main(cfg: DictConfig):
     key, model_key = jax.random.split(key)
     checkpoint = cfg.eval.get("checkpoint", None)
     if checkpoint is None:
-        models, seeds = load_batched_models(cfg, env, env_params, key=model_key)
+        models, seeds = load_batched_actor_critic(cfg, env, env_params, key=model_key)
     else:
         models, seeds, checkpoint_step = load_latest_checkpoint_models(
             cfg, env, env_params, key=model_key, max_steps=checkpoint
         )
         logger.info("Loaded checkpoint at step %s.", checkpoint_step)
     num_models = len(seeds)
-    agents = hydra.utils.instantiate(cfg.alg.agent, models)
+
+    if cfg.alg.name == "gcrl_ltl":
+        gcvf, gcvf_seeds = load_batched_gcvf(cfg, env, env_params, key=model_key)
+        if gcvf_seeds != seeds:
+            raise ValueError(
+                "Actor-critic and GCVF seed sets do not match: "
+                f"{seeds} != {gcvf_seeds}."
+            )
+        agents_factory = hydra.utils.instantiate(cfg.alg.agent, models, _partial_=True)
+        agents = agents_factory(gcvf=gcvf)
+    else:
+        agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     logger.info(
         f"Loaded seeds {seeds}. Each model has {compute_num_params(models) / num_models / 1e3}k parameters."

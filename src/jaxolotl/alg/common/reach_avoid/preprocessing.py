@@ -3,6 +3,9 @@
 from collections.abc import Callable, Sequence
 from typing import cast
 
+from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
+    BooleanReachAvoidSequence,
+)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
@@ -68,3 +71,20 @@ def preprocess_formulas[TSequence, TEncoded](
         ldbas.append(ldba)
         encoded.append(state_sequences)
     return batch_ldbas(ldbas), batch_encoded(encoded)
+
+
+def to_boolean_sequences(
+    state_to_sequences: dict[int, list[ReachAvoidSequence]],
+    env: Environment | EnvWrapper,
+) -> dict[int, list[BooleanReachAvoidSequence]]:
+    """Synthesize and expand Boolean formulas for reach-avoid sequences."""
+    return {
+        state: [
+            expanded_seq
+            for seq in seq_list
+            for expanded_seq in BooleanReachAvoidSequence.from_reach_avoid_sequence(
+                seq, env
+            ).expand_clauses()
+        ]
+        for state, seq_list in state_to_sequences.items()
+    }

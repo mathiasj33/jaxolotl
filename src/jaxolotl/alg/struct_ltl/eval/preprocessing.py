@@ -6,9 +6,7 @@ from jaxolotl.alg.common.reach_avoid.jax_sequence import (
 from jaxolotl.alg.common.reach_avoid.preprocessing import (
     preprocess_formulas as preprocess_reach_avoid_formulas,
 )
-from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
-    BooleanReachAvoidSequence,
-)
+from jaxolotl.alg.common.reach_avoid.preprocessing import to_boolean_sequences
 from jaxolotl.alg.struct_ltl.reach_avoid.jax_clause_graph_reach_avoid_sequence import (
     JaxGraphReachAvoidSequence,
 )
@@ -22,7 +20,6 @@ from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eqx_utils.batching import pad_and_stack
 from jaxolotl.ltl.automata.jax_ldba import JaxLDBA
-from jaxolotl.ltl.reach_avoid.sequence import ReachAvoidSequence
 
 
 def preprocess_formulas(
@@ -50,25 +47,8 @@ def preprocess_formulas(
         env,
         encoder,  # type: ignore[arg-type]
         batcher,  # type: ignore[arg-type]
-        transform_sequences=_to_boolean_sequences,
+        transform_sequences=to_boolean_sequences,
     )
-
-
-def _to_boolean_sequences(
-    state_to_sequences: dict[int, list[ReachAvoidSequence]],
-    env: Environment | EnvWrapper,
-) -> dict[int, list[BooleanReachAvoidSequence]]:
-    """Synthesize and expand Boolean formulas for reach-avoid sequences."""
-    return {
-        state: [
-            expanded_seq
-            for seq in seq_list
-            for expanded_seq in BooleanReachAvoidSequence.from_reach_avoid_sequence(
-                seq, env
-            ).expand_clauses()
-        ]
-        for state, seq_list in state_to_sequences.items()
-    }
 
 
 def _batch_sequences(
