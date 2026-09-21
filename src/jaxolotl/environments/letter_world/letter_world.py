@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 class EnvParams(environment.EnvParams):
     grid_size: int
     letter_freq: int  # how often each letter appears on the grid
+    discretize: bool = True  # ignored
 
 
 class EnvState(eqx.Module):

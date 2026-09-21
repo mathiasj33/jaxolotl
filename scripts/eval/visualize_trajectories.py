@@ -15,7 +15,8 @@ import jaxolotl
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
 from jaxolotl.eval.utils import (
-    load_batched_models,
+    load_batched_actor_critic,
+    load_batched_gcvf,
     load_latest_checkpoint_models,
     make_eval_fn,
 )
@@ -26,8 +27,11 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="visualize_traj")
 def main(cfg: DictConfig):
     # build environment
+    discretize = cfg.alg.name == "gcrl_ltl"
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.env.get("reset_source", "test")
+        cfg.env.name,
+        reset_source=cfg.env.get("reset_source", "test"),
+        discretize=discretize,
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
@@ -42,7 +46,7 @@ def main(cfg: DictConfig):
     key, model_key = jax.random.split(key)
     checkpoint = cfg.eval.get("checkpoint", None)
     if checkpoint is None:
-        models, seeds = load_batched_models(cfg, env, env_params, key=model_key)
+        models, seeds = load_batched_actor_critic(cfg, env, env_params, key=model_key)
     else:
         models, seeds, checkpoint_step = load_latest_checkpoint_models(
             cfg, env, env_params, key=model_key, max_steps=checkpoint
@@ -56,7 +60,21 @@ def main(cfg: DictConfig):
     model = eqx.combine(params, static)
     logger.info("Selected seed %s.", seeds[cfg.eval.model_index])
 
-    agent = hydra.utils.instantiate(cfg.alg.agent, model)
+    if cfg.alg.name == "gcrl_ltl":
+        gcvf, gcvf_seeds = load_batched_gcvf(cfg, env, env_params, key=model_key)
+        if gcvf_seeds != seeds:
+            raise ValueError(
+                "Actor-critic and GCVF seed sets do not match: "
+                f"{seeds} != {gcvf_seeds}."
+            )
+        agents_factory = hydra.utils.instantiate(cfg.alg.agent, models, _partial_=True)
+        params, static = eqx.partition(gcvf, eqx.is_array)
+        params = jax.tree.map(lambda x: x[cfg.eval.model_index], params)
+        params = jax.tree.map(lambda x: x[None, ...], params)
+        gcvf = eqx.combine(params, static)
+        agent = agents_factory(gcvf=gcvf)
+    else:
+        agent = hydra.utils.instantiate(cfg.alg.agent, model)
 
     # set up evaluator
     eval_fn = make_eval_fn(cfg, num_models=1, num_formulas=1, return_trajs=True)

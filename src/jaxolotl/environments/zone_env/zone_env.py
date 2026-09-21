@@ -117,6 +117,8 @@ class ZoneEnv(
 
     @override
     def _action_space(self, params: EnvParams) -> spaces.Space:
+        if params.discretize:
+            return spaces.Discrete(n=4)  # forward, backward, left, right
         return spaces.Box(
             low=jnp.array(
                 [-params.max_force, -params.max_angular_velocity], dtype=jnp.float32
@@ -127,10 +129,6 @@ class ZoneEnv(
             shape=(2,),
             dtype=jnp.float32,
         )
-
-    @override
-    def _discretized_action_space(self, params: EnvParams) -> spaces.Discrete:
-        return spaces.Discrete(n=4)  # forward, backward, left, right
 
     @override
     def _sample_reset(

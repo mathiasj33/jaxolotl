@@ -69,7 +69,6 @@ class GoalWrapper[
         action: jax.Array,
         params: TEnvParams,
     ) -> EnvTransition[GoalState, TObsFeatures]:
-        key, subkey = jax.random.split(key)
         transition = super().step(key, state, action, params)
         reached = jnp.any(state.goal == transition.propositions)
         reward = jax.lax.cond(reached, lambda: 1.0, lambda: 0.0)

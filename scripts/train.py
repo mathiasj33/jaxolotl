@@ -83,13 +83,10 @@ def main(cfg: DictConfig):
     make_models = eqx.filter_vmap(
         build_model, in_axes=(None, None, None, None, None, None, 0)
     )
-    action_space = env.action_space(env_params)
-    if discretize:
-        action_space = env.discretized_action_space(env_params)
     models = make_models(
         cfg.model,
         env.observation_spec(env_params),
-        action_space,
+        env.action_space(env_params),
         len(env.assignments()),
         len(env.propositions),
         env_params,

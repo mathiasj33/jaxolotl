@@ -32,9 +32,11 @@ def model_path(run_dir: Path | str, seed: int, is_gcvf: bool = False) -> Path:
     )
 
 
-def discover_seed_models(run_dir: Path | str) -> dict[int, Path]:
-    """Return a mapping of completed seeds to their final-model paths in a run directory."""
-    model_dir = Path(run_dir) / MODEL_DIRECTORY
+def discover_seed_models(
+    run_dir: Path | str, model_directory: str = MODEL_DIRECTORY
+) -> dict[int, Path]:
+    """Return a mapping of completed seeds to their artifact paths in a run directory."""
+    model_dir = Path(run_dir) / model_directory
     models = {}
     if not model_dir.is_dir():
         return models

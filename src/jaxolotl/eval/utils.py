@@ -12,31 +12,26 @@ import jax.numpy as jnp
 from omegaconf import DictConfig
 
 from jaxolotl import eqx_utils
+from jaxolotl.alg.gcrl_ltl.model.gcvf import GCVF
 from jaxolotl.environments.environment import Environment, EnvParams
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.eval.eval import Evaluator
 from jaxolotl.rl.actor_critic import ActorCritic
 from jaxolotl.utils.artifact_utils import (
+    GCVF_DIRECTORY,
     MODEL_DIRECTORY,
     discover_seed_models,
     verify_model_metadata,
 )
 
 
-def load_batched_models(
+def load_batched_actor_critic(
     cfg: DictConfig,
     env: Environment | EnvWrapper,
     env_params: EnvParams,
     *,
     key: jax.Array,
-    path: Path | None = None,
 ) -> tuple[ActorCritic, list[int]]:
-    """Load a batched model (over seeds) from disk.
-
-    Returns:
-        batched model, seeds
-    """
-    run_dir = path or Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}")
     model_fn = hydra.utils.instantiate(
         cfg.model,
         obs_spec=env.observation_spec(env_params),
@@ -47,10 +42,46 @@ def load_batched_models(
         _partial_=True,
     )
     model: ActorCritic = model_fn(act_space=env.action_space(env_params))
-    seed_to_file = discover_seed_models(run_dir)
+    return load_batched_models(cfg, model)  # type: ignore
+
+
+def load_batched_gcvf(
+    cfg: DictConfig,
+    env: Environment | EnvWrapper,
+    env_params: EnvParams,
+    *,
+    key: jax.Array,
+) -> tuple[eqx.Module, list[int]]:
+    gcvf_model = GCVF(
+        env.observation_spec(env_params),
+        cfg.model.env_net,
+        cfg.model.critic,
+        cfg.model.embedding_dim,
+        len(env.propositions),
+        key,
+    )
+    return load_batched_models(
+        cfg, gcvf_model, model_directory=GCVF_DIRECTORY
+    )
+
+
+def load_batched_models(
+    cfg: DictConfig,
+    model: eqx.Module,
+    *,
+    path: Path | None = None,
+    model_directory: str = MODEL_DIRECTORY,
+) -> tuple[eqx.Module, list[int]]:
+    """Load a batched model (over seeds) from disk.
+
+    Returns:
+        batched model, seeds
+    """
+    run_dir = path or Path(f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}")
+    seed_to_file = discover_seed_models(run_dir, model_directory)
     if not seed_to_file:
         raise FileNotFoundError(
-            f"No final models found in {run_dir / MODEL_DIRECTORY}."
+            f"No final models found in {run_dir / model_directory}."
         )
     verify_model_metadata(seed_to_file)
     seeds = sorted(seed_to_file)
