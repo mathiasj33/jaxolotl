@@ -98,7 +98,7 @@ def save_results(
     """Saves averaged results to a CSV file."""
 
     csv_path = (
-        f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval_results_checkpoints.csv"
+        f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval/checkpoints.csv"
     )
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 

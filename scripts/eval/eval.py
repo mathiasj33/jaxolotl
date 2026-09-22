@@ -100,8 +100,8 @@ def main(cfg: DictConfig):
 
     # log to stdout and save to CSV
     formula_group = HydraConfig.get().runtime.choices.get("formulas", "default")
-    formula_suffix = formula_group.split("/")[-1]
-    log_and_save_results(cfg, returns, lengths, violations, formula_suffix, seeds)
+    task_set = formula_group.split("/")[-1]
+    log_and_save_results(cfg, returns, lengths, violations, task_set, seeds)
 
 
 def log_and_save_results(
@@ -109,15 +109,10 @@ def log_and_save_results(
     returns: jax.Array,
     lengths: jax.Array,
     violations: jax.Array,
-    formula_suffix: str,
+    task_set: str,
     seeds: list[int],
 ):
     """Logs aggregated results per formula and saves per-seed results to a CSV file."""
-    csv_path = (
-        f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/results_{formula_suffix}.csv"
-    )
-    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-
     fieldnames = [
         "seed",
         "deterministic",
@@ -170,11 +165,16 @@ def log_and_save_results(
                 }
             )
 
-    with open(csv_path, mode="w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-    logger.info(f"Wrote results to {csv_path}")
+    if cfg.save:
+        csv_path = (
+            f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval/{task_set}.csv"
+        )
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        with open(csv_path, mode="w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        logger.info(f"Wrote results to {csv_path}")
 
     per_seed_returns = jnp.mean(returns, axis=(1, 2))  # (num_seeds,)
     per_seed_violations = jnp.mean(violations, axis=(1, 2))  # (num_seeds,)

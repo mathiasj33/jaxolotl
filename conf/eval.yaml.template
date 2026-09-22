@@ -2,14 +2,16 @@ defaults:
   - env: zone_env_nm
   - alg: struct_ltl
   - experiment: ${env}/${alg}
-  - formula_type: finite
-  - formulas: ${env}/${formula_type}
+  - task_set: finite
+  - formulas: ${env}/${task_set}
   - hydra: simple
   - _self_
 
 run: pretrained
+save: false
+
 eval:
-  finite: ${formula_type.finite}
+  finite: ${task_set.finite}
   num_episodes: 512
   deterministic: false
   discount: 0.94

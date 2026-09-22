@@ -19,7 +19,7 @@ class EvaluationCase:
     name: str
     alg: str
     env: str
-    formula_type: str
+    task_set: str
     run: str
     expected_success_rate: float
     tolerance: float = 0.01
@@ -30,7 +30,7 @@ class EvaluationCase:
         return (
             f"alg={self.alg}",
             f"env={self.env}",
-            f"formula_type={self.formula_type}",
+            f"task_set={self.task_set}",
             f"run={self.run}",
             *self.extra_overrides,
         )
@@ -41,7 +41,7 @@ EVALUATION_CASES = (
         name="StructLTL/Zones-NM",
         alg="struct_ltl",
         env="zone_env_nm",
-        formula_type="finite",
+        task_set="finite",
         run="pretrained",
         expected_success_rate=0.952,
     ),
@@ -49,7 +49,7 @@ EVALUATION_CASES = (
         name="DeepLTL/Zones-NM",
         alg="deep_ltl",
         env="zone_env_nm",
-        formula_type="finite",
+        task_set="finite",
         run="pretrained",
         expected_success_rate=0.910,
     ),
@@ -57,7 +57,7 @@ EVALUATION_CASES = (
         name="GenZ-LTL/Zones-NM",
         alg="genz_ltl",
         env="zone_env_nm",
-        formula_type="finite",
+        task_set="finite",
         run="pretrained",
         expected_success_rate=0.811,
     ),
@@ -65,7 +65,7 @@ EVALUATION_CASES = (
         name="LTL2Action/Zones-NM",
         alg="ltl2action",
         env="zone_env_nm",
-        formula_type="finite",
+        task_set="finite",
         run="pretrained",
         expected_success_rate=0.557,
     ),
