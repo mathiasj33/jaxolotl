@@ -22,7 +22,18 @@ _name_to_env = {
     "ZoneEnv-NM": partial(ZoneEnv, non_myopic=True),
     "LetterWorld": LetterWorld,
     "WarehouseEnv": WarehouseEnv,
-    "ConveyorWorld": ConveyorWorld,
+    **{
+        f"ConveyorWorld-{chain_length}": partial(
+            ConveyorWorld, chain_length=chain_length
+        )
+        for chain_length in range(1, 11)
+    },
+    **{
+        f"ConveyorWorldSimple-{chain_length}": partial(
+            ConveyorWorld, chain_length=chain_length, simplified=True
+        )
+        for chain_length in range(1, 33)
+    },
     **{
         f"FrankaZoneEnv-{num_colors}": partial(FrankaZoneEnv, num_colors=num_colors)
         for num_colors in range(4, 17)

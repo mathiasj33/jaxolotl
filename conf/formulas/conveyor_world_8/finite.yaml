@@ -1,0 +1,2 @@
+- "F (a & F (b & F (c & F (d & F (e & F (f & F (g & F h)))))))"
+- "F (a & F (b & F (c & F (d & F (e & F (f & F (g & F i)))))))"

@@ -1,0 +1,5 @@
+# @package __global__
+
+defaults:
+  - /experiment/conveyor_world/struct_ltl
+  - _self_

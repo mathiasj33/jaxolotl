@@ -12,7 +12,7 @@ curriculum:
   min_coverage: 0.9
 
 model:
-  _target_: jaxolotl.alg.sem_ltl.model.model.SemLTLModel
+  _target_: jaxolotl.alg.ltl2action.model.model.LTL2ActionModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
@@ -20,15 +20,21 @@ model:
     out_size: 4
     activation: ${act:tanh}
   actor:
-    _target_: jaxolotl.alg.sem_ltl.model.actor.multi_eps_discrete_actor.MultiEpsilonDiscreteActor
+    _target_: jaxolotl.rl.actor.discrete_actor.DiscreteActor
     hidden_sizes: [64]
     activation: ${act:relu}
+    use_epsilon: false
   critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64]
     activation: ${act:tanh}
-  embedding_dim: 16
-  # semantic.embedding_size must be set per-variant, since it depends on the number of propositions
+  rgcn:
+    _target_: jaxolotl.networks.rgcn.RGCN
+    embedding_dim: 32
+    # rgcn.num_layers must be set per-variant: message passing is child->parent only,
+    # so the root sees depth <= num_layers, and the chain-discriminating final
+    # proposition sits at depth 2k-1. Variants use 2k+1.
+    activation: ${act:tanh}
 
 rl_alg:
   total_timesteps: 2e6

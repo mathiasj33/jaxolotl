@@ -4,7 +4,7 @@ from jaxolotl.environments import spaces
 from jaxolotl.environments.registration import make
 
 
-@pytest.mark.parametrize("name", ["LetterWorld", "ConveyorWorld"])
+@pytest.mark.parametrize("name", ["LetterWorld", "ConveyorWorld-3"])
 def test_make_ignores_discretize_for_discrete_environments(name: str) -> None:
     env, params = make(name, discretize=True)
 

@@ -2,17 +2,18 @@
 
 defaults:
   - /rl_alg: ppo
+  - /model/sequence: alibi_attention
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.sem_ltl.curriculum.conveyor_world_curriculum.make_stages
+    _target_: jaxolotl.alg.struct_ltl.curriculum.conveyor_world_curriculum.make_stages
   num_samples: 1e4
   window: 256
   adopt_prob: 0.1
   min_coverage: 0.9
 
 model:
-  _target_: jaxolotl.alg.sem_ltl.model.model.SemLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
@@ -20,15 +21,26 @@ model:
     out_size: 4
     activation: ${act:tanh}
   actor:
-    _target_: jaxolotl.alg.sem_ltl.model.actor.multi_eps_discrete_actor.MultiEpsilonDiscreteActor
+    _target_: jaxolotl.rl.actor.discrete_actor.DiscreteActor
     hidden_sizes: [64]
     activation: ${act:relu}
+    use_epsilon: true
   critic:
     _target_: jaxolotl.networks.mlp.MLP
     hidden_sizes: [64]
     activation: ${act:tanh}
-  embedding_dim: 16
-  # semantic.embedding_size must be set per-variant, since it depends on the number of propositions
+  sequence:
+    embedding_dim: 16
+    clause_mlp:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
+    disjunct_mlp:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: []
+      out_size: 16
+      activation: ${act:relu}
 
 rl_alg:
   total_timesteps: 2e6

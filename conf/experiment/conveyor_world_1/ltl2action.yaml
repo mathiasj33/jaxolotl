@@ -1,0 +1,9 @@
+# @package __global__
+
+defaults:
+  - /experiment/conveyor_world/ltl2action
+  - _self_
+
+model:
+  rgcn:
+    num_layers: 3

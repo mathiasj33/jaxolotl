@@ -1,0 +1,9 @@
+# @package __global__
+
+defaults:
+  - /experiment/conveyor_world/sem_ltl
+  - _self_
+
+model:
+  semantic:
+    embedding_size: 4836
