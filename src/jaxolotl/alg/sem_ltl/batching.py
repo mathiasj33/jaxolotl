@@ -21,11 +21,17 @@ def preprocess_formulas(
     """Build and batch SemML LDBAs, preserving the input formula order."""
     if num_parallel < 1:
         raise ValueError("num_parallel must be at least 1")
-    ldbas = Parallel(n_jobs=num_parallel)(
+    # Curriculum samples repeat few distinct formulas; build each once and share
+    # the (read-only) LDBA object across duplicates.
+    unique_formulas = list(dict.fromkeys(formulas))
+    unique_ldbas = Parallel(n_jobs=num_parallel)(
         delayed(build_ldba)(formula, env, backend="semml")
-        for formula in tqdm(formulas, desc="Building SemML LDBAs")
+        for formula in tqdm(unique_formulas, desc="Building SemML LDBAs")
     )
-    ldbas = cast(list[LDBA], ldbas)
+    formula_to_ldba = dict(
+        zip(unique_formulas, cast(list[LDBA], unique_ldbas), strict=True)
+    )
+    ldbas = [formula_to_ldba[formula] for formula in formulas]
     return JaxSemanticLDBA.from_ldbas(ldbas, env)
 
 

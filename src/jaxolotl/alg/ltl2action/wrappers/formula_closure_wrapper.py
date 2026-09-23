@@ -8,6 +8,7 @@ from jaxolotl.alg.curriculum import CurriculumResetOptions
 from jaxolotl.alg.ltl2action.utils.jax_formula_closure import (
     JaxFormulaClosureGraph,
     JaxFormulaGraph,
+    StaticGraphTable,
 )
 from jaxolotl.environments.environment import Environment, EnvObservation, EnvTransition
 from jaxolotl.environments.wrappers import EnvWrapper
@@ -35,6 +36,42 @@ class FormulaGraphObservation[TObsFeatures: NamedTuple](EnvObservation[TObsFeatu
         graph: JaxFormulaGraph,
     ):
         return cls(features=obs.features, graph=graph)
+
+
+class FormulaIndexObservation[TObsFeatures: NamedTuple](EnvObservation[TObsFeatures]):
+    """Observation extended with an index into a static table of unique graphs."""
+
+    graph_index: jax.Array  # () int32
+    graph_table: StaticGraphTable = eqx.field(static=True)
+
+    @classmethod
+    def from_obs(
+        cls,
+        obs: EnvObservation[TObsFeatures],
+        graph_index: jax.Array,
+        graph_table: StaticGraphTable,
+    ):
+        return cls(
+            features=obs.features, graph_index=graph_index, graph_table=graph_table
+        )
+
+
+def _formula_obs(
+    obs: EnvObservation,
+    closure: JaxFormulaClosureGraph,
+    closure_state: jax.Array,
+) -> EnvObservation:
+    """Attach the formula graph for the given closure state to the observation.
+
+    Emits an index observation when the closure stores deduplicated graphs
+    (training curricula), and a materialized-graph observation otherwise.
+    """
+    if closure.graph_indices is not None:
+        assert closure.graph_table is not None
+        return FormulaIndexObservation.from_obs(
+            obs, closure.graph_indices[closure_state], closure.graph_table
+        )
+    return FormulaGraphObservation.from_obs(obs, closure.get_graph(closure_state))
 
 
 class FormulaClosureWrapper[
@@ -68,8 +105,7 @@ class FormulaClosureWrapper[
             closure=options.task,
             closure_state=options.task.initial_state,
         )
-        formula_graph = state.closure.get_graph(state.closure_state)
-        formula_obs = FormulaGraphObservation.from_obs(obs, formula_graph)
+        formula_obs = _formula_obs(obs, state.closure, state.closure_state)
         return state, formula_obs
 
     @eqx.filter_jit
@@ -99,8 +135,9 @@ class FormulaClosureWrapper[
         terminated = jnp.logical_or(is_true, is_false)
 
         # update observation and state
-        next_graph = state.closure.get_graph(next_closure_state)
-        next_obs = FormulaGraphObservation.from_obs(transition.observation, next_graph)
+        next_obs = _formula_obs(
+            transition.observation, state.closure, next_closure_state
+        )
         new_state = FormulaClosureState(
             state=transition.state,
             closure=state.closure,
@@ -112,9 +149,8 @@ class FormulaClosureWrapper[
             reward=reward,
             terminated=jnp.logical_or(transition.terminated, terminated),
             truncated=transition.truncated,
-            terminal_observation=FormulaGraphObservation.from_obs(
-                transition.terminal_observation,
-                next_graph,
+            terminal_observation=_formula_obs(
+                transition.terminal_observation, state.closure, next_closure_state
             ),
             propositions=transition.propositions,
             info=transition.info | {"is_sink": is_false},

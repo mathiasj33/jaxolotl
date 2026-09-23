@@ -8,6 +8,9 @@ from jaxtyping import PyTree
 from omegaconf import DictConfig
 
 from jaxolotl.alg.ltl2action.utils.jax_formula_closure import JaxFormulaGraph
+from jaxolotl.alg.ltl2action.wrappers.formula_closure_wrapper import (
+    FormulaIndexObservation,
+)
 from jaxolotl.environments.observation_spec import ObservationSpec
 from jaxolotl.environments.spaces import Space
 from jaxolotl.networks.observation_encoder import ObservationEncoder
@@ -54,7 +57,14 @@ class LTL2ActionModel(ActorCritic):
     @override
     def _compute_common_features(self, obs: PyTree) -> jax.Array:
         x = jax.vmap(self.env_net)(obs.features)
-        emb = jax.vmap(self._compute_root_features)(obs.graph)
+        if isinstance(obs, FormulaIndexObservation):
+            # Deduplicated observations: batches repeat few distinct graphs,
+            # so encode the unique-graph table once and gather root features.
+            table = obs.graph_table.to_jax()
+            root_features = jax.vmap(self._compute_root_features)(table)
+            emb = root_features[obs.graph_index]
+        else:
+            emb = jax.vmap(self._compute_root_features)(obs.graph)
         return jnp.concatenate([x, emb], axis=-1)
 
     def _compute_root_features(self, graph: JaxFormulaGraph) -> jax.Array:

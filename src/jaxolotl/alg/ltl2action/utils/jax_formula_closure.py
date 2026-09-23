@@ -35,15 +35,57 @@ class JaxFormulaGraph(NamedTuple):
     edge_mask: jax.Array  # shape: (num_edges,) bool
 
 
+class StaticGraphTable:
+    """Hashable, immutable table of unique formula graphs (numpy leaves).
+
+    Stored in a *static* Equinox field so the small, constant table travels
+    with the pytree structure — through curriculum save/load, environment
+    state, and observations — without being traced, batched per sample, or
+    serialized as a leaf. Content-based equality keeps treedefs (and JIT
+    caches) stable across instances holding identical tables.
+    """
+
+    def __init__(self, graphs: JaxFormulaGraph):
+        self.graphs = JaxFormulaGraph(*(np.asarray(leaf) for leaf in graphs))
+        self._hash = hash(tuple(leaf.tobytes() for leaf in self.graphs))
+
+    @property
+    def num_graphs(self) -> int:
+        return self.graphs.nodes.shape[0]
+
+    def to_jax(self) -> JaxFormulaGraph:
+        """Return the table as a batched JaxFormulaGraph (num_graphs, ...)."""
+        return JaxFormulaGraph(*(jnp.asarray(leaf) for leaf in self.graphs))
+
+    def __hash__(self) -> int:
+        return self._hash
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, StaticGraphTable)
+            and self._hash == other._hash
+            and all(
+                np.array_equal(a, b) for a, b in zip(self.graphs, other.graphs)
+            )
+        )
+
+
 class JaxFormulaClosureGraph(eqx.Module):
-    """Jax representation of a formula closure graph. If batched, uses -1 for padding."""
+    """Jax representation of a formula closure graph. If batched, uses -1 for padding.
+
+    Graphs are stored either materialized per state (`graphs`) or deduplicated
+    (`graph_indices` into a shared static `graph_table`); exactly one of the
+    two representations is present.
+    """
 
     num_states: jax.Array  # int32
     initial_state: jax.Array  # int32
     true_state: jax.Array  # int32
     false_state: jax.Array  # int32, -1 if not present
     transitions: jax.Array  # shape: (num_states, num_assignments) -> int32
-    graphs: JaxFormulaGraph  # batched formula graphs (num_states, ...)
+    graphs: JaxFormulaGraph | None  # batched formula graphs (num_states, ...)
+    graph_indices: jax.Array | None = None  # shape: (num_states,) int32
+    graph_table: StaticGraphTable | None = eqx.field(static=True, default=None)
 
     def get_next_state(
         self, state: jax.Array, assignment_index: jax.Array
@@ -67,6 +109,10 @@ class JaxFormulaClosureGraph(eqx.Module):
         Returns:
             graph: JaxFormulaGraph corresponding to the state.
         """
+        assert self.graphs is not None, (
+            "get_graph requires materialized graphs; this closure stores "
+            "deduplicated graph_indices into a graph_table instead."
+        )
         return jax.tree.map(lambda x: x[state], self.graphs)
 
     @classmethod
