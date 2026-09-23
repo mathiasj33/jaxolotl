@@ -1,0 +1,9 @@
+# @package __global__
+
+defaults:
+  - /experiment/franka_zone_env/genz_ltl
+  - _self_
+
+model:
+  observation_reduction_fn:
+    _target_: jaxolotl.alg.genz_ltl.model.observation_reduction.GenericObservationReduction

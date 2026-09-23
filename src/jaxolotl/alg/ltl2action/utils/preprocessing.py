@@ -19,6 +19,7 @@ def preprocess_formulas(
     env: Environment | EnvWrapper,
     verbose: bool = False,
     num_parallel: int = 1,
+    finite: bool = False,
 ) -> JaxFormulaClosureGraph:
     """Converts a list of LTL formulas into a batched JaxFormulaClosureGraph.
 
@@ -27,6 +28,8 @@ def preprocess_formulas(
         env: The environment whose assignments define closure transitions.
         verbose: Whether to show a progress bar while dispatching formulas.
         num_parallel: Number of formula closures to construct in parallel.
+        finite: Treat pure-safety progression residuals as accepting (finite
+            formula sets only); see JaxFormulaClosureGraph.from_closure_graphs.
 
     Returns:
         A batched JaxFormulaClosureGraph.
@@ -40,7 +43,7 @@ def preprocess_formulas(
         delayed(_build_formula_closure)(formula, assignments) for formula in it
     )
     closures = cast(list[FormulaClosureGraph], closures)
-    return JaxFormulaClosureGraph.from_closure_graphs(closures, env)
+    return JaxFormulaClosureGraph.from_closure_graphs(closures, env, finite=finite)
 
 
 def _build_formula_closure(

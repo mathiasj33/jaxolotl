@@ -1,0 +1,5 @@
+# @package __global__
+
+defaults:
+  - /experiment/franka_zone_env/genz_ltl
+  - _self_

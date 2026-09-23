@@ -16,7 +16,21 @@ from jaxolotl.alg.struct_ltl.reach_avoid.boolean_reach_avoid_sequence import (
 )
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
+from jaxolotl.ltl.logic.utils import Clause
 from jaxolotl.ltl.reach_avoid.sequence import EpsilonType
+
+
+def _step_avoid_atoms(
+    reach: list[Clause] | EpsilonType, avoid: list[Clause]
+) -> list[str]:
+    """Ordered avoid atoms for one step, folding in the zones forbidden by a
+    negative-only reach clause so the policy is steered away from them."""
+    atoms = [next(iter(clause.pos)) for clause in avoid]
+    if not isinstance(reach, EpsilonType) and len(reach) == 1:
+        clause = reach[0]
+        if len(clause.pos) == 0:
+            atoms += [atom for atom in sorted(clause.neg) if atom not in atoms]
+    return atoms
 
 
 class JaxGCRLSequence(JaxReachAvoidSequence):
@@ -83,8 +97,7 @@ class JaxGCRLSequence(JaxReachAvoidSequence):
         max_length = max(len(seq.reach_avoid) for seq in seqs)
         max_avoid = 0
         for seq in seqs:
-            for _, avoid in seq.clauses:
-                max_avoid = max(max_avoid, len(avoid))
+            for reach, avoid in seq.clauses:
                 for clause in avoid:
                     if len(clause.neg) > 0:
                         raise ValueError(
@@ -94,6 +107,7 @@ class JaxGCRLSequence(JaxReachAvoidSequence):
                         raise ValueError(
                             "Avoid clauses for GCRL must contain at most one literal."
                         )
+                max_avoid = max(max_avoid, len(_step_avoid_atoms(reach, avoid)))
         # --- Assignments ---
         assignment_arrays = batch_assignments(
             seqs, env.assignments(), max_length=max_length
@@ -117,20 +131,26 @@ class JaxGCRLSequence(JaxReachAvoidSequence):
                             f"Got {len(reach)} clauses."
                         )
                     clause = reach[0]
-                    if len(clause.neg) > 0:
+                    if len(clause.pos) == 1 and len(clause.neg) == 0:
+                        atom = list(clause.pos)[0]
+                    elif len(clause.pos) == 0 and len(clause.neg) > 0:
+                        # A negative-only reach ("one step outside the listed
+                        # zones", the accepting transition of a safety
+                        # component): the wrapper progresses on any allowed
+                        # assignment, so the goal only steers the policy —
+                        # condition on an arbitrary allowed zone and treat the
+                        # forbidden zones as avoid goals (see
+                        # _step_avoid_atoms).
+                        atom = next(p for p in env.propositions if p not in clause.neg)
+                    else:
                         raise ValueError(
-                            "Reach clauses for GCRL must not contain negated literals."
+                            "Reach clauses for GCRL must be a single positive "
+                            f"literal or purely negative. Got {clause!r}."
                         )
-                    if len(clause.pos) != 1:
-                        raise ValueError(
-                            "Reach clauses for GCRL must contain exactly one literal."
-                        )
-                    atom = list(clause.pos)[0]
                     reach_props[seq_idx, i] = prop_map[atom]
 
                 # Avoid props
-                for c_idx, clause in enumerate(avoid):
-                    atom = list(clause.pos)[0]
+                for c_idx, atom in enumerate(_step_avoid_atoms(reach, avoid)):
                     avoid_props[seq_idx, i, c_idx] = prop_map[atom]
 
         return cls(

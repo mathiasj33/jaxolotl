@@ -83,9 +83,7 @@ def _dedup_graphs(
             )
             index = key_to_index.setdefault(key, len(members))
             if index == len(members):
-                members.append(
-                    JaxFormulaGraph(*(leaf[c, s] for leaf in graphs))
-                )
+                members.append(JaxFormulaGraph(*(leaf[c, s] for leaf in graphs)))
                 if len(members) > MAX_UNIQUE_GRAPHS:
                     return None
             indices[c, s] = index

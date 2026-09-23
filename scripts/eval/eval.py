@@ -61,7 +61,14 @@ def main(cfg: DictConfig):
 
     # preprocess formulas
     logger.info("Preprocessing formulas...")
-    formulas: PyTree = hydra.utils.call(cfg.alg.preprocess_formulas, cfg.formulas, env)
+    # LTL2Action's closures need the finite flag: G-bearing formulas have no
+    # literal True state and only accept under truncated semantics.
+    preprocess_kwargs = (
+        {"finite": cfg.eval.finite} if cfg.alg.name == "ltl2action" else {}
+    )
+    formulas: PyTree = hydra.utils.call(
+        cfg.alg.preprocess_formulas, cfg.formulas, env, **preprocess_kwargs
+    )
 
     # load models
     key = jax.random.key(0)

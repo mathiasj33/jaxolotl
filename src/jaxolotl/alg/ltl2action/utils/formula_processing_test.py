@@ -1,4 +1,9 @@
-from jaxolotl.alg.ltl2action.utils.formula_processing import replace_implication
+import pytest
+
+from jaxolotl.alg.ltl2action.utils.formula_processing import (
+    holds_on_empty_suffix,
+    replace_implication,
+)
 from jaxolotl.ltl.progression.ltl_parser import (
     AlwaysNode,
     AndNode,
@@ -9,6 +14,7 @@ from jaxolotl.ltl.progression.ltl_parser import (
     OrNode,
     UntilNode,
     VarNode,
+    parse,
 )
 
 
@@ -73,6 +79,28 @@ def test_recurses_through_boolean_and_temporal_nodes():
     )
     assert transformed == expected
     assert not contains_implication(transformed)
+
+
+@pytest.mark.parametrize(
+    ("formula", "expected"),
+    [
+        ("true", True),
+        ("false", False),
+        ("a", False),
+        ("!a", True),
+        ("F a", False),
+        ("a U b", False),
+        ("G !a", True),
+        ("!(F a)", True),
+        ("!(G a)", False),
+        ("G !a & F b", False),
+        ("G !a | F b", True),
+        ("G !a & G !b", True),
+        ("a => F b", True),
+    ],
+)
+def test_holds_on_empty_suffix(formula: str, expected: bool):
+    assert holds_on_empty_suffix(parse(formula)) is expected
 
 
 def test_formula_without_implications_is_unchanged():

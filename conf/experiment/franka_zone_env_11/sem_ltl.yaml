@@ -1,0 +1,9 @@
+# @package __global__
+
+defaults:
+  - /experiment/franka_zone_env/sem_ltl
+  - _self_
+
+model:
+  semantic:
+    embedding_size: 656

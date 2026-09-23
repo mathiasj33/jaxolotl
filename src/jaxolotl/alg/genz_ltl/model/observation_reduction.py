@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
+from jaxolotl.environments.franka_zone_env import franka_zone_env
 from jaxolotl.environments.letter_world import letter_world
 from jaxolotl.environments.observation_spec import (
     ArraySpec,
@@ -158,3 +159,52 @@ class ZoneEnvObservationReduction(
         return ObservationSpec(
             reduced=ArraySpec((5 + 2 * params.num_lidar_bins,), jnp.float32)
         )
+
+
+class FrankaZoneEnvObservationReduction(
+    ObservationReductionFunction[franka_zone_env.ObsFeatures, franka_zone_env.EnvParams]
+):
+    """Observation reduction for FrankaZoneEnv."""
+
+    @override
+    def __call__(
+        self, features: franka_zone_env.ObsFeatures, subgoal: JaxReachAvoidSubgoal
+    ) -> ReducedObservation:
+        """Reduce FrankaZoneEnv observations to [arm_obs, reach_obs, avoid_obs].
+
+        The reach zone's row is taken as-is; the avoid zones' rows are sorted by
+        distance (padding last) and truncated to the num_colors - 1 possible avoid
+        zones, each with a 1/-1 validity flag so that zeroed padding rows are
+        distinguishable from a real zone at the end-effector.
+
+        Returns:
+            reduced feature vector of shape (40 + 4 + 5 * (num_colors - 1),)
+        """
+        num_avoid = features.zones.shape[0] - 1
+        reach_obs = features.zones[subgoal.reach]
+        valid = subgoal.avoid != -1
+        avoid_rows = features.zones[subgoal.avoid]
+        # Sort valid rows first by ascending distance (last column), padding last.
+        distance = jnp.where(valid, avoid_rows[:, -1], jnp.inf)
+        order = jnp.argsort(distance)[:num_avoid]
+        valid_sorted = jnp.reshape(valid[order], (-1, 1))
+        rows = jnp.where(valid_sorted, avoid_rows[order], 0.0)
+        flags = jnp.where(valid_sorted, 1.0, -1.0)
+        avoid_obs = jnp.reshape(jnp.concatenate([rows, flags], axis=1), (-1,))
+        return ReducedObservation(
+            reduced=jnp.concatenate([features.arm, reach_obs, avoid_obs], axis=0)
+        )
+
+    @override
+    def output_spec(
+        self,
+        input_spec: ObservationSpec,
+        params: franka_zone_env.EnvParams,
+        num_assignments: int,
+        num_propositions: int,
+    ) -> ObservationSpec:
+        del params, num_assignments
+        arm_size = input_spec["arm"].shape[0]
+        zone_row_size = input_spec["zones"].shape[1]
+        size = arm_size + zone_row_size + (zone_row_size + 1) * (num_propositions - 1)
+        return ObservationSpec(reduced=ArraySpec((size,), jnp.float32))

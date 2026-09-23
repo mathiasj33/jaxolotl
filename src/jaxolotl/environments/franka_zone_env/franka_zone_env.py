@@ -106,6 +106,8 @@ class EnvParams(environment.EnvParams):
     max_pos_step: float
     max_rot_step: float
     max_joint_step: float
+    # Discretize action space for GCRL-LTL
+    discretize: bool = False
 
 
 class ResetDescriptor(eqx.Module):
@@ -172,6 +174,7 @@ class FrankaZoneEnv(
         max_pos_step=0.02,
         max_rot_step=0.1,
         max_joint_step=0.5,
+        discretize=False,
     )
 
     def __init__(self, num_colors: int = 4, **kwargs):
@@ -205,7 +208,10 @@ class FrankaZoneEnv(
         )
 
     @override
-    def _action_space(self, _params: EnvParams) -> spaces.Space:
+    def _action_space(self, params: EnvParams) -> spaces.Space:
+        if params.discretize:
+            # Signed full-scale steps along/about each base axis.
+            return spaces.Discrete(n=2 * _ACTION_DIM)
         return spaces.Box(shape=(_ACTION_DIM,), low=-1.0, high=1.0, dtype=jnp.float32)
 
     @override
@@ -338,6 +344,12 @@ class FrankaZoneEnv(
             zone_centers=descriptor.zone_centers,
         )
 
+    def _map_discrete_action(self, action: jax.Array) -> jax.Array:
+        # Translation along +x, +y, +z, rotation about +x, +y, +z, then the
+        # same six steps negated.
+        mapping = jnp.concatenate([jnp.eye(_ACTION_DIM), -jnp.eye(_ACTION_DIM)])
+        return mapping[action]
+
     @override
     def _step(
         self,
@@ -346,6 +358,8 @@ class FrankaZoneEnv(
         action: jax.Array,
         params: EnvParams,
     ) -> tuple[EnvState, jax.Array, jax.Array, dict[Any, Any]]:
+        if params.discretize:
+            action = self._map_discrete_action(action)
         action = jnp.clip(action, -1.0, 1.0)
         q_cmd, ik_ok = self.controller(
             state.q_cmd,

@@ -8,7 +8,10 @@ import numpy as np
 from tqdm import tqdm
 
 from jaxolotl.alg.ltl2action.utils.formula_closure import FormulaClosureGraph
-from jaxolotl.alg.ltl2action.utils.formula_processing import replace_implication
+from jaxolotl.alg.ltl2action.utils.formula_processing import (
+    holds_on_empty_suffix,
+    replace_implication,
+)
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 from jaxolotl.ltl.progression.ltl_parser import (
@@ -65,7 +68,8 @@ class StaticGraphTable:
             isinstance(other, StaticGraphTable)
             and self._hash == other._hash
             and all(
-                np.array_equal(a, b) for a, b in zip(self.graphs, other.graphs)
+                np.array_equal(a, b)
+                for a, b in zip(self.graphs, other.graphs, strict=True)
             )
         )
 
@@ -116,16 +120,23 @@ class JaxFormulaClosureGraph(eqx.Module):
         return jax.tree.map(lambda x: x[state], self.graphs)
 
     @classmethod
-    def from_closure_graphs(
+    def from_closure_graphs(  # noqa: PLR0912
         cls,
         closures: list[FormulaClosureGraph],
         env: Environment | EnvWrapper,
+        finite: bool = False,
     ) -> "JaxFormulaClosureGraph":
         """Convert a list of FormulaClosureGraphs to a batched Jax representation.
 
         Args:
             closures: The FormulaClosureGraphs to convert.
             env: The environment containing the assignments.
+            finite: Treat states whose formula holds on the empty suffix (pure
+                safety residuals, e.g. ``G !a`` after the liveness part of
+                ``G !a & F b`` is satisfied) as the accepting True state, by
+                redirecting all transitions into them. Matches the truncated
+                LTLf semantics used by the LDBA-based algorithms; G-bearing
+                formulas never progress to a literal True state otherwise.
         """
 
         # Use numpy arrays and convert at the end for efficiency
@@ -163,21 +174,34 @@ class JaxFormulaClosureGraph(eqx.Module):
 
             true_state = -1
             false_state = -1
+            accepting: set[int] = set()
+            for node in closure.nodes.values():
+                node_idx = formula_to_index[node.formula]
+                if isinstance(node.formula, TrueNode):
+                    true_state = node_idx
+                elif isinstance(node.formula, FalseNode):
+                    false_state = node_idx
+                if finite and holds_on_empty_suffix(node.formula):
+                    accepting.add(node_idx)
+
+            if finite and true_state < 0 and accepting:
+                true_state = min(accepting)
+            assert true_state >= 0, (
+                "True state not found. The formula never progresses to a "
+                "literal True; G-bearing formulas only accept under finite "
+                "(truncated) semantics — pass finite=True for finite sets."
+            )
+            true_states[i] = true_state
+            false_states[i] = false_state
+
             for node in closure.nodes.values():
                 node_idx = formula_to_index[node.formula]
                 for assignment, target_node in node.edges.items():
                     assignment_idx = assignment_to_index[assignment]
-                    transitions[i, node_idx, assignment_idx] = formula_to_index[
-                        target_node.formula
-                    ]
-                    if isinstance(node.formula, TrueNode):
-                        true_state = node_idx
-                    elif isinstance(node.formula, FalseNode):
-                        false_state = node_idx
-
-            assert true_state >= 0, "True state not found."
-            true_states[i] = true_state
-            false_states[i] = false_state
+                    target_idx = formula_to_index[target_node.formula]
+                    if target_idx in accepting:
+                        target_idx = true_state
+                    transitions[i, node_idx, assignment_idx] = target_idx
 
             # Graphs
             current_closure_graphs = [None] * len(formula_to_index)

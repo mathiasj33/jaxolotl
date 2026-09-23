@@ -32,17 +32,26 @@ logger = logging.getLogger(__name__)
 def main(cfg: DictConfig):
     # build environment
     discretize = cfg.alg.name == "gcrl_ltl"
+    env_params = cfg.get("env_params", {})
     env, env_params = jaxolotl.make(
         cfg.env.name,
         reset_source=cfg.env.get("reset_source", "test"),
         discretize=discretize,
+        **env_params,
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
     env = VectorizeWrapper(env)
 
     # preprocess formulas
-    formulas: PyTree = hydra.utils.call(cfg.alg.preprocess_formulas, cfg.formulas, env)
+    # LTL2Action's closures need the finite flag: G-bearing formulas have no
+    # accepting state under infinite semantics (see scripts/eval/eval.py).
+    preprocess_kwargs = (
+        {"finite": cfg.eval.finite} if cfg.alg.name == "ltl2action" else {}
+    )
+    formulas: PyTree = hydra.utils.call(
+        cfg.alg.preprocess_formulas, cfg.formulas, env, **preprocess_kwargs
+    )
     logger.info(f"Processed {len(cfg.formulas)} formulas.")
 
     # load models

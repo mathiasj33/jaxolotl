@@ -1,0 +1,6 @@
+# @package _global_
+defaults:
+  - /formulas/franka_zone_env/infinite@formulas
+
+env_params:
+  max_steps_in_episode: 1000

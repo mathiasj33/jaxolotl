@@ -1,10 +1,13 @@
 """Reset, labelling, registration, and MJX integration tests."""
 
+import dataclasses
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 
 from jaxolotl import eqx_utils
+from jaxolotl.environments import spaces
 from jaxolotl.environments.franka_zone_env.franka_zone_env import (
     REACH_HIGH,
     REACH_LOW,
@@ -145,3 +148,21 @@ def test_precomputed_wrapper_banks_only_descriptors(tmp_path):
     assert isinstance(state, EnvState)
     assert state.data.qpos.shape == (9,)
     assert obs.features.zones.shape == (4, 4)
+
+
+def test_discretized_actions_match_continuous_unit_steps():
+    env = FrankaZoneEnv(discretize=True)
+    params = env.default_params
+    space = env.action_space(params)
+    assert isinstance(space, spaces.Discrete)
+    assert space.n == 12
+
+    descriptor = env.sample_reset(jax.random.key(6), None, params)
+    state = env.materialize(descriptor, params)
+    key = jax.random.key(7)
+    continuous_params = dataclasses.replace(params, discretize=False)
+    # Index 2 = +z translation, index 9 = -x rotation.
+    for index, continuous in [(2, jnp.eye(6)[2]), (9, -jnp.eye(6)[3])]:
+        discrete = env.step(key, state, jnp.int32(index), params)
+        reference = env.step(key, state, continuous, continuous_params)
+        assert jnp.allclose(discrete.state.data.qpos, reference.state.data.qpos)
