@@ -7,12 +7,12 @@ to trade off speed and memory usage during evaluation.
 
 import csv
 import logging
-import os
 import time
+from pathlib import Path
 
 import hydra
 import jax
-import jax.numpy as jnp
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
 from jaxtyping import PyTree
 from omegaconf import DictConfig
@@ -27,8 +27,21 @@ from jaxolotl.eval.utils import (
     load_latest_checkpoint_models,
     make_eval_fn,
 )
+from jaxolotl.utils.stats import (
+    ConfidenceInterval,
+    NanPolicy,
+    TaskSetConfidenceIntervals,
+    bootstrap_task_set,
+    student_t_task_set,
+)
 
 logger = logging.getLogger(__name__)
+
+METRIC_LABELS = {
+    "return": "SR/AV",
+    "violations": "Violations",
+    "length": "Successful-episode length",
+}
 
 
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="eval")
@@ -88,7 +101,7 @@ def main(cfg: DictConfig):
     key, eval_key = jax.random.split(key)
     logger.info("Starting evaluation...")
     start = time.time()
-    returns, disc_returns, lengths, violations, _ = eval_fn(
+    returns, _, lengths, violations, _ = eval_fn(
         agents,
         env,
         env_params,
@@ -112,7 +125,16 @@ def log_and_save_results(
     task_set: str,
     seeds: list[int],
 ):
-    """Logs aggregated results per formula and saves per-seed results to a CSV file."""
+    """Log confidence intervals and save raw and aggregated evaluation results."""
+
+    aggregates, seed_metrics = compute_metric_aggregates(
+        cfg, returns, lengths, violations, seeds
+    )
+    metadata = {
+        "deterministic": bool(cfg.eval.deterministic),
+        "ci_method": str(cfg.eval.confidence_interval.method),
+        "confidence_level": float(cfg.eval.confidence_interval.confidence_level),
+    }
     fieldnames = [
         "seed",
         "deterministic",
@@ -121,74 +143,208 @@ def log_and_save_results(
         "violations",
         "length",
     ]
-
     rows = []
-    for i, formula in enumerate(cfg.formulas):
-        # Compute per-seed stats
-        returns_i = returns[:, i]  # (num_seeds, num_episodes)
-        lengths_i = lengths[:, i]  # (num_seeds, num_episodes)
-        violations_i = violations[:, i]  # (num_seeds, num_episodes)
-
-        success_mask = returns_i > 0  # (num_seeds, num_episodes)
-        success_counts = jnp.sum(success_mask, axis=1)  # (num_seeds,)
-        sum_lengths = jnp.sum(lengths_i * success_mask, axis=1)
-        avg_lengths = jnp.where(
-            success_counts > 0, sum_lengths / success_counts, jnp.nan
-        )
-
-        return_means = jnp.mean(returns_i, axis=1)  # (num_seeds,)
-        violation_means = jnp.mean(violations_i, axis=1)  # (num_seeds,)
-
-        # Stdout logging (aggregate across seeds)
+    agg_rows = []
+    formulas = [str(formula) for formula in cfg.formulas]
+    for formula_index, formula in enumerate(formulas):
         logger.info("========================================")
-        logger.info(f"Formula: {formula}")
-        logger.info(
-            f"SR/AV: {float(jnp.mean(return_means)):.3f}+-{float(jnp.std(return_means)):.3f}"
-        )
-        logger.info(
-            f"Violations: {float(jnp.mean(violation_means)):.3f}+-{float(jnp.std(violation_means)):.3f}"
-        )
-        logger.info(
-            f"Length: {float(jnp.mean(avg_lengths)):.3f}+-{float(jnp.std(avg_lengths)):.3f}"
-        )
+        logger.info("Formula: %s", formula)
+        for metric, agg in aggregates.items():
+            ci = agg.per_task[formula_index]
+            logger.info("%s: %s", METRIC_LABELS[metric], _format_ci(ci))
+            agg_rows.append(
+                _summary_row(
+                    task_set=task_set,
+                    scope="formula",
+                    formula=formula,
+                    metric=metric,
+                    ci=ci,
+                    num_seeds=int(
+                        np.isfinite(seed_metrics[metric][:, formula_index]).sum()
+                    ),
+                    num_formulas=1,
+                    metadata=metadata,
+                )
+            )
 
-        # CSV rows (per-seed)
         for seed_index, seed in enumerate(seeds):
             rows.append(
                 {
                     "seed": seed,
                     "deterministic": bool(cfg.eval.deterministic),
                     "formula": formula,
-                    "return": float(return_means[seed_index]),
-                    "violations": float(violation_means[seed_index]),
-                    "length": float(avg_lengths[seed_index]),
+                    "return": float(seed_metrics["return"][seed_index, formula_index]),
+                    "violations": float(
+                        seed_metrics["violations"][seed_index, formula_index]
+                    ),
+                    "length": float(seed_metrics["length"][seed_index, formula_index]),
                 }
             )
 
-    if cfg.save:
-        csv_path = (
-            f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval/{task_set}.csv"
-        )
-        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-        with open(csv_path, mode="w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
-        logger.info(f"Wrote results to {csv_path}")
-
-    per_seed_returns = jnp.mean(returns, axis=(1, 2))  # (num_seeds,)
-    per_seed_violations = jnp.mean(violations, axis=(1, 2))  # (num_seeds,)
     logger.info("========================================")
-    logger.info(
-        f"Overall SR/AV: {float(jnp.mean(per_seed_returns)):.3f}+-{float(jnp.std(per_seed_returns)):.3f}"
+    logger.info("Task set: %s", task_set)
+    for metric, agg in aggregates.items():
+        logger.info("Overall %s: %s", METRIC_LABELS[metric], _format_ci(agg.task_set))
+        agg_rows.append(
+            _summary_row(
+                task_set=task_set,
+                scope="task_set",
+                formula="",
+                metric=metric,
+                ci=agg.task_set,
+                num_seeds=int(np.isfinite(seed_metrics[metric]).any(axis=1).sum()),
+                num_formulas=int(np.isfinite(seed_metrics[metric]).any(axis=0).sum()),
+                metadata=metadata,
+            )
+        )
+
+    if cfg.save:
+        output_dir = Path("runs", cfg.env.name, cfg.alg.name, cfg.run, "eval")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        results_path = output_dir / f"{task_set}.csv"
+        _write_csv(results_path, fieldnames, rows)
+
+        logger.info("Wrote per-seed results to %s", results_path)
+
+        summary_path = output_dir / f"{task_set}_agg.csv"
+        _write_csv(summary_path, list(agg_rows[0]), agg_rows)
+        logger.info("Wrote confidence-interval summary to %s", summary_path)
+
+
+def compute_metric_aggregates(
+    cfg: DictConfig,
+    returns: jax.Array,
+    lengths: jax.Array,
+    violations: jax.Array,
+    seeds: list[int],
+) -> tuple[dict[str, TaskSetConfidenceIntervals], dict[str, np.ndarray]]:
+    """Compute per-seed, per-formula means and confidence intervals for each metric."""
+
+    formulas = [str(formula) for formula in cfg.formulas]
+    if len(set(seeds)) != len(seeds):
+        raise ValueError(f"Evaluation seed labels must be unique, got {seeds}")
+
+    metrics: dict[str, np.ndarray] = {
+        "return": np.asarray(returns, dtype=np.float64),
+        "violations": np.asarray(violations, dtype=np.float64),
+        "length": np.asarray(lengths, dtype=np.float64),
+    }
+    expected_prefix = (len(seeds), len(formulas))
+    for metric, values in metrics.items():
+        if values.ndim != 3 or values.shape[:2] != expected_prefix:
+            raise ValueError(
+                f"{metric} must have shape (num_seeds, num_formulas, num_episodes) "
+                f"with prefix {expected_prefix}, got {values.shape}"
+            )
+
+    return_means = metrics["return"].mean(axis=2)
+    violation_means = metrics["violations"].mean(axis=2)
+    success_mask = metrics["return"] > 0
+    success_counts = success_mask.sum(axis=2)
+    successful_length_sums = np.where(success_mask, metrics["length"], 0.0).sum(axis=2)
+    length_means = np.divide(
+        successful_length_sums,
+        success_counts,
+        out=np.full(expected_prefix, np.nan, dtype=np.float64),
+        where=success_counts > 0,
     )
-    logger.info(
-        f"Overall Violations: {float(jnp.mean(per_seed_violations)):.3f}+-{float(jnp.std(per_seed_violations)):.3f}"
+    # these are per-seed, per-formula means over episodes
+    seed_metrics: dict[str, np.ndarray] = {
+        "return": return_means,
+        "violations": violation_means,
+        "length": length_means,
+    }
+
+    aggregates: dict[str, TaskSetConfidenceIntervals] = {}
+    for metric, values in seed_metrics.items():
+        nan_policy = "omit" if metric == "length" else "raise"
+        bounds = _metric_bounds(metric, finite=bool(cfg.eval.finite))
+        if metric == "length" and np.isnan(values).any():
+            logger.warning(
+                "Successful-episode length is undefined for %d seed/task pairs (no successful episodes).",
+                int(np.isnan(values).sum()),
+            )
+        aggregates[metric] = _confidence_intervals(
+            values,
+            ci_cfg=cfg.eval.confidence_interval,
+            nan_policy=nan_policy,
+            bounds=bounds,
+        )
+    return aggregates, seed_metrics
+
+
+def _confidence_intervals(
+    values: np.ndarray,
+    *,
+    ci_cfg: DictConfig,
+    nan_policy: NanPolicy,
+    bounds: tuple[float, float],
+) -> TaskSetConfidenceIntervals:
+    method = str(ci_cfg.method)
+    common_options = {
+        "confidence_level": float(ci_cfg.confidence_level),
+        "nan_policy": nan_policy,
+        "bounds": bounds,
+    }
+    if method == "student_t":
+        return student_t_task_set(values, **common_options)
+    if method == "bootstrap":
+        return bootstrap_task_set(
+            values,
+            n_resamples=int(ci_cfg.bootstrap.n_resamples),
+            random_seed=int(ci_cfg.bootstrap.seed),
+            **common_options,
+        )
+    raise ValueError(
+        "eval.confidence_interval.method must be 'student_t' or "
+        f"'bootstrap', got {method!r}"
     )
-    per_seed_lengths = jnp.mean(lengths, axis=(1, 2))  # (num_seeds,)
-    logger.info(
-        f"Overall Length: {float(jnp.mean(per_seed_lengths)):.3f}+-{float(jnp.std(per_seed_lengths)):.3f}"
-    )
+
+
+def _metric_bounds(metric: str, *, finite: bool) -> tuple[float, float]:
+    if metric == "return" and finite:
+        return 0.0, 1.0
+    return 0.0, np.inf
+
+
+def _format_ci(ci: ConfidenceInterval) -> str:
+    return f"{ci.mean:.3f} [{ci.lower:.3f}, {ci.upper:.3f}]"
+
+
+def _summary_row(
+    *,
+    task_set: str,
+    scope: str,
+    formula: str,
+    metric: str,
+    ci: ConfidenceInterval,
+    num_seeds: int,
+    num_formulas: int,
+    metadata: dict[str, str | int | float | bool],
+) -> dict[str, str | int | float | bool]:
+    return {
+        "task_set": task_set,
+        "scope": scope,
+        "formula": formula,
+        "metric": metric,
+        "mean": ci.mean,
+        "ci_lower": ci.lower,
+        "ci_upper": ci.upper,
+        "num_seeds": num_seeds,
+        "num_formulas": num_formulas,
+        **metadata,
+    }
+
+
+def _write_csv(
+    path: Path,
+    fieldnames: list[str],
+    rows: list[dict[str, object]],
+) -> None:
+    with path.open(mode="w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 if __name__ == "__main__":

@@ -6977,6 +6977,7 @@ packages:
   - mujoco-mjx>=3.11.0,<4
   - wandb>=0.23.1,<0.24
   - pyarrow>=22.0.0,<23
+  - scipy>=1.14,<2
   requires_python: '>=3.12,<3.13'
 - pypi: https://files.pythonhosted.org/packages/05/7f/798705f5296a58ca505d600456748d1be48078eac8a7050d8a98bc9edb89/decorator-5.3.1-py3-none-any.whl
   name: decorator
