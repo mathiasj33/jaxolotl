@@ -413,7 +413,9 @@ class FrankaZoneEnv(
         return jnp.where(distance < params.zone_radius, indices, -1)
 
     def assignments(self) -> list[Assignment]:  # type: ignore[override]
-        return Assignment.zero_or_one_propositions(set(self.propositions))
+        assignments = [Assignment(color) for color in self.propositions]
+        assignments.append(Assignment(frozenset()))  # empty assignment
+        return assignments
 
     @override
     def get_renderer(self, params: EnvParams, **kwargs) -> "BaseRenderer[ObsFeatures]":

@@ -467,8 +467,13 @@ class PPOSafe(RLAlgorithm):
         data = (trajs, advantages, targets, cost_advantages, cost_targets)
         data = jax.tree.map(lambda x: x.reshape((num_transitions,) + x.shape[2:]), data)
         shuffled = jax.tree.map(lambda x: jnp.take(x, permutation, axis=0), data)
+        # Explicit minibatch size rather than -1: a -1 cannot be inferred for
+        # zero-size leaves (e.g. avoid-clause arrays of avoid-free tasks).
+        minibatch_size = num_transitions // self.config.num_minibatches
         minibatches = jax.tree.map(
-            lambda x: x.reshape((self.config.num_minibatches, -1) + x.shape[1:]),
+            lambda x: x.reshape(
+                (self.config.num_minibatches, minibatch_size) + x.shape[1:]
+            ),
             shuffled,
         )
         return minibatches

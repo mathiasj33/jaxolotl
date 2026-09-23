@@ -134,7 +134,7 @@ class Curriculum[TSample, TJaxSample: eqx.Module](eqx.Module):
             samples = batcher.batch(samples_list, env, num_parallel=num_parallel)
             logger.info("Finished batching curriculum samples.")
             self.samples = jax.tree.map(  # shape: (num_stages, num_samples, ...)
-                lambda x: x.reshape(len(stages), -1, *x.shape[1:]),
+                lambda x: x.reshape(len(stages), num_samples, *x.shape[1:]),
                 samples,
             )
         else:

@@ -42,6 +42,15 @@ def test_vendored_model_has_only_minimal_collision_geoms():
     assert model.opt.timestep == 0.005
 
 
+def test_assignments_are_singletons_in_zone_order_plus_empty():
+    # The GenZ-LTL observation reduction indexes zone rows by assignment index,
+    # so assignment i must be the singleton of proposition/zone i, empty last.
+    env = FrankaZoneEnv(num_colors=5)
+    assignments = env.assignments()
+    assert [set(a) for a in assignments[:-1]] == [{p} for p in env.propositions]
+    assert len(assignments[-1]) == 0
+
+
 def test_compact_reset_is_reachable_non_overlapping_and_clear():
     env = FrankaZoneEnv(num_colors=16)
     params = env.default_params

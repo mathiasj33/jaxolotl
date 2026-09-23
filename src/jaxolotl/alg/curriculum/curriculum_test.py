@@ -92,6 +92,26 @@ def test_forwards_num_parallel_to_batcher():
     assert RecordingBatcher.num_parallel == 3
 
 
+def test_batches_zero_size_leaves():
+    """Leaves with a zero-sized dimension (e.g. avoid clauses when no sample
+    has an avoid formula) must survive the per-stage reshape."""
+
+    class ZeroWidthBatcher:
+        @staticmethod
+        def batch(samples, env, num_parallel=1):
+            del env, num_parallel
+            return Samples(jnp.zeros((len(samples), 0, 1)))
+
+    curriculum = Curriculum(
+        stages=[Stage(None), Stage(None)],
+        batcher=ZeroWidthBatcher(),  # type: ignore
+        env=None,  # type: ignore
+        num_samples=3,
+    )
+
+    assert curriculum.samples.values.shape == (2, 3, 0, 1)
+
+
 def test_nested_stage_selection_is_deterministic():
     stage = MultiRandomStage(
         stages=[
