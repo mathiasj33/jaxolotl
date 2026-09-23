@@ -1,6 +1,47 @@
 import random
+from collections.abc import Sequence
+from typing import override
 
 from jaxolotl.alg.curriculum.curriculum import Sampler
+from jaxolotl.ltl.logic.assignment import Assignment
+from jaxolotl.ltl.logic.boolean_parser import BooleanNode, FalseNode
+from jaxolotl.ltl.logic.utils import compute_sat
+
+
+class BooleanReachStayFormulaSampler(Sampler[str]):
+    """Sample feasible Boolean reach-and-remain objectives as LTL formulae."""
+
+    def __init__(
+        self,
+        reach_formulas: Sequence[BooleanNode],
+        avoid_formulas: Sequence[BooleanNode],
+        assignments: Sequence[Assignment],
+        avoid_prob: float = 0.5,
+    ):
+        if not reach_formulas:
+            raise ValueError("At least one reach formula must be provided.")
+        self.reach_formulas = reach_formulas
+        self.avoid_formulas = avoid_formulas
+        self.assignments = tuple(assignments)
+        self.avoid_prob = avoid_prob
+
+    @override
+    def sample(self, rng: random.Random) -> str:
+        reach = rng.choice(self.reach_formulas)
+        reach_sat = compute_sat(reach, self.assignments)
+        available_avoid = [
+            formula
+            for formula in self.avoid_formulas
+            if not reach_sat.issubset(compute_sat(formula, self.assignments))
+        ]
+        if not available_avoid or rng.random() > self.avoid_prob:
+            avoid = FalseNode()
+        else:
+            avoid = rng.choice(available_avoid)
+
+        if isinstance(avoid, FalseNode):
+            return f"FG ({reach})"
+        return f"(!({avoid}) U G({reach}))"
 
 
 class SimpleGFSampler(Sampler[str]):
