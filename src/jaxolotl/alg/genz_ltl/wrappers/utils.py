@@ -8,10 +8,17 @@ from jaxolotl.environments.wrappers.wrapper import EnvWrapper
 
 
 def wrap_env(
-    env: Environment | EnvWrapper, cfg: DictConfig, training: bool
+    env: Environment | EnvWrapper,
+    cfg: DictConfig,
+    training: bool,
+    terminate_on_success: bool = False,
 ) -> EnvWrapper | Environment:
     if training:
-        env = wrap_for_training(env, cfg, SubgoalWrapper)
+        env = wrap_for_training(
+            env,
+            cfg,
+            lambda env: SubgoalWrapper(env, terminate_on_success=terminate_on_success),
+        )
     else:
         finite = cfg.get("eval", {}).get("finite", False)
         env = LDBASubgoalWrapper(env, overwrite_finite=finite)

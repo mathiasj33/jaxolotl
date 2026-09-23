@@ -1,0 +1,74 @@
+# @package __global__
+
+defaults:
+  - /rl_alg: ppo_safe
+
+# ConveyorWorld tasks have no avoid-subgoals: sample single reach-only subgoals and
+# terminate the episode on success.
+alg:
+  wrap_env:
+    terminate_on_success: true
+
+curriculum:
+  make_stages:
+    _target_: jaxolotl.alg.genz_ltl.curriculum.generic_curriculum.make_stages
+    avoid_prob: 0.0
+  num_samples: 1e4
+  window: 256
+  adopt_prob: 0.1
+  min_coverage: 0.9
+
+model:
+  _target_: jaxolotl.alg.genz_ltl.model.model.GenZLTLModel
+  _recursive_: false
+  observation_reduction_fn:
+    _target_: jaxolotl.alg.genz_ltl.model.observation_reduction.GenericObservationReduction
+  env_net:
+    _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
+    hidden_sizes: [128]
+    out_size: 64
+    activation: ${act:tanh}
+  actor:
+    _target_: jaxolotl.rl.actor.discrete_actor.DiscreteActor
+    hidden_sizes: [64]
+    activation: ${act:relu}
+    use_epsilon: false
+  critic:
+    _target_: jaxolotl.networks.mlp.MLP
+    hidden_sizes: [64]
+    activation: ${act:softplus}
+    final_layer_activation: true
+  cost_critic:
+    _target_: jaxolotl.networks.mlp.MLP
+    hidden_sizes: [64]
+    activation: ${act:tanh}
+    final_layer_activation: false
+  lagrangian:
+    _target_: jaxolotl.networks.mlp.MLP
+    hidden_sizes: [64]
+    activation: ${act:softplus}
+    final_layer_activation: true
+
+rl_alg:
+  total_timesteps: 2e6
+  num_envs: 256
+  num_steps: 64
+  num_minibatches: 4
+  update_epochs: 8
+  gamma: 0.9
+  cost_gamma: 0.9
+  gae_lambda: 0.95
+  clip_eps: 0.2
+  ent_coef: 0.05
+  vf_coef: 0.5
+  cost_vf_coef: 1.0
+  lag_coef: 1.0
+  lr: 3e-4
+  max_grad_norm: 0.5
+  anneal_lr: false
+  adam_eps: 1e-8
+  target_cost: -0.1
+  min_lag: 1e-3
+  max_lag: 3.0
+
+save_freq: 1e5

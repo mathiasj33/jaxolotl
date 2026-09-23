@@ -5,7 +5,10 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from jaxolotl.alg.genz_ltl.wrappers.subgoal_wrapper import SubgoalWrapper
+from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
+    JaxReachAvoidSubgoal,
+)
+from jaxolotl.alg.genz_ltl.wrappers.subgoal_wrapper import SubgoalState, SubgoalWrapper
 from jaxolotl.environments.environment import Environment
 from jaxolotl.environments.observation_spec import ArraySpec
 from jaxolotl.ltl.logic.assignment import Assignment
@@ -74,6 +77,41 @@ class MockComplexEnvState(eqx.Module):
     """Mocks zone_env_nm.EnvState to contain the masked_colors array."""
 
     masked_colors: jax.Array
+
+
+def test_terminate_on_success():
+    env = FakeEnv()
+    params = env.default_params
+    key = jax.random.key(1)
+    action = jnp.array(0)
+    num_assignments = len(env.assignments())
+    # FakeEnv never satisfies any proposition, so the current assignment is always
+    # the empty one; a goal reaching it is satisfied immediately.
+    empty_assignment_idx = env.assignments().index(Assignment(frozenset()))
+
+    env_state, _ = env.reset(key, None, params)
+    goal = JaxReachAvoidSubgoal(
+        reach=jnp.asarray(empty_assignment_idx, dtype=jnp.int32),
+        avoid=-jnp.ones((num_assignments,), dtype=jnp.int32),
+        reach_one_hot=jnp.zeros((len(env.propositions),), dtype=jnp.int32),
+        avoid_one_hot=jnp.zeros((num_assignments,), dtype=jnp.int32),
+    )
+    state = SubgoalState(state=env_state, goal=goal)
+
+    transition = SubgoalWrapper(env, terminate_on_success=True).step(
+        key, state, action, params
+    )
+    assert bool(transition.info["subgoal_success"])
+    assert bool(transition.terminated)
+    assert transition.reward == 1.0
+    # The goal is not resampled in-episode.
+    assert int(transition.state.goal.reach) == empty_assignment_idx
+
+    transition = SubgoalWrapper(env).step(key, state, action, params)
+    assert bool(transition.info["subgoal_success"])
+    assert not bool(transition.terminated)
+    # By default a new goal is sampled in-episode instead.
+    assert int(transition.state.goal.reach) != empty_assignment_idx
 
 
 def test_sample_new_goal_excludes_current_assignment_and_reach():

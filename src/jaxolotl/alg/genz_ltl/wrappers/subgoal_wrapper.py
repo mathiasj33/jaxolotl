@@ -42,7 +42,13 @@ class SubgoalWrapper[
     TEnvParams,
     TObsFeatures: NamedTuple,
 ](EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]):
-    """A wrapper for one-subgoal-at-a-time training with ZoneEnv observation reduction."""
+    """A wrapper for one-subgoal-at-a-time training with ZoneEnv observation reduction.
+
+    If terminate_on_success is set, the episode terminates once the subgoal is reached;
+    otherwise a new subgoal is sampled in-episode and execution continues.
+    """
+
+    terminate_on_success: bool
 
     def __init__(
         self,
@@ -50,8 +56,10 @@ class SubgoalWrapper[
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
             | Environment[Any, Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
+        terminate_on_success: bool = False,
     ):
         super().__init__(env)
+        self.terminate_on_success = terminate_on_success
 
     @eqx.filter_jit
     def reset(
@@ -86,8 +94,12 @@ class SubgoalWrapper[
         safe = avoided & ~transition.terminated
         cost = jax.lax.cond(safe, lambda: -1.0, lambda: 1.0)
         terminated = transition.terminated | (cost > 0)
-        new_goal = self._sample_new_goal(assignment, state, subkey)
-        goal = jax.lax.cond(reached, lambda: new_goal, lambda: state.goal)
+        if self.terminate_on_success:
+            terminated = terminated | reached
+            goal = state.goal
+        else:
+            new_goal = self._sample_new_goal(assignment, state, subkey)
+            goal = jax.lax.cond(reached, lambda: new_goal, lambda: state.goal)
         reduced_obs = SubgoalObservation.from_obs(transition.observation, goal)
         new_state = SubgoalState(state=transition.state, goal=goal)
         return EnvTransition(

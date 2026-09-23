@@ -21,22 +21,27 @@ from jaxolotl.ltl.logic.assignment import Assignment
 
 
 class SubgoalSampler(Sampler[ReachAvoidSubgoal]):
-    def __init__(self, assignments: list[Assignment]):
+    def __init__(self, assignments: list[Assignment], avoid_prob: float = 0.5):
         self.assignments = assignments
+        self.avoid_prob = avoid_prob
 
     def sample(self, rng: random.Random) -> ReachAvoidSubgoal:
         assignments = [assignment for assignment in self.assignments if assignment]
         reach = rng.choice(assignments)
         available = [assignment for assignment in assignments if assignment != reach]
         # Uniformly sample an avoid subset
-        avoid = [assignment for assignment in available if rng.random() < 0.5]
+        avoid = [
+            assignment for assignment in available if rng.random() < self.avoid_prob
+        ]
         return ReachAvoidSubgoal(reach=reach, avoid=avoid)
 
 
-def make_stages(env: Environment | EnvWrapper) -> list[CurriculumStage]:
+def make_stages(
+    env: Environment | EnvWrapper, avoid_prob: float = 0.5
+) -> list[CurriculumStage]:
     return [
         RandomCurriculumStage(
-            sampler=SubgoalSampler(env.assignments()),
+            sampler=SubgoalSampler(env.assignments(), avoid_prob=avoid_prob),
             threshold=None,
         )
     ]

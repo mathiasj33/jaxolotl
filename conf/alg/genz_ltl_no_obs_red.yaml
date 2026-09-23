@@ -1,0 +1,5 @@
+defaults:
+  - genz_ltl
+  - _self_
+
+name: genz_ltl_no_obs_red
