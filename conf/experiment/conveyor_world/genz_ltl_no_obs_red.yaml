@@ -23,6 +23,9 @@ model:
   _recursive_: false
   observation_reduction_fn:
     _target_: jaxolotl.alg.genz_ltl.model.observation_reduction.GenericObservationReduction
+  # Larger than the other algs' conveyor env nets because the observation reduction
+  # concatenates the reach/avoid subgoal one-hots into the observation, so the env net
+  # also encodes the task.
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FlattenMLPEncoder
     hidden_sizes: [128]

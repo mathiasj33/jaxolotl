@@ -19,7 +19,11 @@ from tqdm import tqdm
 import jaxolotl
 from jaxolotl.environments.wrappers.time_limit_wrapper import TimeLimitWrapper
 from jaxolotl.environments.wrappers.vectorize_wrapper import VectorizeWrapper
-from jaxolotl.eval.utils import load_model_checkpoints, make_eval_fn
+from jaxolotl.eval.utils import (
+    load_batched_gcvf,
+    load_model_checkpoints,
+    make_eval_fn,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +31,11 @@ logger = logging.getLogger(__name__)
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="eval_curves")
 def main(cfg: DictConfig):
     # build environment
+    discretize = cfg.alg.name == "gcrl_ltl"
     env, env_params = jaxolotl.make(
-        cfg.env.name, reset_source=cfg.env.get("reset_source", "test")
+        cfg.env.name,
+        reset_source=cfg.env.get("reset_source", "test"),
+        discretize=discretize,
     )
     env = TimeLimitWrapper(env)
     env = hydra.utils.call(cfg.alg.wrap_env, env, cfg, training=False)
@@ -45,7 +52,26 @@ def main(cfg: DictConfig):
         cfg, env, env_params, key=model_key
     )
     num_seeds = len(seeds)
-    agents = hydra.utils.instantiate(cfg.alg.agent, models)
+
+    if cfg.alg.name == "gcrl_ltl":
+        # The GCVF is only trained for the final models; evaluate every
+        # checkpoint with its seed's final GCVF (as in the original GCRL-LTL
+        # implementation).
+        gcvf, gcvf_seeds = load_batched_gcvf(cfg, env, env_params, key=model_key)
+        if gcvf_seeds != seeds:
+            raise ValueError(
+                f"Checkpoint and GCVF seed sets do not match: {seeds} != {gcvf_seeds}."
+            )
+        gcvf_params, gcvf_static = eqx.partition(gcvf, eqx.is_array)
+        gcvf_params = jax.tree.map(
+            lambda x: jnp.broadcast_to(x[None], (len(checkpoint_steps),) + x.shape),
+            gcvf_params,
+        )
+        gcvf = eqx.combine(gcvf_params, gcvf_static)
+        agents_factory = hydra.utils.instantiate(cfg.alg.agent, models, _partial_=True)
+        agents = agents_factory(gcvf=gcvf)
+    else:
+        agents = hydra.utils.instantiate(cfg.alg.agent, models)
 
     # set up evaluator
     eval_fn = make_eval_fn(cfg, num_seeds, len(cfg.formulas), return_trajs=False)

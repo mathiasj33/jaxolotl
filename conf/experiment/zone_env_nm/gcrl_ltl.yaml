@@ -1,0 +1,5 @@
+# @package __global__
+
+defaults:
+  - /experiment/zone_env/gcrl_ltl
+  - _self_
