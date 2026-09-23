@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from jaxolotl.alg.genz_ltl.reach_avoid.jax_reach_avoid_subgoal import (
     JaxReachAvoidSubgoal,
 )
+from jaxolotl.environments.letter_world import letter_world
 from jaxolotl.environments.observation_spec import (
     ArraySpec,
     ObservationSpec,
@@ -70,6 +71,52 @@ class GenericObservationReduction(ObservationReductionFunction[NamedTuple, Named
         del params
         size = input_spec.flat_observation_size + num_propositions + num_assignments
         return ObservationSpec(reduced=ArraySpec((size,), jnp.float32))
+
+
+class LetterWorldObservationReduction(
+    ObservationReductionFunction[letter_world.ObsFeatures, letter_world.EnvParams]
+):
+    """Reduce LetterWorld observations to reach, avoid, and agent locations."""
+
+    @override
+    def __call__(
+        self, features: letter_world.ObsFeatures, subgoal: JaxReachAvoidSubgoal
+    ) -> ReducedObservation:
+        """Return a single-channel grid induced by the current subgoal."""
+        grid = features.grid
+        num_letters = grid.shape[-1] - 1
+        letter_grid = grid[..., :num_letters]
+
+        reach_index = jnp.clip(subgoal.reach, 0, num_letters - 1)
+        reach_is_letter = (subgoal.reach >= 0) & (subgoal.reach < num_letters)
+        reach_mask = (letter_grid[..., reach_index] > 0) & reach_is_letter
+
+        avoid_indices = jnp.clip(subgoal.avoid, 0, num_letters - 1)
+        avoid_is_letter = (subgoal.avoid >= 0) & (subgoal.avoid < num_letters)
+        avoid_mask = jnp.any(
+            (letter_grid[..., avoid_indices] > 0) & avoid_is_letter,
+            axis=-1,
+        )
+        agent_mask = grid[..., -1] > 0
+
+        reduced = jnp.zeros(grid.shape[:2], dtype=jnp.float32)
+        reduced = jnp.where(avoid_mask, 0.5, reduced)
+        reduced = jnp.where(reach_mask, 1.0, reduced)
+        reduced = jnp.where(agent_mask, 0.2, reduced)
+        return ReducedObservation(reduced=reduced[..., None])
+
+    @override
+    def output_spec(
+        self,
+        input_spec: ObservationSpec,
+        params: letter_world.EnvParams,
+        num_assignments: int,
+        num_propositions: int,
+    ) -> ObservationSpec:
+        del input_spec, num_assignments, num_propositions
+        return ObservationSpec(
+            reduced=ArraySpec((params.grid_size, params.grid_size, 1), jnp.float32)
+        )
 
 
 class ZoneEnvObservationReduction(
