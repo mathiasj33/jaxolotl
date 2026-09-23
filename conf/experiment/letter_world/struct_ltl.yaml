@@ -3,17 +3,18 @@
 defaults:
   - /rl_alg: ppo
   - /model/sequence: alibi_attention
+  - _self_
 
 curriculum:
   make_stages:
-    _target_: jaxolotl.alg.deep_ltl.curriculum.letter_world_curriculum.make_stages TODO
-  num_samples: 1e5
+    _target_: jaxolotl.alg.struct_ltl.curriculum.letter_world_curriculum.make_stages
+  num_samples: 1e4
   window: 512
   adopt_prob: 0.1
   min_coverage: 0.9
 
 model:
-  _target_: jaxolotl.alg.deep_ltl.model.model.DeepLTLModel
+  _target_: jaxolotl.alg.struct_ltl.model.model.StructLTLModel
   _recursive_: false
   env_net:
     _target_: jaxolotl.networks.observation_encoder.FieldConvEncoder
@@ -32,9 +33,14 @@ model:
     activation: ${act:tanh}
   sequence:
     embedding_dim: 32
-    deep_sets:
+    clause_mlp:
       _target_: jaxolotl.networks.deep_sets.DeepSets
-      hidden_sizes: [32, 32]
+      hidden_sizes: []
+      out_size: 32
+      activation: ${act:relu}
+    disjunct_mlp:
+      _target_: jaxolotl.networks.deep_sets.DeepSets
+      hidden_sizes: []
       out_size: 32
       activation: ${act:relu}
 
