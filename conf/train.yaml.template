@@ -1,9 +1,9 @@
 defaults:
   - env: zone_env_nm
   - alg: struct_ltl
+  - _self_
   - experiment: ${env}/${alg}
   - hydra: training_run
-  - _self_
 
 run: tmp
 num_seeds: 10
