@@ -16,7 +16,7 @@ def test_representative_experiment_models_can_be_constructed():
         ("tokenized_ltl", "warehouse"),
         ("ltl2action", "letter_world"),
         ("genz_ltl", "zone_env"),
-        ("genz_ltl", "warehouse"),
+        ("genz_ltl_flat", "warehouse"),
     )
     config_dir = Path(__file__).parents[3] / "conf"
 
