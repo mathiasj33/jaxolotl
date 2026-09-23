@@ -1,0 +1,15 @@
+defaults:
+  - env: zone_env_nm
+  - hydra: simple
+  - _self_
+
+type: eval # eval or training
+algorithms:
+  - struct_ltl
+runs:
+  - main
+
+smooth_radius: 10
+bin_size: 65536  # for aggregating training steps
+confidence_level: 0.95
+save: false

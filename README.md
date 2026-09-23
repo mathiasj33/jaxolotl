@@ -146,9 +146,12 @@ This script stores the following training outputs in `runs/${env}/${alg}/${run}`
 
 To plot training performance:
 ```bash
-pixi run -e gpu python scripts/plotting/plot_training_curves.py
+pixi run python scripts/plotting/plot_curves.py type=training env=warehouse \
+  'algorithms=[sem_ltl,deep_ltl]' 'runs=[pretrained]'
 ```
-**NOTE**: you will need to edit which runs to plot inside `scripts/plotting/plot_training_curves.py`
+
+Set `save=true` to save the figure to `plots/training_curves.pdf` instead of
+displaying it. Plot settings can be overridden through [plot_curves.yaml](conf/plot_curves.yaml).
 
 > [!NOTE]
 > If you run into OOM errors, split an experiment into seed batches using the same
@@ -185,9 +188,13 @@ Note that only final pretrained models are provided, so evaluation curves can on
 
 To plot evaluation curves:
 ```bash
-pixi run -e gpu python scripts/plotting/plot_eval_curves.py
+pixi run python scripts/plotting/plot_curves.py type=eval env=warehouse \
+  'algorithms=[struct_ltl]' 'runs=[tmp]'
 ```
-**NOTE**: you will need to edit which runs to plot inside `scripts/plotting/plot_eval_curves.py`
+
+Set `save=true` to save the figure to `plots/eval_curves.pdf` instead of
+displaying it. Plot settings, including smoothing and confidence level,
+can be overridden through [plot_curves.yaml](conf/plot_curves.yaml).
 
 ### Ablation Studies
 

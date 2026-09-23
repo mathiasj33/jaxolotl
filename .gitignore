@@ -3,6 +3,7 @@
 /paper/
 outputs/
 runs/
+plots/
 *.zip
 data/
 dependencies/
@@ -20,6 +21,7 @@ visualize_env.yaml
 visualize_traj.yaml
 combine_models.yaml
 precompute_curriculum.yaml
+plot_curves.yaml
 
 # Pixi environments
 .pixi

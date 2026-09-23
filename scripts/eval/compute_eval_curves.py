@@ -1,5 +1,5 @@
 """Compute evaluation curves by evaluating model checkpoints over time on a fixed set of
-formulas. Saves results to a CSV file for later plotting (see scripts/plotting/plot_eval_curves.py).
+formulas. Saves results to a CSV file for later plotting (see scripts/plotting/plot_curves.py).
 """
 
 import csv
@@ -97,9 +97,7 @@ def save_results(
 ):
     """Saves averaged results to a CSV file."""
 
-    csv_path = (
-        f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval/checkpoints.csv"
-    )
+    csv_path = f"runs/{cfg.env.name}/{cfg.alg.name}/{cfg.run}/eval/checkpoints.csv"
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     fieldnames = [
