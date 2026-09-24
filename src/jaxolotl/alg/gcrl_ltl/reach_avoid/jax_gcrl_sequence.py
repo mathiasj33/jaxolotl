@@ -25,10 +25,22 @@ def _step_avoid_atoms(
 ) -> list[str]:
     """Ordered avoid atoms for one step, folding in the zones forbidden by a
     negative-only reach clause so the policy is steered away from them."""
-    atoms = [next(iter(clause.pos)) for clause in avoid]
+    atoms: list[str] = []
+    for clause in avoid:
+        if len(clause.pos) > 0:
+            assert len(clause.pos) == 1
+            assert len(clause.neg) == 0
+            atoms += list(clause.pos)
+        if len(clause.neg) > 0:
+            assert len(clause.neg) == 1
+            assert len(clause.pos) == 0
+            # don't add negative avoid atoms to the list, e.g. for FG a we must reach a
+            # and then avoid !a, GCRL-LTL models this simply as always conditioning on
+            # reaching a without explicit avoidance.
     if not isinstance(reach, EpsilonType) and len(reach) == 1:
         clause = reach[0]
         if len(clause.pos) == 0:
+            # e.g. F a & G!b, after a is reached, there is no more reach clause
             atoms += [atom for atom in sorted(clause.neg) if atom not in atoms]
     return atoms
 
@@ -99,9 +111,13 @@ class JaxGCRLSequence(JaxReachAvoidSequence):
         for seq in seqs:
             for reach, avoid in seq.clauses:
                 for clause in avoid:
-                    if len(clause.neg) > 0:
+                    if len(clause.neg) > 0 and len(clause.pos) > 0:
                         raise ValueError(
-                            "Avoid clauses for GCRL must not contain negated literals."
+                            "Avoid clauses for GCRL must not contain both negative and positive literals."
+                        )
+                    if len(clause.neg) > 1:
+                        raise ValueError(
+                            "Avoid clauses for GCRL must contain at most one negative literal."
                         )
                     if len(clause.pos) > 1:
                         raise ValueError(

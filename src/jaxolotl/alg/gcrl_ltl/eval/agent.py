@@ -26,6 +26,7 @@ class GCRLAgent(Agent[LDBAWrapperState]):
 
     ldba_state: jax.Array
     seqs: JaxGCRLSequence  # selected sequences for each environment
+    first_step_is_eps: jax.Array  # (num_envs,) bool
     eps_enabled: jax.Array  # (num_envs,) bool
     vmap_choose_sequences: bool
     unsafe_threshold: float  # threshold for unsafe actions
@@ -45,6 +46,7 @@ class GCRLAgent(Agent[LDBAWrapperState]):
             None,  # type: ignore
             None,  # type: ignore
             None,  # type: ignore
+            None,  # type: ignore
             vmap_choose_sequences,
             unsafe_threshold,
             gcvf,
@@ -57,7 +59,9 @@ class GCRLAgent(Agent[LDBAWrapperState]):
         num_envs = self.ldba_state.shape[0]
 
         # First, get the action distribution without avoidance based on the current reach proposition
-        goal_obsv = GoalObservation.from_obs(obsv, self.seqs.reach_props[:, 0])
+        reach_idx = jnp.where(self.first_step_is_eps, 1, 0)
+        reach_props = self.seqs.reach_props[jnp.arange(num_envs), reach_idx]
+        goal_obsv = GoalObservation.from_obs(obsv, reach_props)
         action_dist: distrax.Categorical = cast(
             distrax.Categorical, self.model.get_action(goal_obsv)
         )
@@ -69,7 +73,9 @@ class GCRLAgent(Agent[LDBAWrapperState]):
             repeated_obs = jax.tree.map(
                 lambda x: jnp.repeat(x, max_avoid, axis=0), obsv
             )
-            avoid_props = self.seqs.avoid_props[:, 0, :]  # (num_envs, max_avoid)
+            avoid_props = self.seqs.avoid_props[
+                jnp.arange(num_envs), reach_idx, :
+            ]  # (num_envs, max_avoid)
             valid_mask = avoid_props != -1
             avoid_props = jnp.where(
                 valid_mask, avoid_props, 0
@@ -135,11 +141,13 @@ class GCRLAgent(Agent[LDBAWrapperState]):
         eps_enabled = jax.vmap(self._is_epsilon_enabled, in_axes=(None, 0, 0))(
             env, seq, assignment_index
         )
+        first_step_is_eps = seq.reach[:, 0, 0] == len(env._env.assignments())
         return GCRLAgent(
             model=self.model,
             ldba_state=state.ldba_state,
             seqs=seq,
             eps_enabled=eps_enabled,
+            first_step_is_eps=first_step_is_eps,
             vmap_choose_sequences=self.vmap_choose_sequences,
             unsafe_threshold=self.unsafe_threshold,
             gcvf=self.gcvf,
