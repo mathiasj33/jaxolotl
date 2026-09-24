@@ -11,5 +11,11 @@ runs:
 
 smooth_radius: 10
 bin_size: 65536  # for aggregating training steps
-confidence_level: 0.95
+confidence_interval:
+  method: student_t  # student_t or bootstrap
+  confidence_level: 0.95
+  bootstrap:
+    n_resamples: 10000
+    seed: 42
+
 save: false
