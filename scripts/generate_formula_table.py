@@ -1,4 +1,4 @@
-"""Generate LaTeX tables of the finite and infinite evaluation LTL specifications.
+"""Generate LaTeX tables of the finite, infinite and persistence evaluation LTL specifications.
 
 Formulas are read from the Hydra `formulas` config group (`conf/formulas/<env>/<task_set>.yaml`)
 and translated token by token, so the table keeps the parenthesisation of the source formulas.
@@ -50,6 +50,11 @@ SECTIONS = {
         "Infinite Horizon",
         r"\psi",
         "Infinite-horizon evaluation specifications.",
+    ),
+    "reach_stay": (
+        "Persistence",
+        r"\chi",
+        "Persistence evaluation specifications.",
     ),
 }
 
@@ -159,7 +164,6 @@ def build_table(
         r"\centering",
         r"\small",
         rf"\label{{{label}}}",
-        r"\resizebox{\textwidth}{!}{%",
         rf"\begin{{tabular}}{{c l p{{{formula_width}}}}}",
         r"\toprule",
         r" & {ID} & {LTL Formula} \\",
@@ -183,7 +187,7 @@ def build_table(
                 )
                 index += 1
             lines += [r" & & \\"] * (span - len(formulas))
-    lines += [r"\bottomrule", r"\end{tabular}", "}", r"\end{table}"]
+    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
     return "\n".join(lines) + "\n"
 
 

@@ -1,8 +1,9 @@
 """Generate LaTeX tables of the training hyperparameters of each method, one table per environment.
 
 Hyperparameters are read from the composed Hydra training config (`train` with `env=<env>` and
-`alg=<alg>`, i.e. `conf/experiment/<env>/<alg>.yaml`), and the maximum episode length from the
-environment's default parameters. An environment family (e.g. Conveyor-1 to -10 and
+`alg=<alg>`, i.e. `conf/experiment/<env>/<alg>.yaml`), the maximum episode length from the
+environment's default parameters, and the size of the precomputed reset pool from the
+`precompute` config. An environment family (e.g. Conveyor-1 to -10 and
 ConveyorSimple-1 to -32) gets a single table, in which values that differ between its
 environments are shown as a range. Adjacent methods sharing a value are merged into one `\\spanval` cell, and
 settings that do not apply to a method are marked N/A. Rows and sections that apply to none of
@@ -107,9 +108,17 @@ def _curriculum(key: str) -> Callable[[Config], Any]:
     return getter
 
 
+def _curriculum_samples(cfg: Config) -> int:
+    """Precomputed tasks per curriculum stage (an integer, as in `jaxolotl.alg.curriculum.factory`)."""
+    return int(_lookup(cfg, "curriculum.num_samples"))
+
+
 TASK_SETS = ("finite", "infinite")
 TRAIN_LENGTH = "Max episode length"
 EVAL_LENGTH = "Max episode length (eval, {})"
+SAMPLES = "Samples per stage"
+# rows always in scientific notation, so that they read alike across tables
+SCIENTIFIC_ROWS = {SAMPLES}
 
 # (category, [(hyperparameter, getter)]). A getter is a config key, alternative keys (the first
 # present one is used) or a function of the config; a missing value means N/A.
@@ -147,6 +156,7 @@ SECTIONS: list[tuple[str, list[tuple[str, Getter]]]] = [
     (
         "Curriculum",
         [
+            (SAMPLES, _curriculum_samples),
             ("Episode window", _curriculum("window")),
             ("Adoption prob.", _curriculum("adopt_prob")),
             ("Min coverage", _curriculum("min_coverage")),
@@ -229,6 +239,7 @@ SECTIONS: list[tuple[str, list[tuple[str, Getter]]]] = [
     (
         "Environment",
         [
+            ("Precomputed resets", "env.precomputed_resets"),
             (TRAIN_LENGTH, "env.max_steps_in_episode"),
             *(
                 (
@@ -438,6 +449,9 @@ def load_config(env: str, alg: str) -> Config | None:
     assert isinstance(container, dict)
     environment, env_params = jaxolotl.make(cfg.env.name)
     container["env"]["max_steps_in_episode"] = env_params.max_steps_in_episode
+    # As in `scripts/train.py`; native resets use no precomputed pool.
+    if cfg.env.get("reset_source", "train") != "native":
+        container["env"]["precomputed_resets"] = precomputed_resets(env)
     # As in `jaxolotl.alg.curriculum.factory.wrap_for_training`.
     stages = hydra.utils.call(cfg.curriculum.make_stages, environment)
     skip = cfg.curriculum.get("skip_curriculum", False)
@@ -446,6 +460,14 @@ def load_config(env: str, alg: str) -> Config | None:
         task_set: eval_max_steps(env, task_set) for task_set in TASK_SETS
     }
     return container
+
+
+@functools.cache
+def precomputed_resets(env: str) -> int:
+    """Size of the environment's precomputed reset pool per split, which
+    `scripts/precompute_resets.py` rounds up to whole batches of `num_envs` resets."""
+    cfg = compose("precompute", overrides=[f"env={env}"])
+    return int(cfg.num_envs * math.ceil(cfg.num_resets / cfg.num_envs))
 
 
 @functools.cache
@@ -564,7 +586,7 @@ def build_table(family: str) -> str:
         for hyperparameter, _ in rows:
             raws = [columns[name][index] for name in names]
             index += 1
-            scientific = _row_notation(raws)
+            scientific = hyperparameter in SCIENTIFIC_ROWS or _row_notation(raws)
             cells = [aggregate(raw, scientific) for raw in raws]
             if any(text is not None for text, _ in cells):
                 shown.append((hyperparameter, cells))
