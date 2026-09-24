@@ -23,6 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import hydra
 import numpy as np
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
@@ -95,6 +96,17 @@ def _sequence_model(cfg: Config) -> str | None:
     return encoder.upper() if encoder else None
 
 
+def _curriculum(key: str) -> Callable[[Config], Any]:
+    """Curriculum manager settings, which are unused (N/A) with a single-stage curriculum."""
+
+    def getter(cfg: Config) -> Any:
+        if cfg["curriculum_stages"] == 1:
+            return None
+        return _lookup(cfg, f"curriculum.{key}")
+
+    return getter
+
+
 TASK_SETS = ("finite", "infinite")
 TRAIN_LENGTH = "Max episode length"
 EVAL_LENGTH = "Max episode length (eval, {})"
@@ -135,9 +147,9 @@ SECTIONS: list[tuple[str, list[tuple[str, Getter]]]] = [
     (
         "Curriculum",
         [
-            ("Episode window", "curriculum.window"),
-            ("Adoption prob.", "curriculum.adopt_prob"),
-            ("Min coverage", "curriculum.min_coverage"),
+            ("Episode window", _curriculum("window")),
+            ("Adoption prob.", _curriculum("adopt_prob")),
+            ("Min coverage", _curriculum("min_coverage")),
         ],
     ),
     (
@@ -424,8 +436,12 @@ def load_config(env: str, alg: str) -> Config | None:
     cfg = compose("train", overrides=[f"env={env}", f"alg={alg}"])
     container = OmegaConf.to_container(cfg, resolve=False)
     assert isinstance(container, dict)
-    _, env_params = jaxolotl.make(cfg.env.name)
+    environment, env_params = jaxolotl.make(cfg.env.name)
     container["env"]["max_steps_in_episode"] = env_params.max_steps_in_episode
+    # As in `jaxolotl.alg.curriculum.factory.wrap_for_training`.
+    stages = hydra.utils.call(cfg.curriculum.make_stages, environment)
+    skip = cfg.curriculum.get("skip_curriculum", False)
+    container["curriculum_stages"] = 1 if skip else len(stages)
     container["env"]["eval_max_steps_in_episode"] = {
         task_set: eval_max_steps(env, task_set) for task_set in TASK_SETS
     }
