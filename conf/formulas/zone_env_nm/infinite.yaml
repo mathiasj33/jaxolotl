@@ -6,3 +6,5 @@
 - "FG purple & G !yellow"
 - "G ((green | yellow) => F red) & FG (green | purple)"
 - "F (purple & F (green | red)) & FG yellow"
+- "F ((purple | yellow) & F ((purple | red) & F green)) & GF red & GF yellow"
+- "F (green & F (red & F green)) & F purple & GF red & GF yellow"

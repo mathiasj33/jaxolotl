@@ -6,3 +6,5 @@
 - "F (green & (!red U yellow)) & F purple"
 - "F (yellow | purple | red) & (!yellow U green)"
 - "F purple & F green & F yellow & F red"
+- "F ((purple | yellow) & F ((purple | red) & F green))"
+- "(!yellow U purple) & F (green & F (red & F green))"
