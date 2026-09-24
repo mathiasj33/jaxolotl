@@ -39,6 +39,10 @@ ENV_LABELS = {
     "franka_zone_env": "FrankaZoneEnv",
     "warehouse": "Warehouse",
 }
+# task set -> envs left out of its table (e.g. task sets not used in the paper's results)
+EXCLUDED_ENVS = {
+    "infinite": {"zone_env_nm"},
+}
 # task set -> (section title, formula ID symbol, caption of the standalone table)
 SECTIONS = {
     "finite": (
@@ -174,7 +178,10 @@ def build_table(
         if len(task_sets) > 1:
             lines += [rf"\multicolumn{{3}}{{c}}{{\textit{{{title}}}}} \\", r"\midrule"]
         index = 1
-        groups = [(env, load_formulas(env, task_set)) for env in envs]
+        excluded = EXCLUDED_ENVS.get(task_set, set())
+        groups = [
+            (env, load_formulas(env, task_set)) for env in envs if env not in excluded
+        ]
         groups = [(env, formulas) for env, formulas in groups if formulas]
         for g, (env, formulas) in enumerate(groups):
             if g > 0:
