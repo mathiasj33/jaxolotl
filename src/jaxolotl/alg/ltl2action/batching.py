@@ -44,7 +44,7 @@ class FormulaClosureBatcher(SampleBatcher[str, JaxFormulaClosureGraph]):
         formula_to_index = {f: i for i, f in enumerate(unique_formulas)}
         inverse = np.array([formula_to_index[f] for f in samples], dtype=np.int32)
 
-        deduped = _dedup_graphs(unique.graphs)
+        deduped = _dedup_graphs(unique.graphs)  # type: ignore
         if deduped is None:
             # Expand the materialized representation to one closure per sample.
             return jax.tree.map(lambda x: jnp.asarray(np.asarray(x)[inverse]), unique)
@@ -71,7 +71,7 @@ def _dedup_graphs(
     Returns per-(closure, state) indices into a table of unique graphs, or
     None when the table would exceed MAX_UNIQUE_GRAPHS.
     """
-    graphs = JaxFormulaGraph(*(np.asarray(leaf) for leaf in graphs))
+    graphs = JaxFormulaGraph(*(np.asarray(leaf) for leaf in graphs))  # type: ignore
     num_closures, num_states = graphs.nodes.shape[:2]
     key_to_index: dict[bytes, int] = {}
     members: list[JaxFormulaGraph] = []

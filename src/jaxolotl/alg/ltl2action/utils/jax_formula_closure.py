@@ -49,7 +49,7 @@ class StaticGraphTable:
     """
 
     def __init__(self, graphs: JaxFormulaGraph):
-        self.graphs = JaxFormulaGraph(*(np.asarray(leaf) for leaf in graphs))
+        self.graphs = JaxFormulaGraph(*(np.asarray(leaf) for leaf in graphs))  # type: ignore
         self._hash = hash(tuple(leaf.tobytes() for leaf in self.graphs))
 
     @property

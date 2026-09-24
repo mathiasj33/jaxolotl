@@ -30,7 +30,9 @@ def test_safety_residual_accepts_under_finite_semantics():
     b_idx = assignments.index(Assignment("b"))
 
     batched = JaxFormulaClosureGraph.from_closure_graphs(
-        [_build_closure("G !b & F a")], env, finite=True
+        [_build_closure("G !b & F a")],
+        env,  # type: ignore
+        finite=True,
     )
 
     init = int(batched.initial_state[0])
@@ -48,9 +50,11 @@ def test_safety_residual_accepts_under_finite_semantics():
 def test_finite_flag_is_a_no_op_for_co_safe_formulas():
     env = _StubEnv()
 
-    default = JaxFormulaClosureGraph.from_closure_graphs([_build_closure("F a")], env)
+    default = JaxFormulaClosureGraph.from_closure_graphs([_build_closure("F a")], env)  # type: ignore
     finite = JaxFormulaClosureGraph.from_closure_graphs(
-        [_build_closure("F a")], env, finite=True
+        [_build_closure("F a")],
+        env,  # type: ignore
+        finite=True,
     )
 
     assert np.array_equal(
@@ -63,4 +67,4 @@ def test_missing_true_state_raises_without_finite():
     env = _StubEnv()
 
     with pytest.raises(AssertionError, match="True state not found"):
-        JaxFormulaClosureGraph.from_closure_graphs([_build_closure("G !b & F a")], env)
+        JaxFormulaClosureGraph.from_closure_graphs([_build_closure("G !b & F a")], env)  # type: ignore

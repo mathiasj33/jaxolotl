@@ -77,7 +77,7 @@ def test_output_spec_matches_reduced_shape() -> None:
     )
     spec = reduction.output_spec(
         input_spec,
-        params=None,
+        params=None,  # type: ignore
         num_assignments=_NUM_ASSIGNMENTS,
         num_propositions=_NUM_COLORS,
     )

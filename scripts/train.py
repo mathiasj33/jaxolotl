@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base="1.3", config_path="../conf", config_name="train")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig):  # noqa: PLR0915
     run_dir = Path.cwd()  # Automatically created by Hydra
     start_seed = int(cfg.start_seed)
     num_seeds = int(cfg.num_seeds)

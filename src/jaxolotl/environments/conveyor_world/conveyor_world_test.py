@@ -209,15 +209,15 @@ def test_multi_letter_propositions():
 def test_simplified_registration():
     env, params = registration.make("ConveyorWorldSimple-4")
     assert isinstance(env, ConveyorWorld)
-    assert params.chain_length == 4
-    assert params.simplified
+    assert params.chain_length == 4  # type: ignore
+    assert params.simplified  # type: ignore
     npt.assert_array_equal(np.asarray(env._start_pos), [1, 5])
 
 
 def test_registration():
     env, params = registration.make("ConveyorWorld-5")
     assert isinstance(env, ConveyorWorld)
-    assert params.chain_length == 5
+    assert params.chain_length == 5  # type: ignore
     assert env.propositions == ("a", "b", "c", "d", "e", "f")
 
 
@@ -241,7 +241,7 @@ def test_samplers_split_between_finals():
     chains = set()
     for _ in range(100):
         seq = sequence_sampler.sample(rng)
-        reach = tuple(node.name for node, _ in seq.reach_avoid_formulas)
+        reach = tuple(node.name for node, _ in seq.reach_avoid_formulas)  # type: ignore
         avoid = tuple(avoid for _, avoid in seq.reach_avoid_formulas)
         assert avoid == (None,) * 3
         chains.add(reach)

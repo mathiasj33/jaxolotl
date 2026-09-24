@@ -60,9 +60,7 @@ def load_batched_gcvf(
         len(env.propositions),
         key,
     )
-    return load_batched_models(
-        cfg, gcvf_model, model_directory=GCVF_DIRECTORY
-    )
+    return load_batched_models(cfg, gcvf_model, model_directory=GCVF_DIRECTORY)
 
 
 def load_batched_models(

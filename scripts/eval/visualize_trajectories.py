@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base="1.3", config_path="../../conf", config_name="visualize_traj")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig):  # noqa: PLR0915
     # build environment
     discretize = cfg.alg.name == "gcrl_ltl"
     env, env_params = jaxolotl.make(

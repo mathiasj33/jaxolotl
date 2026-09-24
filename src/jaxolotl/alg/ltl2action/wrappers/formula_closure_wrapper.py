@@ -106,7 +106,7 @@ class FormulaClosureWrapper[
             closure_state=options.task.initial_state,
         )
         formula_obs = _formula_obs(obs, state.closure, state.closure_state)
-        return state, formula_obs
+        return state, formula_obs  # type: ignore
 
     @eqx.filter_jit
     def step(
