@@ -4,3 +4,7 @@
 - "!(purple | yellow) U (red & F green)"
 - "!green U ((red | purple) & (!green U yellow))"
 - "((green | red) => (!yellow U purple)) U yellow"
+- "G !purple & F (red & F (green & F yellow))"
+- "!(green | purple | yellow) U (red & F (yellow & (!red U green)))"
+- "G !yellow & F (red & F (purple & F (green & F red)))"
+- "F ((red | green) & ((red => (!yellow U (purple & F green))) & (green => (!purple U (yellow & F red)))))"
