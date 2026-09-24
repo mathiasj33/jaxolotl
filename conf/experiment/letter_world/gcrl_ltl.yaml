@@ -6,7 +6,7 @@ defaults:
 curriculum:
   make_stages:
     _target_: jaxolotl.alg.gcrl_ltl.generic_curriculum.make_stages
-  num_samples: 1e5
+  num_samples: 1e4
   window: 256
   adopt_prob: 0.1
   min_coverage: 0.9

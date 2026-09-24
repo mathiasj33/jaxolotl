@@ -40,8 +40,8 @@ model:
 
 rl_alg:
   total_timesteps: 2e8
-  num_envs: 128
-  num_steps: 1024
+  num_envs: 1024
+  num_steps: 128
   num_minibatches: 4
   update_epochs: 5
   gamma: 0.998

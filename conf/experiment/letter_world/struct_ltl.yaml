@@ -9,7 +9,7 @@ curriculum:
   make_stages:
     _target_: jaxolotl.alg.struct_ltl.curriculum.letter_world_curriculum.make_stages
   num_samples: 1e4
-  window: 512
+  window: 256
   adopt_prob: 0.1
   min_coverage: 0.9
 
