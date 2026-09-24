@@ -1,0 +1,4 @@
+- "FG red"
+- "FG red & F (yellow & F green)"
+- "FG purple & G !yellow"
+- "G ((green | yellow) => F red) & FG (green | purple)"

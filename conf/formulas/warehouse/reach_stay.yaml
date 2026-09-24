@@ -1,0 +1,6 @@
+- "FG region_a"
+- "F (vase & region_b & (region_b U (!vase & region_b))) & FG region_b"
+- "FG region_b"
+- "FG vase & G !region_a"
+- "F vase & FG region_a"
+- "F crate & FG region_b"
