@@ -16,11 +16,15 @@
 </div>
 
 
-Jaxolotl is a unified framework providing high-performance [JAX](https://docs.jax.dev/en/latest/index.html) implementations of a wide range of algorithms and environments for LTL-conditioned multi-task RL. Our implementations provide speed-ups of up to 20-30x compared to standard PyTorch implementations.
+Jaxolotl is a unified framework providing high-performance
+[JAX](https://docs.jax.dev/en/latest/index.html) implementations of a wide range of
+algorithms and environments for LTL-conditioned multi-task RL. Our implementations
+provide end-to-end speed-ups of up to 220x compared to standard PyTorch
+implementations.
 
 <div align="center">
 
-[**Installation 🔧**](#installation-) | [**Algorithms 🤖**]() | [**Environments 🌍**]() | [**Performance 🚀**]() | [**Getting started ⚡**](#getting-started-)
+[**Installation 🔧**](#installation-) | [**Algorithms 🤖**](#algorithms-) | [**Environments 🌍**](#environments-) | [**Getting started ⚡**](#getting-started-)
 
 </div>
 
@@ -93,6 +97,7 @@ docker run --rm -it --gpus all \
 **Algorithm** | Finite | Infinite | Non-myopic | Curriculum | Task representation | Paper | Code
 --- | --- | --- | --- | --- | --- | --- | ---
 LTL2Action | ✅ | ❌ | ✅ | ✅ | Formula syntax tree | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/alg/ltl2action)
+GCRL-LTL | ✅ | ✅ | ❌ | ❌ | Proposition subgoal | [Link](https://papers.nips.cc/paper_files/paper/2023/hash/7b35a69f434b5eb07ed1b1ef16ace52c-Abstract-Conference.html) | [Link](src/jaxolotl/alg/gcrl_ltl)
 DeepLTL | ✅ | ✅ | ✅ | ✅ | Reach-avoid sequence | [Link](https://arxiv.org/abs/2410.04631) | [Link](src/jaxolotl/alg/deep_ltl)
 GenZ-LTL | ✅ | ✅ | ❌ | ❌ | Reach-avoid subgoal / observation reduction | [Link](https://arxiv.org/abs/2508.01561) | [Link](src/jaxolotl/alg/genz_ltl)
 SemLTL | ✅ | ✅ | ✅ | ✅ | Semantically labelled LDBA | [Link](https://arxiv.org/abs/2602.06746) | [Link](src/jaxolotl/alg/sem_ltl)
@@ -105,6 +110,7 @@ StructLTL | ✅ | ✅ | ✅ | ✅ | Boolean reach-avoid sequence | [Link](https:
 LetterWorld | Grid (7 × 7 × 13) | Discrete (4 directions) | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/environments/letter_world)
 ZoneEnv | Proprioception + lidar (69D) | Continuous (2D) | [Link](https://arxiv.org/abs/2102.06858) | [Link](src/jaxolotl/environments/zone_env)
 ZoneEnv-NM | Proprioception + lidar (69D) | Continuous (2D) | [Link](https://arxiv.org/abs/2602.14344) | [Link](src/jaxolotl/environments/zone_env)
+FrankaZoneEnv | Proprioception + range–bearing (72D) | Continuous (6D) | [Link](https://arxiv.org/abs/2604.24729) | [Link](src/jaxolotl/environments/franka_zone_env)
 Warehouse | Proprioception + lidar + region/inventory features (47D) | Hybrid (2D continuous + 5 discrete) | [Link](https://arxiv.org/abs/2602.14344) | [Link](src/jaxolotl/environments/warehouse_env)
 ConveyorWorld | Position (2D) | Discrete (4 directions) | [Link](https://arxiv.org/abs/2602.06746) | [Link](src/jaxolotl/environments/conveyor_world)
 
@@ -188,10 +194,6 @@ pixi run python scripts/plotting/plot_curves.py type=eval env=warehouse \
 Set `save=true` to save the figure to `plots/eval_curves.pdf` instead of
 displaying it. Plot settings, including smoothing and confidence level,
 can be overridden through [plot_curves.yaml](conf/plot_curves.yaml).
-
-### Ablation Studies
-
-This repository includes code for reproducing the ablation studies D.2.1 and D.2.2. See `conf/experiment/warehouse/tokenized_ltl.yaml` for a configuration of StructLTL with a flat sequence model, and `conf/experiment/warehouse/gcn_ltl.yaml` for the GNN configuration. To train StructLTL with a GRU encoder instead of the attention mechanism, specify `model/sequence=gru`.
 
 ## License
 
