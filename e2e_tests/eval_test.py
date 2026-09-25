@@ -1,4 +1,8 @@
-"""Test that verifies expected success rates for pretrained evaluation runs."""
+"""Test that verifies expected success rates for pretrained evaluation runs.
+
+Pretrained models are not bundled with the repository. Each case is skipped unless its
+final models exist under ``runs/<env name>/<alg>/<run>/models``.
+"""
 
 import re
 import shutil
@@ -7,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+
+from jaxolotl.utils.artifact_utils import discover_seed_models
 
 PROJECT_ROOT = Path(__file__).parents[1]
 SUCCESS_RATE_PATTERN = re.compile(
@@ -19,6 +25,7 @@ class EvaluationCase:
     name: str
     alg: str
     env: str
+    env_name: str
     task_set: str
     run: str
     expected_success_rate: float
@@ -35,12 +42,17 @@ class EvaluationCase:
             *self.extra_overrides,
         )
 
+    @property
+    def run_dir(self) -> Path:
+        return PROJECT_ROOT / "runs" / self.env_name / self.alg / self.run
+
 
 EVALUATION_CASES = (
     EvaluationCase(
         name="StructLTL/Zones-NM",
         alg="struct_ltl",
         env="zone_env_nm",
+        env_name="ZoneEnv-NM",
         task_set="finite",
         run="pretrained",
         expected_success_rate=0.952,
@@ -49,6 +61,7 @@ EVALUATION_CASES = (
         name="DeepLTL/Zones-NM",
         alg="deep_ltl",
         env="zone_env_nm",
+        env_name="ZoneEnv-NM",
         task_set="finite",
         run="pretrained",
         expected_success_rate=0.910,
@@ -57,6 +70,7 @@ EVALUATION_CASES = (
         name="GenZ-LTL/Zones-NM",
         alg="genz_ltl",
         env="zone_env_nm",
+        env_name="ZoneEnv-NM",
         task_set="finite",
         run="pretrained",
         expected_success_rate=0.811,
@@ -65,6 +79,7 @@ EVALUATION_CASES = (
         name="LTL2Action/Zones-NM",
         alg="ltl2action",
         env="zone_env_nm",
+        env_name="ZoneEnv-NM",
         task_set="finite",
         run="pretrained",
         expected_success_rate=0.557,
@@ -103,6 +118,9 @@ def require_cuda_gpu() -> None:
     ids=lambda case: case.name,
 )
 def test_evaluation_success_rate(case: EvaluationCase) -> None:
+    if not discover_seed_models(case.run_dir):
+        pytest.skip(f"no pretrained models found in {case.run_dir}")
+
     result = subprocess.run(
         [
             "pixi",

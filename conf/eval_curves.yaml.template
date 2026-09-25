@@ -7,7 +7,7 @@ defaults:
   - hydra: simple
   - _self_
 
-run: pretrained
+run: tmp
 eval:
   finite: ${task_set.finite}
   num_episodes: 50
