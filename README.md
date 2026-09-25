@@ -33,11 +33,6 @@ pixi install -e gpu
 pixi run -e gpu copy-templates
 ```
 
-To install the pretrained models:
-```bash
-pixi run -e gpu install-pretrained-models
-```
-
 ### Rabinizer 4
 
 We use [Rabinizer 4](https://www7.in.tum.de/~kretinsk/rabinizer4.html) for the
@@ -147,7 +142,7 @@ This script stores the following training outputs in `runs/${env}/${alg}/${run}`
 To plot training performance:
 ```bash
 pixi run python scripts/plotting/plot_curves.py type=training env=warehouse \
-  'algorithms=[sem_ltl,deep_ltl]' 'runs=[pretrained]'
+  'algorithms=[struct_ltl]' 'runs=[tmp]'
 ```
 
 Set `save=true` to save the figure to `plots/training_curves.pdf` instead of
@@ -166,7 +161,7 @@ To evaluate the trained models:
 pixi run -e gpu python scripts/eval/eval.py alg=struct_ltl env=warehouse task_set=finite run=tmp
 ```
 
-Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See [eval.yaml](conf/eval.yaml.template) for other configuration options.
+See [eval.yaml](conf/eval.yaml.template) for other configuration options.
 
 > [!NOTE]
 > If you run into OOM errors, the eval script supports `models_per_batch` and `formulas_per_batch` to control the evaluation parallelism. Lowering these will reduce memory requirements, at the expense of longer runtimes.
@@ -176,15 +171,13 @@ Pretrained models can be evaluated with `run=pretrained` (once they have been in
 
 To visualize trajectories for the trained policy on an LTL formula (both for drawing trajectories and rendering them in real-time):
 ```bash
-pixi run -e gpu python scripts/eval/visualize_trajectories.py alg=struct_ltl env=warehouse run=pretrained eval.formula="F (vase & region_a & X(!vase & region_a))"
+pixi run -e gpu python scripts/eval/visualize_trajectories.py alg=struct_ltl env=warehouse run=tmp eval.formula="F (vase & region_a & X(!vase & region_a))"
 ```
 
 To compute evaluation curves:
 ```bash
 pixi run -e gpu python scripts/eval/compute_eval_curves.py alg=struct_ltl env=warehouse task_set=finite run=tmp
 ```
-
-Note that only final pretrained models are provided, so evaluation curves can only be computed for new runs.
 
 To plot evaluation curves:
 ```bash
