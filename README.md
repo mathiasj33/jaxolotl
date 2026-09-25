@@ -64,6 +64,16 @@ The SemLTL algorithm additionally requires [SemML](https://gitlab.com/live-lab/s
 ```bash
 git submodule init
 git submodule update
+```
+
+If you obtained this repository without git metadata (e.g. as a zip archive), clone SemML at the pinned commit instead:
+```bash
+git clone https://gitlab.com/live-lab/software/semml.git semml
+git -C semml checkout 18b2d2ef005cfaa8f94f48cd4009904eb4e8b966
+```
+
+Then build SemML and link it into the `dependencies` subfolder:
+```bash
 pixi run python semml/build.py
 ln -s "$(pwd)/semml" dependencies/semml
 ```
@@ -78,7 +88,7 @@ We alternatively provide a Dockerfile to build an image with all required depend
 ```bash
 docker build -t jaxolotl:gpu .
 ```
-Note that the container only installs SemLTL dependencies if you have initialised the SemML submodule via `git submodule init && git submodule update`. Otherwise the SemLTL installation will be skipped.
+Note that the container only installs SemLTL dependencies if the `semml` folder is populated, either by initialising the SemML submodule via `git submodule init && git submodule update` or by cloning SemML as described above. Otherwise the SemLTL installation will be skipped.
 
 Note that this is a GPU-enabled image and requires a working [Docker](https://www.docker.com/) and [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installation.
 
