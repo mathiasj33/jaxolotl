@@ -1,5 +1,0 @@
-formula_length,formula_file,formula_index,num_measurements,forward_mean_seconds,forward_std_seconds
-2,conf/formulas/warehouse/reach-2.yaml,1,50,0.00019241632195189597,2.050087583869143e-05
-4,conf/formulas/warehouse/reach-4.yaml,1,50,0.00019295192207209765,3.4456650231330724e-05
-8,conf/formulas/warehouse/reach-8.yaml,0,50,0.0001946670759934932,3.708854954779513e-05
-12,conf/formulas/warehouse/reach-12.yaml,1,50,0.00019518884131684898,2.9080146539260696e-05
