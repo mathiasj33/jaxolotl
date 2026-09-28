@@ -26,6 +26,7 @@ WORKDIR /workspace
 COPY . .
 RUN pixi install -e gpu \
     && pixi run -e gpu copy-templates \
+    && pixi run -e gpu install-pretrained-models \
     && pixi clean cache -y
 
 # Install Rabinizer 4 in the expected project location.

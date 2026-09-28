@@ -7,7 +7,7 @@ defaults:
   - hydra: simple
   - _self_
 
-run: tmp
+run: pretrained
 save: false
 
 eval:

@@ -37,6 +37,11 @@ pixi install -e gpu
 pixi run -e gpu copy-templates
 ```
 
+To install the pretrained models:
+```bash
+pixi run -e gpu install-pretrained-models
+```
+
 ### Rabinizer 4
 
 We use [Rabinizer 4](https://www7.in.tum.de/~kretinsk/rabinizer4.html) for the
@@ -177,7 +182,7 @@ To evaluate the trained models:
 pixi run -e gpu python scripts/eval/eval.py alg=struct_ltl env=warehouse task_set=finite run=tmp
 ```
 
-See [eval.yaml](conf/eval.yaml.template) for other configuration options.
+Pretrained models can be evaluated with `run=pretrained` (once they have been installed). See [eval.yaml](conf/eval.yaml.template) for other configuration options.
 
 > [!NOTE]
 > If you run into OOM errors, the eval script supports `models_per_batch` and `formulas_per_batch` to control the evaluation parallelism. Lowering these will reduce memory requirements, at the expense of longer runtimes.
@@ -194,6 +199,8 @@ To compute evaluation curves:
 ```bash
 pixi run -e gpu python scripts/eval/compute_eval_curves.py alg=struct_ltl env=warehouse task_set=finite run=tmp
 ```
+
+Note that only final checkpoints are provided for pretrained models, so evaluation curves can only be computed for new runs.
 
 To plot evaluation curves:
 ```bash
