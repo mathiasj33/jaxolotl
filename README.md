@@ -157,7 +157,7 @@ pixi run -e gpu python scripts/train.py alg=struct_ltl env=warehouse run=tmp
 This script stores the following training outputs in `runs/${env}/${alg}/${run}`:
 
 - `logs.csv` and `train.log` contain training logs.
-- `model/model_seed<N>.eqx` contains one final model per seed.
+- `models/model_seed<N>.eqx` contains one final model per seed.
 - `checkpoints` contains training checkpoints. Checkpointing frequency can be controlled with the `save_freq` parameter.
 
 To plot training performance:
@@ -165,6 +165,8 @@ To plot training performance:
 pixi run python scripts/plotting/plot_curves.py type=training env=warehouse \
   'algorithms=[struct_ltl]' 'runs=[tmp]'
 ```
+
+Alternatively, you can use the [wandb](https://wandb.ai/) integration to to plot performance during training by setting a project and `use_wandb=true` in [conf/train.yaml](conf/train.yaml).
 
 Set `save=true` to save the figure to `plots/training_curves.pdf` instead of
 displaying it. Plot settings can be overridden through [plot_curves.yaml](conf/plot_curves.yaml).
@@ -211,6 +213,9 @@ pixi run python scripts/plotting/plot_curves.py type=eval env=warehouse \
 Set `save=true` to save the figure to `plots/eval_curves.pdf` instead of
 displaying it. Plot settings, including smoothing and confidence level,
 can be overridden through [plot_curves.yaml](conf/plot_curves.yaml).
+
+### Developer Guide
+For an overview of how to develop new LTL-RL algorithms within jaxolotl, have a look at the [developer guide](developer-guide.md).
 
 ## License
 
