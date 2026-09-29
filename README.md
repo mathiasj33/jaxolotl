@@ -22,6 +22,10 @@ algorithms and environments for LTL-conditioned multi-task RL. Our implementatio
 provide end-to-end speed-ups of up to 220x compared to standard PyTorch
 implementations.
 
+<p align="center">
+    <img src="assets/curves.png" max-width="1000px" />
+</p>
+
 <div align="center">
 
 [**Installation 🔧**](#installation-) | [**Algorithms 🤖**](#algorithms-) | [**Environments 🌍**](#environments-) | [**Getting started ⚡**](#getting-started-)
