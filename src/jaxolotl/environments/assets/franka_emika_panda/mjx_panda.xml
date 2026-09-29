@@ -1,3 +1,4 @@
+<!-- Modified for jaxolotl: removed the gripper actuator. See README.md for provenance. -->
 <mujoco model="panda">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 

@@ -223,7 +223,10 @@ For an overview of how to develop new LTL-RL algorithms within jaxolotl, have a 
 
 ## License
 
-This project is licensed under the terms of the [MIT License](/LICENSE).
+Original jaxolotl material is licensed under the [MIT License](/LICENSE).
+Adapted code, the Panda model and meshes, the Three.js dependency, and the
+`semml` Git submodule retain their own licenses; see the
+[third-party notices](/THIRD_PARTY_NOTICES.md) for their sources and terms.
 
 ## Citation
 
