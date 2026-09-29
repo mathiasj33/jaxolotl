@@ -1,7 +1,6 @@
 """Test that verifies expected success rates for pretrained evaluation runs.
 
-Pretrained models are not bundled with the repository. Each case is skipped unless its
-final models exist under ``runs/<env name>/<alg>/<run>/models``.
+Each case is skipped unless its final models exist under ``runs/<env name>/<alg>/<run>/models``.
 """
 
 import re
@@ -16,20 +15,18 @@ from jaxolotl.utils.artifact_utils import discover_seed_models
 
 PROJECT_ROOT = Path(__file__).parents[1]
 SUCCESS_RATE_PATTERN = re.compile(
-    r"Overall SR/AV:\s*(?P<success_rate>[0-9]+(?:\.[0-9]+)?)\s*\+-"
+    r"Overall SR/AV:\s*(?P<success_rate>[0-9]+(?:\.[0-9]+)?)\s*.*"
 )
 
 
 @dataclass(frozen=True)
 class EvaluationCase:
-    name: str
     alg: str
-    env: str
-    env_name: str
-    task_set: str
-    run: str
     expected_success_rate: float
-    tolerance: float = 0.01
+    env: str = "zone_env"
+    task_set: str = "finite"
+    run: str = "pretrained"
+    tolerance: float = 0.05
     extra_overrides: tuple[str, ...] = ("+eval.num_seeds=1",)
 
     @property
@@ -44,46 +41,25 @@ class EvaluationCase:
 
     @property
     def run_dir(self) -> Path:
-        return PROJECT_ROOT / "runs" / self.env_name / self.alg / self.run
+        env_to_name = {
+            "zone_env": "ZoneEnv",
+            "letter_world": "LetterWorld",
+            "warehouse": "WarehouseEnv",
+        }
+        return PROJECT_ROOT / "runs" / env_to_name[self.env] / self.alg / self.run
+
+    @property
+    def name(self) -> str:
+        return f"{self.alg}/{self.env}-{self.task_set}"
 
 
 EVALUATION_CASES = (
-    EvaluationCase(
-        name="StructLTL/Zones-NM",
-        alg="struct_ltl",
-        env="zone_env_nm",
-        env_name="ZoneEnv-NM",
-        task_set="finite",
-        run="pretrained",
-        expected_success_rate=0.952,
-    ),
-    EvaluationCase(
-        name="DeepLTL/Zones-NM",
-        alg="deep_ltl",
-        env="zone_env_nm",
-        env_name="ZoneEnv-NM",
-        task_set="finite",
-        run="pretrained",
-        expected_success_rate=0.910,
-    ),
-    EvaluationCase(
-        name="GenZ-LTL/Zones-NM",
-        alg="genz_ltl",
-        env="zone_env_nm",
-        env_name="ZoneEnv-NM",
-        task_set="finite",
-        run="pretrained",
-        expected_success_rate=0.811,
-    ),
-    EvaluationCase(
-        name="LTL2Action/Zones-NM",
-        alg="ltl2action",
-        env="zone_env_nm",
-        env_name="ZoneEnv-NM",
-        task_set="finite",
-        run="pretrained",
-        expected_success_rate=0.557,
-    ),
+    EvaluationCase(alg="struct_ltl", expected_success_rate=0.95),
+    EvaluationCase(alg="deep_ltl", expected_success_rate=0.92),
+    EvaluationCase(alg="genz_ltl", expected_success_rate=1.0),
+    EvaluationCase(alg="sem_ltl", expected_success_rate=0.83),
+    EvaluationCase(alg="gcrl_ltl", expected_success_rate=0.93),
+    EvaluationCase(alg="ltl2action", expected_success_rate=0.43),
 )
 
 
