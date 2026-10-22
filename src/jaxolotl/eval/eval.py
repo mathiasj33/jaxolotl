@@ -163,7 +163,9 @@ class Evaluator(eqx.Module):
         if self.return_trajs:
             trajs = jax.tree.map(
                 lambda x: jnp.zeros(
-                    (self.num_episodes, max_length + 1) + x.shape[1:], dtype=x.dtype
+                    # max_length + 2: initial state + potential epsilon step
+                    (self.num_episodes, max_length + 2) + x.shape[1:],
+                    dtype=x.dtype,
                 ),
                 env_state.state,
             )
